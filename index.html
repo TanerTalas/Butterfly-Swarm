@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Butterfly Swarm — Aşama 1</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; overflow: hidden; background: #0d1017; }
+      canvas { display: block; }
+
+      #hud {
+        position: fixed;
+        left: 16px;
+        bottom: 14px;
+        font: 12px/1.6 ui-monospace, "Cascadia Code", Consolas, monospace;
+        color: #7e8899;
+        pointer-events: none;
+        user-select: none;
+      }
+      #hud b { color: #c8d0dd; font-weight: 600; }
+      #hud .stage { color: #e0a458; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <b>Butterfly Swarm</b> — <span class="stage">Aşama 1: statik kelebek</span><br />
+      sürükle: döndür &nbsp;·&nbsp; tekerlek: yakınlaş &nbsp;·&nbsp; sağ tık: kaydır<br />
+      <span id="stats"></span>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

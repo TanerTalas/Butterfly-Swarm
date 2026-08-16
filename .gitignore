@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vite/
+*.local
+.DS_Store
+Thumbs.db
+
+# Editor / tooling
+.vscode/
+.idea/
+
+# Çalışma dokümanları — projenin kendisine dahil değil
+CLAUDE.md
+ROADMAP.md
+.claude/
