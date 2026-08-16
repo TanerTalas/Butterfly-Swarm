@@ -51,6 +51,10 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
   limits.close();
 
   const form = gui.addFolder('Kanat Formu');
+  form
+    .add(p, 'scale', 0.05, 1.2, 0.01)
+    .name('kelebek boyu')
+    .onChange((v) => butterfly.setScale(v));
   form.add(p, 'foreSpan', 0.6, 2.2, 0.01).name('ön kanat açıklık').onChange(rebuild);
   form.add(p, 'foreChord', 0.6, 2.0, 0.01).name('ön kanat en').onChange(rebuild);
   form.add(p, 'hindSpan', 0.4, 1.8, 0.01).name('arka kanat açıklık').onChange(rebuild);

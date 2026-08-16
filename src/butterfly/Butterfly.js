@@ -32,6 +32,19 @@ import {
 export const REST_DEFAULTS = {
   foreRestDeg: 12, // duruş halinde ön kanat yükselmesi
   hindRestDeg: 4, // arka kanat biraz daha düz
+
+  // Kelebeğin dünya ölçeği.
+  //
+  // Geometri ~3.4 birim kanat açıklığıyla modellendi; uçuş hacmi ise kamera
+  // frustum'undan türüyor ve varsayılan kamerada ~7.3 birim yüksekliğinde.
+  // 1:1 ölçekte tek kelebek ekranın yarısını kaplıyor, sürü sığmıyor.
+  //
+  // Kamerayı geri çekmek görsel olarak eşdeğer olurdu (perspektif kamerada
+  // aynı pikseller) AMA uçuş hacmi de kamerayla birlikte büyüdüğü için
+  // maxSpeed / wander / followRadius / fleeRadius / bob gibi dünya birimli
+  // parametrelerin hepsini yeniden ayarlamak gerekirdi. Ölçek burada
+  // durunca o ayarlar geçerli kalıyor.
+  scale: 0.25, // ≈ 0.85 birim kanat açıklığı, ekran yüksekliğinin ~%12'si
 };
 
 export class Butterfly {
@@ -91,7 +104,14 @@ export class Butterfly {
       2 * g.foreWing.attributes.position.count +
       2 * g.hindWing.attributes.position.count;
 
+    this.setScale(this.params.scale);
     this.applyRestPose();
+  }
+
+  /** Dünya ölçeği. Konum/yönelim `Flier` tarafından yazılıyor, ölçek burada. */
+  setScale(s) {
+    this.params.scale = s;
+    this.group.scale.setScalar(s);
   }
 
   _setWingTexture(material, shape) {
