@@ -200,7 +200,7 @@ function drawMarginSpots(ctx, outline, b, edgeWidth, px, py, toPixels, colors) {
  * dışarı fırlayan çıkıntılar bundan oluşuyor. Miter uzunluğu ayrıca
  * sınırlanıyor: sivri köşe içeride pahlanır, dışarı taşmaz.
  */
-function insetPolygon(points, dist) {
+export function insetPolygon(points, dist) {
   const n = points.length;
   // CCW poligonda iç taraf, ilerleme yönünün solu: normal = (-ey, ex)
   const sign = signedArea(points) > 0 ? 1 : -1;
@@ -246,7 +246,7 @@ function edgeNormal(a, b, sign) {
 }
 
 /** Üst üste binen ardışık noktaları atar (eğri birleşim yerlerinde oluşuyor). */
-function dedupe(points, eps = 1e-5) {
+export function dedupe(points, eps = 1e-5) {
   const out = [];
   for (const p of points) {
     const last = out[out.length - 1];
