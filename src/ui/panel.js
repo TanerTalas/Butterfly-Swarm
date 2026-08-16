@@ -10,11 +10,23 @@ import { FLIGHT_DEFAULTS } from '../flight/steering.js';
  * dağınıklık, sayı) genişleyecek.
  */
 export function createPanel({ butterfly, flight, scene: sceneCtl }) {
-  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 3' });
+  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 4' });
 
   const p = butterfly.params;
   const rebuild = () => butterfly.rebuild();
   const repose = () => butterfly.applyRestPose();
+
+  const mouse = gui.addFolder('Mouse Davranışı');
+  mouse
+    .add(flight, 'mode', { 'takip et': 'follow', 'kaç': 'flee', 'aldırma': 'ignore' })
+    .name('mod');
+  mouse.add(flight, 'followSpeed', 0, 20, 0.1).name('takip hızı');
+  mouse.add(flight, 'followRadius', 0.1, 6, 0.05).name('takip halkası');
+  mouse.add(flight, 'orbitSpeed', 0, 15, 0.1).name('dolanma hızı');
+  mouse.add(flight, 'fleeSpeed', 0, 30, 0.1).name('kaçış hızı');
+  mouse.add(flight, 'fleeRadius', 0.2, 10, 0.1).name('kaçış yarıçapı');
+  mouse.add(flight, 'modeBlend', 0.2, 10, 0.1).name('mod geçiş hızı');
+  mouse.add(sceneCtl, 'showTarget').name('hedefi göster').onChange(sceneCtl.onTarget);
 
   const fly = gui.addFolder('Uçuş');
   fly.add(flight, 'flying').name('uçsun');

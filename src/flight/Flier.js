@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import {
   wanderForce,
   viewBoundsForce,
+  followForce,
+  orbitForce,
+  fleeForce,
   limitLength,
   ensureMinLength,
   limitClimb,
@@ -34,6 +37,13 @@ export class Flier {
     this.acceleration = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
 
+    // Mod ağırlıkları ajanın kendisinde tutuluyor ve hedefe doğru
+    // yumuşatılıyor: mod değişince sürü aniden yön değiştirmiyor.
+    this.followMix = 0;
+    this.fleeMix = 0;
+    // Dolanma yönü: sürünün yarısı bir yöne, yarısı diğerine
+    this.spin = id % 2 === 0 ? 1 : -1;
+
     // Kare başına ayırma yapmamak için yeniden kullanılan geçiciler
     this._acc = new THREE.Vector3();
     this._tmp = new THREE.Vector3();
@@ -46,20 +56,49 @@ export class Flier {
   }
 
   /**
-   * @param {THREE.Camera} camera Uçuş hacmi kameranın görünür alanı; sınır
-   *   kuvveti bunu okuyor.
-   * @param {number} focusDistance Kameradan yörünge merkezine uzaklık.
+   * @param {object} ctx
+   * @param {THREE.Camera} ctx.camera Uçuş hacmi kameranın görünür alanı.
+   * @param {number} ctx.focusDistance Kameradan yörünge merkezine uzaklık.
+   * @param {THREE.Vector3|null} ctx.target Mouse'un dünya karşılığı.
    */
-  update(dt, camera, focusDistance) {
+  update(dt, ctx) {
     if (!this.params.flying) return;
 
     this.time += dt;
     const p = this.params;
 
+    this._blendMode(dt);
+
     const acc = this._acc.set(0, 0, 0);
     acc.add(wanderForce(this._tmp, this.id, this.time, p));
+
+    if (ctx.target) {
+      if (this.followMix > 1e-3) {
+        acc.addScaledVector(
+          followForce(this._tmp, this.position, ctx.target, p),
+          this.followMix,
+        );
+        acc.addScaledVector(
+          orbitForce(this._tmp, this.position, ctx.target, this.spin, p),
+          this.followMix,
+        );
+      }
+      if (this.fleeMix > 1e-3) {
+        acc.addScaledVector(
+          fleeForce(this._tmp, this.position, ctx.target, p),
+          this.fleeMix,
+        );
+      }
+    }
+
     acc.add(
-      viewBoundsForce(this._tmp, this.position, camera, focusDistance, p),
+      viewBoundsForce(
+        this._tmp,
+        this.position,
+        ctx.camera,
+        ctx.focusDistance,
+        p,
+      ),
     );
     limitLength(acc, p.maxForce);
 
@@ -71,6 +110,14 @@ export class Flier {
 
     this._updateOrientation(acc, dt);
     this.acceleration.copy(acc);
+  }
+
+  /** Mod ağırlıklarını hedefe doğru yumuşatır — geçiş ani olmasın. */
+  _blendMode(dt) {
+    const p = this.params;
+    const k = 1 - Math.exp(-p.modeBlend * dt);
+    this.followMix += ((p.mode === 'follow' ? 1 : 0) - this.followMix) * k;
+    this.fleeMix += ((p.mode === 'flee' ? 1 : 0) - this.fleeMix) * k;
   }
 
   _updateOrientation(acc, dt) {

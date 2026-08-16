@@ -4,6 +4,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Butterfly } from './butterfly/Butterfly.js';
 import { Flier } from './flight/Flier.js';
 import { FLIGHT_DEFAULTS } from './flight/steering.js';
+import { Pointer } from './input/pointer.js';
 import { createPanel } from './ui/panel.js';
 
 // ── Renderer ───────────────────────────────────────────────────────────────
@@ -71,13 +72,25 @@ const flier = new Flier({ id: 0, params: flight });
 // ki zoom ve pan hacmi kendiliğinden takip etsin.
 let focusDistance = camera.position.distanceTo(controls.target);
 
+const pointer = new Pointer(renderer.domElement, camera);
+
+// Mouse hedefini görmek için küçük bir işaretçi
+const targetMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.09, 12, 8),
+  new THREE.MeshBasicMaterial({ color: 0x66d9ff, transparent: true, opacity: 0.55 }),
+);
+targetMarker.visible = false;
+scene.add(targetMarker);
+
 // ── Panel ──────────────────────────────────────────────────────────────────
 const sceneCtl = {
   autoRotate: false,
   showAxes: false,
   wireframe: false,
+  showTarget: false,
   exposure: renderer.toneMappingExposure,
   background: '#0d1017',
+  onTarget: (v) => (targetMarker.visible = v),
   onAxes: (v) => (axes.visible = v),
   onWireframe: (v) => butterfly.setWireframe(v),
   onExposure: (v) => (renderer.toneMappingExposure = v),
@@ -109,8 +122,15 @@ function animate() {
   camera.updateMatrixWorld();
   focusDistance = camera.position.distanceTo(controls.target);
 
+  pointer.update(dt, focusDistance);
+  targetMarker.position.copy(pointer.world);
+
   butterfly.update(dt);
-  flier.update(dt, camera, focusDistance);
+  flier.update(dt, {
+    camera,
+    focusDistance,
+    target: pointer.active ? pointer.world : null,
+  });
 
   // Dikey salınım çırpmayla senkron: kanatlar aşağı inerken gövde yükseliyor
   flier.applyTo(butterfly.group, -butterfly.wave * flight.bob);
@@ -123,7 +143,8 @@ function animate() {
     statsEl.textContent =
       `${butterfly.vertexCount} vertex · ` +
       `${renderer.info.render.calls} draw call · ${fps} fps · ` +
-      `hız ${flier.velocity.length().toFixed(2)}`;
+      `hız ${flier.velocity.length().toFixed(2)} · ` +
+      `mod ${flight.mode}${pointer.active ? '' : ' (mouse bekleniyor)'}`;
     statsTimer = 0;
     frames = 0;
   }
@@ -139,6 +160,7 @@ window.__app = {
   butterfly,
   flier,
   flight,
+  pointer,
   sceneCtl,
 };
 

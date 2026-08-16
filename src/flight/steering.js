@@ -37,6 +37,18 @@ export const FLIGHT_DEFAULTS = {
   maxBankDeg: 55,
   bob: 0.045, // çırpmayla senkron dikey salınım
 
+  // ── Mouse davranışı ──────────────────────────────────────────────────
+  mode: 'follow', // 'follow' | 'flee' | 'ignore'
+  followSpeed: 7.0,
+  // Kelebekler mouse'un ÜSTÜNE değil, etrafındaki bu yarıçaplı halkaya
+  // yöneliyor. Halkanın içindeyse dışa itiliyor — yoksa hepsi imlecin
+  // üstüne yığılıp tek bir topak oluyor.
+  followRadius: 1.5,
+  orbitSpeed: 4.0, // halka üzerinde teğetsel dolanma
+  fleeSpeed: 12.0,
+  fleeRadius: 3.5, // bu mesafeden uzakta kaçış yok
+  modeBlend: 2.0, // mod geçişinin yumuşaklığı (1/s)
+
   // Uçuş hacmi sabit bir dünya kutusu değil, kameranın GÖRÜNÜR alanı.
   // Ekranın ne kadarını doldursunlar; 1.0 tam kenara kadar demek.
   screenFill: 0.94,
@@ -73,6 +85,68 @@ export function wanderForce(out, id, time, params) {
   );
 
   return out.multiplyScalar(params.wander * (0.4 + params.scatter));
+}
+
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+/**
+ * Takip kuvveti — hedefin ÜSTÜNE değil, etrafındaki halkaya.
+ *
+ * Saf "hedefe doğru git" kuvveti sürüyü imlecin üstünde tek bir topağa
+ * çeviriyor. Burada kuvvet halkanın dışındayken içeri, içindeyken dışarı
+ * bakıyor ve halkanın üstünde sıfırlanıyor; sonuç imlecin çevresinde
+ * asılı duran bir bulut.
+ */
+export function followForce(out, position, target, params) {
+  out.subVectors(target, position);
+  const d = out.length();
+  if (d < 1e-4) return out.set(0, 0, 0);
+
+  out.multiplyScalar(1 / d); // birim yön
+
+  const radius = Math.max(params.followRadius, 1e-3);
+  const gain = clamp((d - radius) / radius, -1, 1);
+  return out.multiplyScalar(gain * params.followSpeed);
+}
+
+/**
+ * Hedefin etrafında teğetsel dolanma. `spin` ajana göre ±1; sürüde
+ * kelebeklerin bir kısmı saat yönünde, kalanı tersine dönsün diye.
+ */
+export function orbitForce(out, position, target, spin, params) {
+  out.subVectors(target, position);
+  const d = out.length();
+  if (d < 1e-4) return out.set(0, 0, 0);
+  out.multiplyScalar(1 / d);
+
+  // Yatay teğet: hedefe bakan yön ile dünya-yukarının çapraz çarpımı
+  out.cross(WORLD_UP);
+  const len = out.length();
+  if (len < 1e-4) return out.set(0, 0, 0); // hedef tam tepede/altta
+
+  // Halkadan uzaklaştıkça dolanma zayıflasın
+  const falloff = 1 / (1 + Math.abs(d - params.followRadius));
+  return out.multiplyScalar((spin * params.orbitSpeed * falloff) / len);
+}
+
+/**
+ * Kaçış kuvveti. Yalnızca `fleeRadius` içinde etkin ve mesafeyle ters
+ * orantılı: imleç dibindeyse panik, uzaktaysa umursamıyor. Yarıçapın tam
+ * kenarında sıfıra indiği için moda girip çıkarken sıçrama olmuyor.
+ */
+export function fleeForce(out, position, target, params) {
+  out.subVectors(position, target);
+  const d = out.length();
+  const radius = Math.max(params.fleeRadius, 1e-3);
+  if (d < 1e-4 || d > radius) return out.set(0, 0, 0);
+
+  out.multiplyScalar(1 / d);
+  const panic = 1 - d / radius;
+  return out.multiplyScalar(panic * panic * params.fleeSpeed);
+}
+
+function clamp(v, lo, hi) {
+  return v < lo ? lo : v > hi ? hi : v;
 }
 
 // Kamera tabanı için geçiciler
