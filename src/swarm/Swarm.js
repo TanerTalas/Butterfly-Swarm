@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { buildSwarmGeometry } from './geometry.js';
+import { HINGES } from '../butterfly/geometry.js';
 import { injectFlapShader, syncFlapUniforms } from './wingShader.js';
 import { createWingMaterial, createBodyMaterial } from '../butterfly/material.js';
 import {
@@ -75,6 +76,17 @@ export class Swarm {
     this.bodyMaterial.vertexColors = true;
     this.wingMaterial = createWingMaterial();
 
+    // Shader YALNIZCA BİR KEZ enjekte edilir.
+    //
+    // three, aynı `customProgramCacheKey` için programı materyal başına
+    // önbelleğe alıyor ve önbellekte bulunca `onBeforeCompile`'ı bir daha
+    // ÇAĞIRMIYOR. Yeniden enjekte etmek yeni bir uniforms nesnesi üretir ama
+    // o nesne hiçbir zaman programa bağlanmaz: `uTime` donar, kanatlar
+    // çırpmayı bırakır, gövdenin dikey salınımı ise CPU tarafında olduğu
+    // için sürdüğünden kelebekler "sadece vücuduyla inip kalkıyor" görünür.
+    // Menteşeler sabit olduğu için yeniden enjeksiyona zaten gerek yok.
+    this.flapUniforms = injectFlapShader(this.wingMaterial, HINGES);
+
     this._allocate();
     this.build();
   }
@@ -96,12 +108,22 @@ export class Swarm {
     // kabuk yerine bulut oluşturmasını sağlayan şey bu
     this.radiusBias = new Float32Array(n);
 
+    // Ham rastgele çekilişler AYRI tutuluyor.
+    //
+    // `scale[i]` gibi türetilmiş değerler parametre değişince yeniden
+    // hesaplanmalı; ama rastgeleliği o anda yeniden çekersek sürü sıçrar
+    // (bir kelebek büyükken aniden küçük olur). Çekilişler bir kez yapılıp
+    // saklanıyor, türetme her seferinde aynı çekilişten yapılıyor.
+    this._sizeRand = new Float32Array(n);
+    this._speedRand = new Float32Array(n);
+    this._hueRand = new Float32Array(n);
+
     for (let i = 0; i < n; i++) this._seed(i);
+    this.applyVariation();
   }
 
   /** Bir ajanı rastgele bir başlangıç durumuna kurar. */
   _seed(i) {
-    const p = this.params;
     const spread = 4;
 
     this.position[i * 3] = (Math.random() - 0.5) * spread * 2;
@@ -114,14 +136,31 @@ export class Swarm {
 
     this.quaternion[i * 4 + 3] = 1; // birim quaternion
 
-    // Bireysel varyasyon: sürü tek bir organizma gibi görünmesin
-    this.scale[i] = p.scale * (1 + (Math.random() - 0.5) * p.sizeVariation);
     this.phase[i] = Math.random();
-    this.flapSpeed[i] = p.flapSpeed * (1 + (Math.random() - 0.5) * 0.35);
     this.noiseOffset[i] = Math.random() * 1000;
     // Küpü alınmış rastgelelik: yakın yarıçapları seyreltip yoğunluğu
     // hacme eşit dağıtıyor, yoksa herkes merkeze toplanıyor
     this.radiusBias[i] = Math.cbrt(Math.random());
+
+    this._sizeRand[i] = Math.random() - 0.5;
+    this._speedRand[i] = Math.random() - 0.5;
+    this._hueRand[i] = Math.random() - 0.5;
+  }
+
+  /**
+   * Boy ve çırpma hızı çeşitliliğini parametrelerden yeniden türetir.
+   * Geometri değişmediği için yeniden inşa GEREKMİYOR — panelde slider
+   * sürüklerken bu yeterli.
+   */
+  applyVariation() {
+    const p = this.params;
+    for (let i = 0; i < this.capacity; i++) {
+      this.scale[i] = p.scale * (1 + this._sizeRand[i] * p.sizeVariation);
+      this.flapSpeed[i] = p.flapSpeed * (1 + this._speedRand[i] * 0.35);
+    }
+    // aFlapSpeed instance attribute'u aynı diziyi paylaşıyor; GPU'ya bildir
+    const attr = this.wingMesh?.geometry.getAttribute('aFlapSpeed');
+    if (attr) attr.needsUpdate = true;
   }
 
   // ── Geometri / mesh ─────────────────────────────────────────────────────
@@ -134,8 +173,6 @@ export class Swarm {
     if (this.wingMaterial.map) this.wingMaterial.map.dispose();
     this.wingMaterial.map = built.atlas;
     this.wingMaterial.needsUpdate = true;
-
-    this.flapUniforms = injectFlapShader(this.wingMaterial, built.hinges);
 
     // Instance başına çırpma verisi — yalnızca kanat geometrisinde gerekli
     built.wings.setAttribute(
@@ -165,7 +202,7 @@ export class Swarm {
       this.group.add(mesh);
     }
 
-    this._applyHueVariation();
+    this.applyHue();
     this.setCount(this.params.count);
   }
 
@@ -173,12 +210,15 @@ export class Swarm {
    * Instance rengi diffuse'u ÇARPIYOR. Doygun bir renk deseni boğardı, o
    * yüzden ton kaydırması en parlak kanalı 1'de tutacak şekilde normalize
    * ediliyor: renk kayıyor ama parlaklık düşmüyor.
+   *
+   * Boy çeşitliliğinde olduğu gibi, ham çekiliş `_hueRand`'da saklı —
+   * slider'ı oynatmak renkleri yeniden karmıyor, aynı çekilişi yeniden
+   * ölçekliyor.
    */
-  _applyHueVariation() {
+  applyHue() {
     const p = this.params;
     for (let i = 0; i < this.capacity; i++) {
-      const hue = 0.08 + (Math.random() - 0.5) * p.hueSpread;
-      _color.setHSL(hue, 0.55, 0.5);
+      _color.setHSL(0.08 + this._hueRand[i] * p.hueSpread, 0.55, 0.5);
       const max = Math.max(_color.r, _color.g, _color.b) || 1;
       _color.multiplyScalar(1 / max);
       // Doygunluğu kısıp beyaza yaklaştır — desen baskın kalsın

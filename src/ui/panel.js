@@ -15,15 +15,20 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   const p = swarm.params;
   const rebuild = () => swarm.rebuild();
 
+  // Bu ayarlar geometriyi değiştirmiyor; per-instance dizileri yeniden
+  // türetmek yetiyor. Geometri yeniden inşası yalnızca "Kanat Formu" için.
+  const variation = () => swarm.applyVariation();
+  const hue = () => swarm.applyHue();
+
   const flock = gui.addFolder('Sürü');
   flock
     .add(p, 'count', 1, swarm.capacity, 1)
     .name('kelebek sayısı')
     .onChange((v) => swarm.setCount(v));
-  flock.add(p, 'scale', 0.03, 1.0, 0.005).name('kelebek boyu').onChange(rebuild);
-  flock.add(p, 'sizeVariation', 0, 1, 0.01).name('boy çeşitliliği').onChange(rebuild);
-  flock.add(p, 'hueSpread', 0, 0.5, 0.01).name('renk aralığı').onChange(rebuild);
-  flock.add(p, 'hueStrength', 0, 1, 0.01).name('renk çeşitliliği').onChange(rebuild);
+  flock.add(p, 'scale', 0.03, 1.0, 0.005).name('kelebek boyu').onChange(variation);
+  flock.add(p, 'sizeVariation', 0, 1, 0.01).name('boy çeşitliliği').onChange(variation);
+  flock.add(p, 'hueSpread', 0, 0.5, 0.01).name('renk aralığı').onChange(hue);
+  flock.add(p, 'hueStrength', 0, 1, 0.01).name('renk çeşitliliği').onChange(hue);
 
   const mouse = gui.addFolder('Mouse Davranışı');
   mouse
@@ -73,9 +78,8 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
 
   const flap = gui.addFolder('Çırpma');
   flap.add(p, 'flapping').name('çırpsın');
-  // Hız instance attribute'una yazılı (kelebek başına ±%17 sapmayla),
-  // değişince yeniden üretilmeli
-  flap.add(p, 'flapSpeed', 0.2, 16, 0.1).name('hız (vuruş/sn)').onChange(rebuild);
+  // Hız instance attribute'una yazılı (kelebek başına ±%17 sapmayla)
+  flap.add(p, 'flapSpeed', 0.2, 16, 0.1).name('hız (vuruş/sn)').onChange(variation);
   flap.add(p, 'flapAmplitude', 0, 1.4, 0.01).name('genlik');
   flap.add(p, 'flapUpDeg', 10, 100, 1).name('tepe açı°');
   flap.add(p, 'flapDownDeg', -60, 30, 1).name('dip açı°');
@@ -101,6 +105,7 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
           Object.assign(p, WING_DEFAULTS, FLAP_DEFAULTS, SWARM_DEFAULTS);
           Object.assign(flight, FLIGHT_DEFAULTS);
           rebuild();
+          swarm.setCount(p.count);
           gui.controllersRecursive().forEach((c) => c.updateDisplay());
         },
       },
