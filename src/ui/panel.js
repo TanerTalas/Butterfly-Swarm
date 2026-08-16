@@ -2,18 +2,42 @@ import GUI from 'lil-gui';
 import { WING_DEFAULTS } from '../butterfly/geometry.js';
 import { REST_DEFAULTS } from '../butterfly/Butterfly.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
+import { FLIGHT_DEFAULTS } from '../flight/steering.js';
 
 /*
  * Tasarım + animasyon paneli. Amacı kanat siluetini, duruşunu ve çırpmasını
  * canlı ayarlamak. Aşama 6'da davranış parametreleriyle (takip/kaçış hızı,
  * dağınıklık, sayı) genişleyecek.
  */
-export function createPanel({ butterfly, scene: sceneCtl }) {
-  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 2' });
+export function createPanel({ butterfly, flight, scene: sceneCtl }) {
+  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 3' });
 
   const p = butterfly.params;
   const rebuild = () => butterfly.rebuild();
   const repose = () => butterfly.applyRestPose();
+
+  const fly = gui.addFolder('Uçuş');
+  fly.add(flight, 'flying').name('uçsun');
+  fly.add(flight, 'maxSpeed', 0.2, 8, 0.05).name('azami hız');
+  fly.add(flight, 'minSpeed', 0, 3, 0.05).name('asgari hız');
+  fly.add(flight, 'maxForce', 0.5, 20, 0.1).name('azami kuvvet');
+  fly.add(flight, 'wander', 0, 12, 0.1).name('dolanma');
+  fly.add(flight, 'scatter', 0, 1, 0.01).name('dağınıklık');
+  fly.add(flight, 'verticalBias', 0, 1.5, 0.01).name('dikey dolanma');
+  fly.add(flight, 'maxClimbDeg', 5, 75, 1).name('azami tırmanma°');
+  fly.add(flight, 'turnRate', 0.5, 20, 0.1).name('dönüş çevikliği');
+  fly.add(flight, 'bank', 0, 2, 0.01).name('yatış');
+  fly.add(flight, 'maxBankDeg', 0, 85, 1).name('azami yatış°');
+  fly.add(flight, 'bob', 0, 0.25, 0.005).name('dikey salınım');
+
+  const limits = gui.addFolder('Uçuş Hacmi');
+  limits.add(sceneCtl, 'showBounds').name('sınırları göster').onChange(sceneCtl.onBounds);
+  limits.add(flight, 'boundsX', 1, 15, 0.1).name('genişlik ±X').onChange(sceneCtl.onBoundsSize);
+  limits.add(flight, 'boundsY', 0.5, 8, 0.1).name('yükseklik ±Y').onChange(sceneCtl.onBoundsSize);
+  limits.add(flight, 'boundsZ', 1, 15, 0.1).name('derinlik ±Z').onChange(sceneCtl.onBoundsSize);
+  limits.add(flight, 'boundsMargin', 0.2, 4, 0.05).name('geri itme payı');
+  limits.add(flight, 'boundsForce', 0, 30, 0.5).name('geri itme gücü');
+  limits.close();
 
   const form = gui.addFolder('Kanat Formu');
   form.add(p, 'foreSpan', 0.6, 2.2, 0.01).name('ön kanat açıklık').onChange(rebuild);
@@ -24,6 +48,7 @@ export function createPanel({ butterfly, scene: sceneCtl }) {
   form.add(p, 'droop', 0, 0.4, 0.005).name('uç sarkması').onChange(rebuild);
   form.add(p, 'edgeWidth', 0, 0.2, 0.005).name('kenar bandı').onChange(rebuild);
   form.add(p, 'tessellation', 0.05, 0.4, 0.01).name('üçgen yoğunluğu').onChange(rebuild);
+  form.close();
 
   const flap = gui.addFolder('Çırpma');
   flap.add(p, 'flapping').name('çırpsın').onChange(repose);
@@ -58,6 +83,8 @@ export function createPanel({ butterfly, scene: sceneCtl }) {
       {
         reset: () => {
           Object.assign(p, WING_DEFAULTS, REST_DEFAULTS, FLAP_DEFAULTS);
+          Object.assign(flight, FLIGHT_DEFAULTS);
+          sceneCtl.onBoundsSize();
           rebuild();
           gui.controllersRecursive().forEach((c) => c.updateDisplay());
         },

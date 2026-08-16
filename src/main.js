@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Butterfly } from './butterfly/Butterfly.js';
+import { Flier } from './flight/Flier.js';
+import { FLIGHT_DEFAULTS } from './flight/steering.js';
 import { createPanel } from './ui/panel.js';
 
 // ── Renderer ───────────────────────────────────────────────────────────────
@@ -28,14 +30,14 @@ const camera = new THREE.PerspectiveCamera(
   0.05,
   100,
 );
-camera.position.set(1.9, 1.15, 2.9);
+camera.position.set(0, 2.2, 9.5);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0.05, 0);
+controls.target.set(0, 0, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 0.8;
-controls.maxDistance = 12;
+controls.maxDistance = 30;
 controls.update();
 
 // ── Işık ───────────────────────────────────────────────────────────────────
@@ -58,24 +60,43 @@ const axes = new THREE.AxesHelper(1.2);
 axes.visible = false;
 scene.add(axes);
 
-// ── Kelebek ────────────────────────────────────────────────────────────────
+// ── Kelebek + uçuş ─────────────────────────────────────────────────────────
 const butterfly = new Butterfly();
 scene.add(butterfly.group);
 
+const flight = { ...FLIGHT_DEFAULTS };
+const flier = new Flier({ id: 0, params: flight });
+
+// Uçuş hacmini gösteren tel kafes — sınır kuvvetini ayarlarken şart
+const boundsBox = new THREE.Box3Helper(new THREE.Box3(), 0x2f6d8f);
+boundsBox.visible = false;
+scene.add(boundsBox);
+
+function syncBoundsHelper() {
+  boundsBox.box.set(
+    new THREE.Vector3(-flight.boundsX, -flight.boundsY, -flight.boundsZ),
+    new THREE.Vector3(flight.boundsX, flight.boundsY, flight.boundsZ),
+  );
+}
+syncBoundsHelper();
+
 // ── Panel ──────────────────────────────────────────────────────────────────
 const sceneCtl = {
-  autoRotate: true,
+  autoRotate: false,
   showAxes: false,
   wireframe: false,
+  showBounds: false,
   exposure: renderer.toneMappingExposure,
   background: '#0d1017',
   onAxes: (v) => (axes.visible = v),
   onWireframe: (v) => butterfly.setWireframe(v),
   onExposure: (v) => (renderer.toneMappingExposure = v),
   onBackground: (v) => scene.background.set(v),
+  onBounds: (v) => (boundsBox.visible = v),
+  onBoundsSize: syncBoundsHelper,
 };
 
-createPanel({ butterfly, scene: sceneCtl });
+createPanel({ butterfly, flight, scene: sceneCtl });
 
 // ── Döngü ──────────────────────────────────────────────────────────────────
 // THREE.Clock deprecated. connect() Page Visibility API'sini bağlıyor:
@@ -93,11 +114,13 @@ function animate() {
   // Görünürlük dışındaki takılmalara (uzun GC, ağır rebuild) karşı üst sınır
   const dt = Math.min(timer.getDelta(), 0.1);
 
-  if (sceneCtl.autoRotate) {
-    butterfly.group.rotation.y += dt * 0.35;
-  }
-
   butterfly.update(dt);
+  flier.update(dt);
+
+  // Dikey salınım çırpmayla senkron: kanatlar aşağı inerken gövde yükseliyor
+  flier.applyTo(butterfly.group, -butterfly.wave * flight.bob);
+
+  controls.autoRotate = sceneCtl.autoRotate;
   controls.update();
   renderer.render(scene, camera);
 
@@ -107,7 +130,8 @@ function animate() {
     const fps = Math.round(frames / statsTimer);
     statsEl.textContent =
       `${butterfly.vertexCount} vertex · ` +
-      `${renderer.info.render.calls} draw call · ${fps} fps`;
+      `${renderer.info.render.calls} draw call · ${fps} fps · ` +
+      `hız ${flier.velocity.length().toFixed(2)}`;
     statsTimer = 0;
     frames = 0;
   }
@@ -115,7 +139,16 @@ function animate() {
 renderer.setAnimationLoop(animate);
 
 // Geliştirme kolaylığı: konsoldan sahneye erişim
-window.__app = { scene, camera, controls, renderer, butterfly, sceneCtl };
+window.__app = {
+  scene,
+  camera,
+  controls,
+  renderer,
+  butterfly,
+  flier,
+  flight,
+  sceneCtl,
+};
 
 // ── Resize ─────────────────────────────────────────────────────────────────
 window.addEventListener('resize', () => {

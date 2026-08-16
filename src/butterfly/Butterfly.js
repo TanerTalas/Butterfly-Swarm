@@ -47,6 +47,9 @@ export class Butterfly {
     // Bireysel çırpma fazı — sürüde kelebekler senkron çırpmasın diye
     this.phase = options.phase ?? Math.random();
     this.time = 0;
+    // Vuruşun anlık değeri [-1,1]. Uçuştaki dikey salınım (bob) bunu okuyor
+    // ki gövde hareketi çırpmayla senkron kalsın.
+    this.wave = 0;
 
     // Ön ve arka kanadın deseni farklı (siluetleri farklı), o yüzden iki
     // ayrı materyal + iki ayrı texture.
@@ -121,6 +124,7 @@ export class Butterfly {
       w.mesh.rotation.x = 0;
     }
     this.bodyGroup.rotation.x = 0;
+    this.wave = 0;
   }
 
   update(dt) {
@@ -132,6 +136,7 @@ export class Butterfly {
     this.time += dt;
     const p = this.params;
     const cycle = flapCycle(this.time, p.flapSpeed, this.phase);
+    this.wave = flapWave(cycle, p.downstrokeFraction);
 
     for (const w of this.wings) {
       const isFore = w.kind === 'fore';
@@ -150,10 +155,7 @@ export class Butterfly {
 
     // Aksiyon–reaksiyon: kanatlar yukarı giderken gövde hafifçe aşağı bakıyor
     this.bodyGroup.rotation.x =
-      -flapWave(cycle, p.downstrokeFraction) *
-      p.bodyBobDeg *
-      p.flapAmplitude *
-      THREE.MathUtils.DEG2RAD;
+      -this.wave * p.bodyBobDeg * p.flapAmplitude * THREE.MathUtils.DEG2RAD;
   }
 
   setWireframe(on) {
