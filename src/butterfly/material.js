@@ -10,19 +10,33 @@ export function createWingMaterial(map = null) {
   return new THREE.MeshPhysicalMaterial({
     map,
     side: THREE.DoubleSide,
-    roughness: 0.45,
+    roughness: 0.6,
     metalness: 0.0,
+
+    // KRİTİK: speküler şiddeti düşük tutulmalı.
+    //
+    // Varsayılan specularIntensity = 1 ile Fresnel, yüzeye profilden
+    // bakıldığında yansımayı %100'e çıkarıyor. Kanat ince bir levha olduğu
+    // için uçuş sırasında sürekli profile yaklaşıyor ve o anlarda çevreyi
+    // yansıtan beyaz bir aynaya dönüşüyordu: koyu kenar bandı bile açık
+    // griye kalkıp kanat "yarı saydam" görünüyordu. Fiziksel olarak doğru
+    // ama kelebek kanadı pullu ve mat — bu kadar yansıtıcı değil.
+    specularIntensity: 0.22,
+
     // Kanat pulları: yumuşak, tozlu bir parlaklık.
-    // Düşük tutuluyor — yüksek sheen vertex renklerini beyaza doğru yıkıyor.
-    sheen: 0.3,
-    sheenRoughness: 0.6,
+    sheen: 0.15,
+    sheenRoughness: 0.85,
     sheenColor: new THREE.Color(0xffd7a0),
+
     // Hafif yanardönerlik — açıya göre renk oynaması
-    iridescence: 0.18,
+    iridescence: 0.07,
     iridescenceIOR: 1.25,
     iridescenceThicknessRange: [120, 420],
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.55,
+
+    // clearcoat KULLANILMIYOR: ikinci bir Fresnel katmanı ve yukarıdaki
+    // yıkanma sorununu aynen geri getiriyor.
+    clearcoat: 0,
+
     flatShading: false,
   });
 }

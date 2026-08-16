@@ -30,13 +30,15 @@ import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js
 
 // ── Ayarlanabilir tasarım parametreleri ────────────────────────────────────
 export const WING_DEFAULTS = {
-  foreSpan: 1.15, // ön kanat açıklığı (menteşeden uca)
-  foreChord: 1.0, // ön kanat en/boy oranı çarpanı
-  hindSpan: 0.92, // arka kanat açıklığı
-  hindChord: 1.0,
+  // span x'i, chord y'yi ölçekliyor. Kanadı büyütürken ikisini BİRLİKTE
+  // ölçekle, yoksa siluet gerilmiş görünür.
+  foreSpan: 1.45, // ön kanat açıklığı (menteşeden uca)
+  foreChord: 1.26, // ön kanat en/boy oranı çarpanı
+  hindSpan: 1.16, // arka kanat açıklığı
+  hindChord: 1.26,
   camber: 0.045, // orta açıklıkta yukarı bombe (fazlası kanadı yastığa çeviriyor)
   droop: 0.055, // uca doğru aşağı sarkma
-  edgeWidth: 0.06, // koyu kenar bandının kalınlığı (shape birimi)
+  edgeWidth: 0.076, // koyu kenar bandının kalınlığı (shape birimi)
   tessellation: 0.18, // hedef maksimum üçgen kenar uzunluğu
 };
 
@@ -173,16 +175,22 @@ export function shapeBounds(shape) {
 function buildAbdomen() {
   // Uca doğru incelen profil. LatheGeometry Y ekseni etrafında döner;
   // rotateX(PI/2) ile Y → +Z olur, profili −y'de kurup kuyruğa uzatıyoruz.
+  //
+  // DİKKAT: LatheGeometry profil noktalarının ARTAN y sırasında olmasını
+  // bekler. Ters sırada verilirse üçgen sarımı çevrilir, normaller içeri
+  // döner ve FrontSide culling ile karnın dış yüzeyi atılır — karın
+  // "yarı saydam" görünüp içinden göğüs seçilir.
+  // Bu yüzden liste kuyruk ucundan (en negatif y) göğse doğru sıralı.
   const profile = [
-    [0.0, 0.115],
-    [-0.06, 0.138],
-    [-0.22, 0.142],
-    [-0.4, 0.128],
-    [-0.56, 0.105],
-    [-0.7, 0.077],
-    [-0.82, 0.048],
-    [-0.9, 0.022],
     [-0.94, 0.0],
+    [-0.9, 0.022],
+    [-0.82, 0.048],
+    [-0.7, 0.077],
+    [-0.56, 0.105],
+    [-0.4, 0.128],
+    [-0.22, 0.142],
+    [-0.06, 0.138],
+    [0.0, 0.115],
   ].map(([y, r]) => new THREE.Vector2(r, y - 0.02));
 
   // Segment sayıları bilinçli olarak düşük: Aşama 5'te bu geometri 500 kez
