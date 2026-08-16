@@ -16,8 +16,15 @@ export const FLAP_DEFAULTS = {
   hindLag: 0.12, // arka kanadın faz gecikmesi (vuruş kesri)
   hindAmplitude: 0.85,
   twistDeg: 16, // kanadın açıklık ekseni etrafında burulması
-  bodyBobDeg: 3.5, // gövdenin ters yönde salınımı
 };
+
+/*
+ * Not: Aşama 2'de gövde, çırpmanın tersine hafifçe salınıyordu (bodyBobDeg).
+ * Sürüde gövde ve kanatlar aynı instance matrisini paylaştığı için gövdeyi
+ * ayrıca döndürmek mümkün değil; ancak kelebekler ekran yüksekliğinin ~%11'i
+ * kadar olduğundan bu detay zaten görünmüyor. Uçuş yolundaki dikey salınım
+ * (FLIGHT_DEFAULTS.bob) korundu.
+ */
 
 /**
  * Vuruş dalgası: [0,1) döngü konumu → [-1, 1]. +1 tepe, -1 dip.

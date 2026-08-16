@@ -1,7 +1,7 @@
 import GUI from 'lil-gui';
 import { WING_DEFAULTS } from '../butterfly/geometry.js';
-import { REST_DEFAULTS } from '../butterfly/Butterfly.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
+import { SWARM_DEFAULTS } from '../swarm/Swarm.js';
 import { FLIGHT_DEFAULTS } from '../flight/steering.js';
 
 /*
@@ -9,19 +9,29 @@ import { FLIGHT_DEFAULTS } from '../flight/steering.js';
  * canlı ayarlamak. Aşama 6'da davranış parametreleriyle (takip/kaçış hızı,
  * dağınıklık, sayı) genişleyecek.
  */
-export function createPanel({ butterfly, flight, scene: sceneCtl }) {
-  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 4' });
+export function createPanel({ swarm, flight, scene: sceneCtl }) {
+  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 5' });
 
-  const p = butterfly.params;
-  const rebuild = () => butterfly.rebuild();
-  const repose = () => butterfly.applyRestPose();
+  const p = swarm.params;
+  const rebuild = () => swarm.rebuild();
+
+  const flock = gui.addFolder('Sürü');
+  flock
+    .add(p, 'count', 1, swarm.capacity, 1)
+    .name('kelebek sayısı')
+    .onChange((v) => swarm.setCount(v));
+  flock.add(p, 'scale', 0.03, 1.0, 0.005).name('kelebek boyu').onChange(rebuild);
+  flock.add(p, 'sizeVariation', 0, 1, 0.01).name('boy çeşitliliği').onChange(rebuild);
+  flock.add(p, 'hueSpread', 0, 0.5, 0.01).name('renk aralığı').onChange(rebuild);
+  flock.add(p, 'hueStrength', 0, 1, 0.01).name('renk çeşitliliği').onChange(rebuild);
 
   const mouse = gui.addFolder('Mouse Davranışı');
   mouse
     .add(flight, 'mode', { 'takip et': 'follow', 'kaç': 'flee', 'aldırma': 'ignore' })
     .name('mod');
   mouse.add(flight, 'followSpeed', 0, 20, 0.1).name('takip hızı');
-  mouse.add(flight, 'followRadius', 0.1, 6, 0.05).name('takip halkası');
+  mouse.add(flight, 'followRadius', 0.1, 8, 0.05).name('takip halkası');
+  mouse.add(flight, 'followSpread', 0, 1, 0.01).name('halka saçılması');
   mouse.add(flight, 'orbitSpeed', 0, 15, 0.1).name('dolanma hızı');
   mouse.add(flight, 'fleeSpeed', 0, 30, 0.1).name('kaçış hızı');
   mouse.add(flight, 'fleeRadius', 0.2, 10, 0.1).name('kaçış yarıçapı');
@@ -51,10 +61,6 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
   limits.close();
 
   const form = gui.addFolder('Kanat Formu');
-  form
-    .add(p, 'scale', 0.05, 1.2, 0.01)
-    .name('kelebek boyu')
-    .onChange((v) => butterfly.setScale(v));
   form.add(p, 'foreSpan', 0.6, 2.2, 0.01).name('ön kanat açıklık').onChange(rebuild);
   form.add(p, 'foreChord', 0.6, 2.0, 0.01).name('ön kanat en').onChange(rebuild);
   form.add(p, 'hindSpan', 0.4, 1.8, 0.01).name('arka kanat açıklık').onChange(rebuild);
@@ -66,24 +72,19 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
   form.close();
 
   const flap = gui.addFolder('Çırpma');
-  flap.add(p, 'flapping').name('çırpsın').onChange(repose);
-  flap.add(p, 'flapSpeed', 0.5, 16, 0.1).name('hız (vuruş/sn)');
+  flap.add(p, 'flapping').name('çırpsın');
+  // Hız instance attribute'una yazılı (kelebek başına ±%17 sapmayla),
+  // değişince yeniden üretilmeli
+  flap.add(p, 'flapSpeed', 0.2, 16, 0.1).name('hız (vuruş/sn)').onChange(rebuild);
   flap.add(p, 'flapAmplitude', 0, 1.4, 0.01).name('genlik');
   flap.add(p, 'flapUpDeg', 10, 100, 1).name('tepe açı°');
   flap.add(p, 'flapDownDeg', -60, 30, 1).name('dip açı°');
-  flap
-    .add(p, 'downstrokeFraction', 0.2, 0.8, 0.01)
-    .name('aşağı hamle payı')
-    .onChange(() => {}); // 0.5 = simetrik (mekanik), <0.5 = hızlı aşağı vuruş
+  // 0.5 = simetrik (mekanik), <0.5 = hızlı aşağı vuruş
+  flap.add(p, 'downstrokeFraction', 0.2, 0.8, 0.01).name('aşağı hamle payı');
   flap.add(p, 'twistDeg', 0, 45, 1).name('burulma°');
   flap.add(p, 'hindLag', -0.4, 0.4, 0.01).name('arka kanat gecikme');
   flap.add(p, 'hindAmplitude', 0.2, 1.2, 0.01).name('arka kanat genlik');
-  flap.add(p, 'bodyBobDeg', 0, 15, 0.5).name('gövde salınımı°');
-
-  const pose = gui.addFolder('Duruş (çırpma kapalıyken)');
-  pose.add(p, 'foreRestDeg', -20, 80, 1).name('ön kanat açı°').onChange(repose);
-  pose.add(p, 'hindRestDeg', -20, 80, 1).name('arka kanat açı°').onChange(repose);
-  pose.close();
+  flap.close();
 
   const view = gui.addFolder('Sahne');
   view.add(sceneCtl, 'autoRotate').name('otomatik döndür');
@@ -97,7 +98,7 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
     .add(
       {
         reset: () => {
-          Object.assign(p, WING_DEFAULTS, REST_DEFAULTS, FLAP_DEFAULTS);
+          Object.assign(p, WING_DEFAULTS, FLAP_DEFAULTS, SWARM_DEFAULTS);
           Object.assign(flight, FLIGHT_DEFAULTS);
           rebuild();
           gui.controllersRecursive().forEach((c) => c.updateDisplay());

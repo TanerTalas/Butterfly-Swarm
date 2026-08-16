@@ -16,29 +16,79 @@ import { shapeBounds, WING_COLORS, WING_DEFAULTS } from './geometry.js';
  * kendi üstüne binip tırtıklı bir hat bırakıyor.
  */
 
-const TEXTURE_LONG_EDGE = 768;
+const TILE = 768;
 
-export function createWingTexture(shape, options = {}) {
-  const colors = { ...WING_COLORS, ...(options.colors || {}) };
-  const edgeWidth = options.edgeWidth ?? WING_DEFAULTS.edgeWidth;
-
-  const b = shapeBounds(shape);
-  const aspect = b.width / b.height;
-  const W = Math.round(aspect >= 1 ? TEXTURE_LONG_EDGE : TEXTURE_LONG_EDGE * aspect);
-  const H = Math.round(aspect >= 1 ? TEXTURE_LONG_EDGE / aspect : TEXTURE_LONG_EDGE);
+/**
+ * Ön ve arka kanat desenini TEK bir texture'a yan yana çizer.
+ *
+ * Sürüde tüm kelebekler tek `InstancedMesh` olduğu için tek materyal, dolayısıyla
+ * tek texture gerekiyor. Her kanadın UV'si kendi bölgesine yeniden eşleniyor.
+ *
+ * @returns {{texture: THREE.Texture, regions: {fore: object, hind: object}}}
+ *   Bölgeler UV uzayında `{uMin, uMax, vMin, vMax}`.
+ */
+export function createWingAtlas(shapes, options = {}) {
+  const W = TILE * 2;
+  const H = TILE;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // shape uzayı → canvas pikseli.
-  // Canvas'ın y'si aşağı doğru, texture'ın v'si yukarı: flipY (three'de
-  // CanvasTexture için varsayılan açık) bunu geri çeviriyor, bu yüzden
-  // burada y'yi ters çevirmek zorundayız ki iki ters birbirini götürsün.
-  const px = (x) => ((x - b.minX) / b.width) * W;
-  const py = (y) => (1 - (y - b.minY) / b.height) * H;
-  const toPixels = (units) => (units / b.width) * W;
+  const rects = {
+    fore: { x: 0, y: 0, w: TILE, h: TILE },
+    hind: { x: TILE, y: 0, w: TILE, h: TILE },
+  };
+
+  drawWing(ctx, shapes.fore, rects.fore, options);
+  drawWing(ctx, shapes.hind, rects.hind, options);
+
+  return {
+    texture: makeTexture(canvas),
+    regions: {
+      fore: toUvRegion(rects.fore, W, H),
+      hind: toUvRegion(rects.hind, W, H),
+    },
+  };
+}
+
+/**
+ * Canvas dikdörtgeni → UV bölgesi.
+ *
+ * Canvas'ın y'si aşağı, texture'ın v'si yukarı doğru; CanvasTexture'da
+ * varsayılan olarak açık olan flipY bunu çeviriyor, yani canvas'ın ÜST kenarı
+ * v = 1'e denk geliyor. Aşağıdaki ters çevirme bu yüzden.
+ */
+function toUvRegion(rect, W, H) {
+  return {
+    uMin: rect.x / W,
+    uMax: (rect.x + rect.w) / W,
+    vMin: 1 - (rect.y + rect.h) / H,
+    vMax: 1 - rect.y / H,
+  };
+}
+
+function makeTexture(canvas) {
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+/** Tek kanat deseni, verilen canvas dikdörtgenine çizilir. */
+function drawWing(ctx, shape, rect, options = {}) {
+  const colors = { ...WING_COLORS, ...(options.colors || {}) };
+  const edgeWidth = options.edgeWidth ?? WING_DEFAULTS.edgeWidth;
+
+  const b = shapeBounds(shape);
+
+  // shape uzayı → canvas pikseli (dikdörtgen içine)
+  const px = (x) => rect.x + ((x - b.minX) / b.width) * rect.w;
+  const py = (y) => rect.y + (1 - (y - b.minY) / b.height) * rect.h;
+  const toPixels = (units) => (units / b.width) * rect.w;
 
   const outline = dedupe(shape.getPoints(48));
   const inner = insetPolygon(outline, edgeWidth);
@@ -58,7 +108,7 @@ export function createWingTexture(shape, options = {}) {
   path(outline);
   ctx.clip();
   ctx.fillStyle = hex(colors.edge);
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
   // 2) İçe kaydırılmış kontura kırpıp asıl kanat rengini basıyoruz
   ctx.save();
@@ -70,7 +120,7 @@ export function createWingTexture(shape, options = {}) {
   grad.addColorStop(0.42, hex(colors.mid));
   grad.addColorStop(1.0, hex(colors.tip));
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
   drawVeins(ctx, outline, b, edgeWidth, px, py, toPixels, colors);
   ctx.restore();
@@ -79,13 +129,6 @@ export function createWingTexture(shape, options = {}) {
   drawMarginSpots(ctx, outline, b, edgeWidth, px, py, toPixels, colors);
 
   ctx.restore();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
 }
 
 /**

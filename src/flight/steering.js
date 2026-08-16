@@ -43,7 +43,11 @@ export const FLIGHT_DEFAULTS = {
   // Kelebekler mouse'un ÜSTÜNE değil, etrafındaki bu yarıçaplı halkaya
   // yöneliyor. Halkanın içindeyse dışa itiliyor — yoksa hepsi imlecin
   // üstüne yığılıp tek bir topak oluyor.
-  followRadius: 1.5,
+  followRadius: 2.2,
+  // Ama TEK bir yarıçap da sürüyü ince bir kabuğa sıkıştırıyor. Her kelebek
+  // yarıçapını bu oranda saçılmış olarak alıyor: kimi imlecin dibinde, kimi
+  // uzağında. Kabuk yerine yoğunluğu merkeze doğru artan bir bulut.
+  followSpread: 0.7,
   orbitSpeed: 4.0, // halka üzerinde teğetsel dolanma
   fleeSpeed: 12.0,
   fleeRadius: 3.5, // bu mesafeden uzakta kaçış yok
@@ -97,15 +101,15 @@ const WORLD_UP = new THREE.Vector3(0, 1, 0);
  * bakıyor ve halkanın üstünde sıfırlanıyor; sonuç imlecin çevresinde
  * asılı duran bir bulut.
  */
-export function followForce(out, position, target, params) {
+export function followForce(out, position, target, radius, params) {
   out.subVectors(target, position);
   const d = out.length();
   if (d < 1e-4) return out.set(0, 0, 0);
 
   out.multiplyScalar(1 / d); // birim yön
 
-  const radius = Math.max(params.followRadius, 1e-3);
-  const gain = clamp((d - radius) / radius, -1, 1);
+  const r = Math.max(radius, 1e-3);
+  const gain = clamp((d - r) / r, -1, 1);
   return out.multiplyScalar(gain * params.followSpeed);
 }
 
@@ -113,7 +117,7 @@ export function followForce(out, position, target, params) {
  * Hedefin etrafında teğetsel dolanma. `spin` ajana göre ±1; sürüde
  * kelebeklerin bir kısmı saat yönünde, kalanı tersine dönsün diye.
  */
-export function orbitForce(out, position, target, spin, params) {
+export function orbitForce(out, position, target, spin, radius, params) {
   out.subVectors(target, position);
   const d = out.length();
   if (d < 1e-4) return out.set(0, 0, 0);
@@ -125,7 +129,7 @@ export function orbitForce(out, position, target, spin, params) {
   if (len < 1e-4) return out.set(0, 0, 0); // hedef tam tepede/altta
 
   // Halkadan uzaklaştıkça dolanma zayıflasın
-  const falloff = 1 / (1 + Math.abs(d - params.followRadius));
+  const falloff = 1 / (1 + Math.abs(d - radius));
   return out.multiplyScalar((spin * params.orbitSpeed * falloff) / len);
 }
 

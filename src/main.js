@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Butterfly } from './butterfly/Butterfly.js';
-import { Flier } from './flight/Flier.js';
+import { Swarm, SWARM_DEFAULTS } from './swarm/Swarm.js';
+import { WING_DEFAULTS } from './butterfly/geometry.js';
+import { FLAP_DEFAULTS } from './butterfly/flap.js';
 import { FLIGHT_DEFAULTS } from './flight/steering.js';
 import { Pointer } from './input/pointer.js';
 import { createPanel } from './ui/panel.js';
@@ -61,12 +62,16 @@ const axes = new THREE.AxesHelper(1.2);
 axes.visible = false;
 scene.add(axes);
 
-// ── Kelebek + uçuş ─────────────────────────────────────────────────────────
-const butterfly = new Butterfly();
-scene.add(butterfly.group);
-
+// ── Sürü ───────────────────────────────────────────────────────────────────
 const flight = { ...FLIGHT_DEFAULTS };
-const flier = new Flier({ id: 0, params: flight });
+const butterflyParams = {
+  ...WING_DEFAULTS,
+  ...FLAP_DEFAULTS,
+  ...SWARM_DEFAULTS,
+};
+
+const swarm = new Swarm({ capacity: 800, params: butterflyParams, flight });
+scene.add(swarm.group);
 
 // Uçuş hacmi kameranın görünür alanı; odak mesafesi her karede güncelleniyor
 // ki zoom ve pan hacmi kendiliğinden takip etsin.
@@ -92,12 +97,15 @@ const sceneCtl = {
   background: '#0d1017',
   onTarget: (v) => (targetMarker.visible = v),
   onAxes: (v) => (axes.visible = v),
-  onWireframe: (v) => butterfly.setWireframe(v),
+  onWireframe: (v) => {
+    swarm.wingMaterial.wireframe = v;
+    swarm.bodyMaterial.wireframe = v;
+  },
   onExposure: (v) => (renderer.toneMappingExposure = v),
   onBackground: (v) => scene.background.set(v),
 };
 
-createPanel({ butterfly, flight, scene: sceneCtl });
+createPanel({ swarm, flight, scene: sceneCtl });
 
 // ── Döngü ──────────────────────────────────────────────────────────────────
 // THREE.Clock deprecated. connect() Page Visibility API'sini bağlıyor:
@@ -125,15 +133,11 @@ function animate() {
   pointer.update(dt, focusDistance);
   targetMarker.position.copy(pointer.world);
 
-  butterfly.update(dt);
-  flier.update(dt, {
+  swarm.update(dt, {
     camera,
     focusDistance,
     target: pointer.active ? pointer.world : null,
   });
-
-  // Dikey salınım çırpmayla senkron: kanatlar aşağı inerken gövde yükseliyor
-  flier.applyTo(butterfly.group, -butterfly.wave * flight.bob);
   renderer.render(scene, camera);
 
   frames++;
@@ -141,9 +145,9 @@ function animate() {
   if (statsTimer >= 0.5) {
     const fps = Math.round(frames / statsTimer);
     statsEl.textContent =
-      `${butterfly.vertexCount} vertex · ` +
+      `${butterflyParams.count} kelebek · ` +
+      `${renderer.info.render.triangles.toLocaleString('tr')} üçgen · ` +
       `${renderer.info.render.calls} draw call · ${fps} fps · ` +
-      `hız ${flier.velocity.length().toFixed(2)} · ` +
       `mod ${flight.mode}${pointer.active ? '' : ' (mouse bekleniyor)'}`;
     statsTimer = 0;
     frames = 0;
@@ -157,9 +161,9 @@ window.__app = {
   camera,
   controls,
   renderer,
-  butterfly,
-  flier,
+  swarm,
   flight,
+  params: butterflyParams,
   pointer,
   sceneCtl,
 };
