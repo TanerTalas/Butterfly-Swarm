@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   wanderForce,
-  boundsForce,
+  viewBoundsForce,
   limitLength,
   ensureMinLength,
   limitClimb,
@@ -45,7 +45,12 @@ export class Flier {
     this._roll = new THREE.Quaternion();
   }
 
-  update(dt) {
+  /**
+   * @param {THREE.Camera} camera Uçuş hacmi kameranın görünür alanı; sınır
+   *   kuvveti bunu okuyor.
+   * @param {number} focusDistance Kameradan yörünge merkezine uzaklık.
+   */
+  update(dt, camera, focusDistance) {
     if (!this.params.flying) return;
 
     this.time += dt;
@@ -53,7 +58,9 @@ export class Flier {
 
     const acc = this._acc.set(0, 0, 0);
     acc.add(wanderForce(this._tmp, this.id, this.time, p));
-    acc.add(boundsForce(this._tmp, this.position, p));
+    acc.add(
+      viewBoundsForce(this._tmp, this.position, camera, focusDistance, p),
+    );
     limitLength(acc, p.maxForce);
 
     this.velocity.addScaledVector(acc, dt);

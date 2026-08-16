@@ -67,33 +67,21 @@ scene.add(butterfly.group);
 const flight = { ...FLIGHT_DEFAULTS };
 const flier = new Flier({ id: 0, params: flight });
 
-// Uçuş hacmini gösteren tel kafes — sınır kuvvetini ayarlarken şart
-const boundsBox = new THREE.Box3Helper(new THREE.Box3(), 0x2f6d8f);
-boundsBox.visible = false;
-scene.add(boundsBox);
-
-function syncBoundsHelper() {
-  boundsBox.box.set(
-    new THREE.Vector3(-flight.boundsX, -flight.boundsY, -flight.boundsZ),
-    new THREE.Vector3(flight.boundsX, flight.boundsY, flight.boundsZ),
-  );
-}
-syncBoundsHelper();
+// Uçuş hacmi kameranın görünür alanı; odak mesafesi her karede güncelleniyor
+// ki zoom ve pan hacmi kendiliğinden takip etsin.
+let focusDistance = camera.position.distanceTo(controls.target);
 
 // ── Panel ──────────────────────────────────────────────────────────────────
 const sceneCtl = {
   autoRotate: false,
   showAxes: false,
   wireframe: false,
-  showBounds: false,
   exposure: renderer.toneMappingExposure,
   background: '#0d1017',
   onAxes: (v) => (axes.visible = v),
   onWireframe: (v) => butterfly.setWireframe(v),
   onExposure: (v) => (renderer.toneMappingExposure = v),
   onBackground: (v) => scene.background.set(v),
-  onBounds: (v) => (boundsBox.visible = v),
-  onBoundsSize: syncBoundsHelper,
 };
 
 createPanel({ butterfly, flight, scene: sceneCtl });
@@ -114,14 +102,18 @@ function animate() {
   // Görünürlük dışındaki takılmalara (uzun GC, ağır rebuild) karşı üst sınır
   const dt = Math.min(timer.getDelta(), 0.1);
 
+  controls.autoRotate = sceneCtl.autoRotate;
+  controls.update();
+
+  // Sınır kuvveti kamera tabanını okuyor; matris güncel olmalı
+  camera.updateMatrixWorld();
+  focusDistance = camera.position.distanceTo(controls.target);
+
   butterfly.update(dt);
-  flier.update(dt);
+  flier.update(dt, camera, focusDistance);
 
   // Dikey salınım çırpmayla senkron: kanatlar aşağı inerken gövde yükseliyor
   flier.applyTo(butterfly.group, -butterfly.wave * flight.bob);
-
-  controls.autoRotate = sceneCtl.autoRotate;
-  controls.update();
   renderer.render(scene, camera);
 
   frames++;

@@ -30,13 +30,12 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
   fly.add(flight, 'maxBankDeg', 0, 85, 1).name('azami yatış°');
   fly.add(flight, 'bob', 0, 0.25, 0.005).name('dikey salınım');
 
-  const limits = gui.addFolder('Uçuş Hacmi');
-  limits.add(sceneCtl, 'showBounds').name('sınırları göster').onChange(sceneCtl.onBounds);
-  limits.add(flight, 'boundsX', 1, 15, 0.1).name('genişlik ±X').onChange(sceneCtl.onBoundsSize);
-  limits.add(flight, 'boundsY', 0.5, 8, 0.1).name('yükseklik ±Y').onChange(sceneCtl.onBoundsSize);
-  limits.add(flight, 'boundsZ', 1, 15, 0.1).name('derinlik ±Z').onChange(sceneCtl.onBoundsSize);
-  limits.add(flight, 'boundsMargin', 0.2, 4, 0.05).name('geri itme payı');
-  limits.add(flight, 'boundsForce', 0, 30, 0.5).name('geri itme gücü');
+  // Uçuş hacmi kameranın görünür alanı — sabit bir dünya kutusu değil
+  const limits = gui.addFolder('Uçuş Hacmi (ekran)');
+  limits.add(flight, 'screenFill', 0.3, 1.2, 0.01).name('ekranı doldurma');
+  limits.add(flight, 'depthSpread', 0.05, 0.9, 0.01).name('derinlik payı');
+  limits.add(flight, 'boundsMargin', 0.05, 0.6, 0.01).name('geri itme payı');
+  limits.add(flight, 'boundsForce', 0, 40, 0.5).name('geri itme gücü');
   limits.close();
 
   const form = gui.addFolder('Kanat Formu');
@@ -84,7 +83,6 @@ export function createPanel({ butterfly, flight, scene: sceneCtl }) {
         reset: () => {
           Object.assign(p, WING_DEFAULTS, REST_DEFAULTS, FLAP_DEFAULTS);
           Object.assign(flight, FLIGHT_DEFAULTS);
-          sceneCtl.onBoundsSize();
           rebuild();
           gui.controllersRecursive().forEach((c) => c.updateDisplay());
         },

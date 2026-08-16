@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
 
 /*
@@ -36,10 +37,13 @@ export const FLIGHT_DEFAULTS = {
   maxBankDeg: 55,
   bob: 0.045, // çırpmayla senkron dikey salınım
 
-  boundsX: 5.0,
-  boundsY: 2.6,
-  boundsZ: 5.0,
-  boundsMargin: 1.5, // geri itmenin başladığı iç pay
+  // Uçuş hacmi sabit bir dünya kutusu değil, kameranın GÖRÜNÜR alanı.
+  // Ekranın ne kadarını doldursunlar; 1.0 tam kenara kadar demek.
+  screenFill: 0.94,
+  // Yakın/uzak sınır, odak mesafesinin oranı olarak. Zoom'da kendiliğinden
+  // ölçekleniyor.
+  depthSpread: 0.35,
+  boundsMargin: 0.22, // geri itmenin başladığı iç pay (yarı-genişliğin oranı)
   boundsForce: 14.0,
 };
 
@@ -71,30 +75,74 @@ export function wanderForce(out, id, time, params) {
   return out.multiplyScalar(params.wander * (0.4 + params.scatter));
 }
 
-/**
- * Sahne sınırlarından yumuşak geri itme.
- *
- * Sert clamp DEĞİL: kelebek duvara çarpıp durmuyor, kenara yaklaştıkça
- * artan bir kuvvetle içeri doğru kavis çiziyor. Kuvvet kareli arttığı için
- * payın başında neredeyse hissedilmiyor, sınırda ise baskın.
- */
-export function boundsForce(out, position, params) {
-  out.set(0, 0, 0);
-  const margin = params.boundsMargin;
+// Kamera tabanı için geçiciler
+const _right = new THREE.Vector3();
+const _up = new THREE.Vector3();
+const _forward = new THREE.Vector3();
+const _rel = new THREE.Vector3();
 
-  applyAxis(out, 'x', position.x, params.boundsX, margin, params.boundsForce);
-  applyAxis(out, 'y', position.y, params.boundsY, margin, params.boundsForce);
-  applyAxis(out, 'z', position.z, params.boundsZ, margin, params.boundsForce);
+/**
+ * Görünür alandan yumuşak geri itme.
+ *
+ * Sınır sabit bir dünya kutusu DEĞİL, kameranın frustum'u: kelebek her zaman
+ * ekranda kalıyor ve zoom, döndürme, pencere yeniden boyutlandırma otomatik
+ * olarak hesaba katılıyor (kamera tabanı ve `aspect` her karede okunuyor).
+ *
+ * Geri itme sert clamp değil: kenara yaklaştıkça kareli artan bir kuvvet.
+ * Payın başında neredeyse hissedilmiyor, sınırda baskın — kelebek duvara
+ * çarpıp durmak yerine içeri doğru kavis çiziyor.
+ *
+ * @param {number} focusDistance Kameradan yörünge merkezine uzaklık; derinlik
+ *   dilimi buna göre ölçekleniyor.
+ */
+export function viewBoundsForce(out, position, camera, focusDistance, params) {
+  out.set(0, 0, 0);
+
+  const e = camera.matrixWorld.elements;
+  _right.set(e[0], e[1], e[2]);
+  _up.set(e[4], e[5], e[6]);
+  _forward.set(-e[8], -e[9], -e[10]);
+
+  _rel.subVectors(position, camera.position);
+  const depth = _rel.dot(_forward);
+  const x = _rel.dot(_right);
+  const y = _rel.dot(_up);
+
+  // Kameranın arkasına düşerse bile makul bir yarı-genişlik üret
+  const safeDepth = Math.max(depth, 0.05);
+  const halfH =
+    safeDepth *
+    Math.tan(camera.fov * THREE.MathUtils.DEG2RAD * 0.5) *
+    params.screenFill;
+  const halfW = halfH * camera.aspect;
+
+  const strength = params.boundsForce;
+  const marginFrac = params.boundsMargin;
+
+  pushAxis(out, _right, x, halfW, halfW * marginFrac, strength);
+  pushAxis(out, _up, y, halfH, halfH * marginFrac, strength);
+
+  // Derinlik dilimi: odak mesafesi etrafında
+  const halfDepth = Math.max(focusDistance * params.depthSpread, 0.1);
+  pushAxis(
+    out,
+    _forward,
+    depth - focusDistance,
+    halfDepth,
+    halfDepth * marginFrac,
+    strength,
+  );
 
   return out;
 }
 
-function applyAxis(out, axis, value, limit, margin, strength) {
+/** `axis` ekseninde sınırı aşan bileşeni içeri doğru iter. */
+function pushAxis(out, axis, value, limit, margin, strength) {
   const over = Math.abs(value) - (limit - margin);
   if (over <= 0) return;
 
   const t = Math.min(over / margin, 1.5);
-  out[axis] -= Math.sign(value) * t * t * strength;
+  out.addScaledVector(axis, -Math.sign(value) * t * t * strength);
 }
 
 /** Vektörü verilen uzunlukla sınırlar (yönü korur). */
