@@ -32,14 +32,14 @@ import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js
 export const WING_DEFAULTS = {
   // span x'i, chord y'yi ölçekliyor. Kanadı büyütürken ikisini BİRLİKTE
   // ölçekle, yoksa siluet gerilmiş görünür.
-  foreSpan: 1.45, // ön kanat açıklığı (menteşeden uca)
-  foreChord: 1.26, // ön kanat en/boy oranı çarpanı
+  foreSpan: 1.6, // ön kanat açıklığı (menteşeden uca)
+  foreChord: 1.6, // ön kanat en/boy oranı çarpanı
   hindSpan: 1.16, // arka kanat açıklığı
   hindChord: 1.26,
   camber: 0.045, // orta açıklıkta yukarı bombe (fazlası kanadı yastığa çeviriyor)
   droop: 0.055, // uca doğru aşağı sarkma
   edgeWidth: 0.076, // koyu kenar bandının kalınlığı (shape birimi)
-  tessellation: 0.18, // hedef maksimum üçgen kenar uzunluğu
+  tessellation: 0.4, // hedef maksimum üçgen kenar uzunluğu
 };
 
 export const WING_COLORS = {

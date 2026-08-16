@@ -8,7 +8,7 @@
 
 export const FLAP_DEFAULTS = {
   flapping: true,
-  flapSpeed: 6.5, // saniyedeki tam vuruş sayısı
+  flapSpeed: 1.6, // saniyedeki tam vuruş sayısı
   flapAmplitude: 1.0,
   flapUpDeg: 72, // vuruşun tepesi
   flapDownDeg: -14, // vuruşun dibi
