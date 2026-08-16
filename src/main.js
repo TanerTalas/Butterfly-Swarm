@@ -78,20 +78,26 @@ const sceneCtl = {
 createPanel({ butterfly, scene: sceneCtl });
 
 // ── Döngü ──────────────────────────────────────────────────────────────────
-const clock = new THREE.Clock();
+// THREE.Clock deprecated. connect() Page Visibility API'sini bağlıyor:
+// arka plandan dönüldüğünde devasa bir dt üretmiyor, yani kelebek
+// ışınlanmıyor (ROADMAP Aşama 3 kabul kriteri).
+const timer = new THREE.Timer();
+timer.connect(document);
+
 const statsEl = document.getElementById('stats');
 let statsTimer = 0;
 let frames = 0;
 
 function animate() {
-  const dt = Math.min(clock.getDelta(), 0.1);
-  const t = clock.elapsedTime;
+  timer.update();
+  // Görünürlük dışındaki takılmalara (uzun GC, ağır rebuild) karşı üst sınır
+  const dt = Math.min(timer.getDelta(), 0.1);
 
   if (sceneCtl.autoRotate) {
     butterfly.group.rotation.y += dt * 0.35;
   }
 
-  butterfly.update(dt, t);
+  butterfly.update(dt);
   controls.update();
   renderer.render(scene, camera);
 

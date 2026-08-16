@@ -2,6 +2,13 @@ import * as THREE from 'three';
 import { createButterflyGeometry, WING_DEFAULTS } from './geometry.js';
 import { createWingTexture } from './pattern.js';
 import {
+  FLAP_DEFAULTS,
+  flapAngle,
+  flapCycle,
+  flapWave,
+  twistAngle,
+} from './flap.js';
+import {
   createWingMaterial,
   createBodyMaterial,
   createEyeMaterial,
@@ -25,13 +32,21 @@ import {
 export const REST_DEFAULTS = {
   foreRestDeg: 12, // duruş halinde ön kanat yükselmesi
   hindRestDeg: 4, // arka kanat biraz daha düz
-  hindLag: 0.0, // Aşama 2'de faz gecikmesi olacak
 };
 
 export class Butterfly {
   constructor(options = {}) {
     this.group = new THREE.Group();
-    this.params = { ...WING_DEFAULTS, ...REST_DEFAULTS, ...options };
+    this.params = {
+      ...WING_DEFAULTS,
+      ...REST_DEFAULTS,
+      ...FLAP_DEFAULTS,
+      ...options,
+    };
+
+    // Bireysel çırpma fazı — sürüde kelebekler senkron çırpmasın diye
+    this.phase = options.phase ?? Math.random();
+    this.time = 0;
 
     // Ön ve arka kanadın deseni farklı (siluetleri farklı), o yüzden iki
     // ayrı materyal + iki ayrı texture.
@@ -55,9 +70,12 @@ export class Butterfly {
     this._setWingTexture(this.foreMaterial, g.shapes.fore);
     this._setWingTexture(this.hindMaterial, g.shapes.hind);
 
+    // Gövde kendi grubunda: çırpmaya tepki olarak hafifçe salınıyor
+    this.bodyGroup = new THREE.Group();
     this.bodyMesh = new THREE.Mesh(g.body, this.bodyMaterial);
     this.eyeMesh = new THREE.Mesh(g.eyes, this.eyeMaterial);
-    this.group.add(this.bodyMesh, this.eyeMesh);
+    this.bodyGroup.add(this.bodyMesh, this.eyeMesh);
+    this.group.add(this.bodyGroup);
 
     for (const side of [1, -1]) {
       this.wings.push(this._addWing(g.foreWing, g.hinges.fore, side, 'fore'));
@@ -99,17 +117,43 @@ export class Butterfly {
     const fore = THREE.MathUtils.degToRad(this.params.foreRestDeg);
     const hind = THREE.MathUtils.degToRad(this.params.hindRestDeg);
     for (const w of this.wings) {
-      const angle = w.kind === 'fore' ? fore : hind;
-      w.pivot.rotation.z = w.side * angle;
+      w.pivot.rotation.z = w.side * (w.kind === 'fore' ? fore : hind);
+      w.mesh.rotation.x = 0;
     }
+    this.bodyGroup.rotation.x = 0;
   }
 
-  /**
-   * Aşama 1'de kelebek hareketsiz; bu metod yalnızca duruşu güncel tutuyor.
-   * Aşama 2'de flapAngle() buraya bağlanacak.
-   */
-  update(/* dt, time */) {
-    this.applyRestPose();
+  update(dt) {
+    if (!this.params.flapping) {
+      this.applyRestPose();
+      return;
+    }
+
+    this.time += dt;
+    const p = this.params;
+    const cycle = flapCycle(this.time, p.flapSpeed, this.phase);
+
+    for (const w of this.wings) {
+      const isFore = w.kind === 'fore';
+      // Arka kanat ön kanadı faz gecikmesiyle takip ediyor ve daha az açılıyor
+      const wingCycle = isFore ? cycle : cycle - p.hindLag;
+      const amplitude = p.flapAmplitude * (isFore ? 1 : p.hindAmplitude);
+
+      w.pivot.rotation.z =
+        w.side * flapAngle(wingCycle, { ...p, flapAmplitude: amplitude });
+
+      // Burulma: mesh pivotun çocuğu olduğu için local X = açıklık ekseni.
+      // Sol kanadın scale.x = -1 olması bunu etkilemiyor; ayna x'te,
+      // burulma ise y–z düzleminde.
+      w.mesh.rotation.x = twistAngle(wingCycle, p);
+    }
+
+    // Aksiyon–reaksiyon: kanatlar yukarı giderken gövde hafifçe aşağı bakıyor
+    this.bodyGroup.rotation.x =
+      -flapWave(cycle, p.downstrokeFraction) *
+      p.bodyBobDeg *
+      p.flapAmplitude *
+      THREE.MathUtils.DEG2RAD;
   }
 
   setWireframe(on) {
