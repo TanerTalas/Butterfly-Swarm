@@ -17,10 +17,13 @@ import * as THREE from 'three';
 
 const WING_FORE = 0.5; // aWingId eşiği: < 0.5 ön kanat, > 0.5 arka kanat
 
-const COMMON = /* glsl */ `
+const VERTEX_COMMON = /* glsl */ `
 attribute float aWingId;
 attribute float aPhase;
 attribute float aFlapSpeed;
+attribute float aHueShift;
+
+varying float vHueShift;
 
 uniform float uTime;
 uniform vec3  uForeHinge;
@@ -98,6 +101,42 @@ vec3 bfTransformNormal(vec3 n) {
 }
 `;
 
+/*
+ * Renk çeşitliliği fragment shader'da, ton DÖNDÜRMESİ olarak yapılıyor.
+ *
+ * Kolay yol `InstancedMesh.setColorAt()` olurdu ama instance rengi diffuse'u
+ * ÇARPIYOR: turuncu bir deseni mavi ile çarpınca mavi değil koyu çamur çıkar,
+ * çünkü desenin mavi kanalı zaten sıfıra yakın. Ton döndürme ise kanadın
+ * kendi iç gradyanını (koyu kök → açık uç) ve koyu kenar bandını koruyup
+ * yalnızca rengi kaydırıyor, yani tüm renk çarkı kullanılabiliyor.
+ */
+const FRAGMENT_COMMON = /* glsl */ `
+varying float vHueShift;
+uniform float uSaturation;
+
+vec3 bfRgb2Hsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 bfHsv2Rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+vec3 bfTint(vec3 rgb) {
+  vec3 hsv = bfRgb2Hsv(rgb);
+  hsv.x = fract(hsv.x + vHueShift);
+  hsv.y = clamp(hsv.y * uSaturation, 0.0, 1.0);
+  return bfHsv2Rgb(hsv);
+}
+`;
+
 /**
  * Kanat materyaline çırpma shader'ını enjekte eder ve uniform'ları döndürür.
  *
@@ -118,23 +157,35 @@ export function injectFlapShader(material, hinges) {
     uTwist: { value: 0 },
     uHindLag: { value: 0.12 },
     uHindAmp: { value: 0.85 },
+    uSaturation: { value: 1 },
   };
 
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
 
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${COMMON}`)
+      .replace('#include <common>', `#include <common>\n${VERTEX_COMMON}`)
       .replace(
         '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
          bfSetup();
+         vHueShift = aHueShift;
          objectNormal = bfTransformNormal(objectNormal);`,
       )
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
          transformed = bfTransform(transformed);`,
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n${FRAGMENT_COMMON}`)
+      // map_fragment texture'ı örnekleyip diffuseColor'a çarpıyor; tonu
+      // hemen sonrasında kaydırıyoruz
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+         diffuseColor.rgb = bfTint(diffuseColor.rgb);`,
       );
   };
 
@@ -158,4 +209,5 @@ export function syncFlapUniforms(uniforms, params, time) {
   uniforms.uTwist.value = params.twistDeg * THREE.MathUtils.DEG2RAD;
   uniforms.uHindLag.value = params.hindLag;
   uniforms.uHindAmp.value = params.hindAmplitude;
+  uniforms.uSaturation.value = params.saturation;
 }

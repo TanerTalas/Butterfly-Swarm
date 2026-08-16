@@ -39,7 +39,7 @@ export const FLIGHT_DEFAULTS = {
 
   // ── Mouse davranışı ──────────────────────────────────────────────────
   mode: 'follow', // 'follow' | 'flee' | 'ignore'
-  followSpeed: 7.0,
+  followSpeed: 4.2,
   // Kelebekler mouse'un ÜSTÜNE değil, etrafındaki bu yarıçaplı halkaya
   // yöneliyor. Halkanın içindeyse dışa itiliyor — yoksa hepsi imlecin
   // üstüne yığılıp tek bir topak oluyor.

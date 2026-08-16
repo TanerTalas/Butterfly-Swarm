@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { buildSwarmGeometry } from './geometry.js';
 import { HINGES } from '../butterfly/geometry.js';
 import { injectFlapShader, syncFlapUniforms } from './wingShader.js';
@@ -38,14 +38,16 @@ export const SWARM_DEFAULTS = {
   scale: 0.25,
 
   sizeVariation: 0.35, // ±%17 boyut çeşitliliği
-  hueSpread: 0.1, // ton kaydırma aralığı
-  hueStrength: 0.5, // 0 = hepsi aynı renk, 1 = tam ton kaydırma
+
+  // Ton kaydırma aralığı. 0 = hepsi desenin kendi turuncusu,
+  // 1 = tüm renk çarkı (mavi, mor, kırmızı, yeşil…) rastgele dağılmış.
+  hueSpread: 1.0,
+  saturation: 1.0, // < 1 pastel, > 1 canlı
 };
 
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const FALLBACK_UP = new THREE.Vector3(0, 0, 1);
 const FORWARD = new THREE.Vector3(0, 0, 1);
-const WHITE = new THREE.Color(1, 1, 1);
 
 // Modül düzeyi geçiciler — kare başına ayırma yok
 const _pos = new THREE.Vector3();
@@ -61,7 +63,6 @@ const _target = new THREE.Quaternion();
 const _roll = new THREE.Quaternion();
 const _matrix = new THREE.Matrix4();
 const _scale = new THREE.Vector3();
-const _color = new THREE.Color();
 
 export class Swarm {
   constructor({ capacity = 800, params, flight }) {
@@ -117,6 +118,8 @@ export class Swarm {
     this._sizeRand = new Float32Array(n);
     this._speedRand = new Float32Array(n);
     this._hueRand = new Float32Array(n);
+    // Shader'a giden instance attribute'u
+    this.hueShift = new Float32Array(n);
 
     for (let i = 0; i < n; i++) this._seed(i);
     this.applyVariation();
@@ -144,7 +147,7 @@ export class Swarm {
 
     this._sizeRand[i] = Math.random() - 0.5;
     this._speedRand[i] = Math.random() - 0.5;
-    this._hueRand[i] = Math.random() - 0.5;
+    this._hueRand[i] = Math.random(); // [0,1) — tam renk çarkı için
   }
 
   /**
@@ -183,6 +186,10 @@ export class Swarm {
       'aFlapSpeed',
       new THREE.InstancedBufferAttribute(this.flapSpeed, 1),
     );
+    built.wings.setAttribute(
+      'aHueShift',
+      new THREE.InstancedBufferAttribute(this.hueShift, 1),
+    );
 
     this.bodyMesh = new THREE.InstancedMesh(
       built.body,
@@ -207,27 +214,19 @@ export class Swarm {
   }
 
   /**
-   * Instance rengi diffuse'u ÇARPIYOR. Doygun bir renk deseni boğardı, o
-   * yüzden ton kaydırması en parlak kanalı 1'de tutacak şekilde normalize
-   * ediliyor: renk kayıyor ama parlaklık düşmüyor.
+   * Kelebek başına ton kaydırmasını yeniden türetir.
    *
-   * Boy çeşitliliğinde olduğu gibi, ham çekiliş `_hueRand`'da saklı —
+   * Boy çeşitliliğinde olduğu gibi ham çekiliş `_hueRand`'da saklı —
    * slider'ı oynatmak renkleri yeniden karmıyor, aynı çekilişi yeniden
-   * ölçekliyor.
+   * ölçekliyor. Yoksa her dokunuşta bütün sürü renk değiştirirdi.
    */
   applyHue() {
-    const p = this.params;
+    const spread = this.params.hueSpread;
     for (let i = 0; i < this.capacity; i++) {
-      _color.setHSL(0.08 + this._hueRand[i] * p.hueSpread, 0.55, 0.5);
-      const max = Math.max(_color.r, _color.g, _color.b) || 1;
-      _color.multiplyScalar(1 / max);
-      // Doygunluğu kısıp beyaza yaklaştır — desen baskın kalsın
-      _color.lerp(WHITE, 1 - p.hueStrength);
-      this.wingMesh.setColorAt(i, _color);
+      this.hueShift[i] = (this._hueRand[i] - 0.5) * spread;
     }
-    if (this.wingMesh.instanceColor) {
-      this.wingMesh.instanceColor.needsUpdate = true;
-    }
+    const attr = this.wingMesh?.geometry.getAttribute('aHueShift');
+    if (attr) attr.needsUpdate = true;
   }
 
   setCount(n) {

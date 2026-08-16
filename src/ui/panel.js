@@ -27,8 +27,8 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
     .onChange((v) => swarm.setCount(v));
   flock.add(p, 'scale', 0.03, 1.0, 0.005).name('kelebek boyu').onChange(variation);
   flock.add(p, 'sizeVariation', 0, 1, 0.01).name('boy çeşitliliği').onChange(variation);
-  flock.add(p, 'hueSpread', 0, 0.5, 0.01).name('renk aralığı').onChange(hue);
-  flock.add(p, 'hueStrength', 0, 1, 0.01).name('renk çeşitliliği').onChange(hue);
+  flock.add(p, 'hueSpread', 0, 1, 0.01).name('renk çeşitliliği').onChange(hue);
+  flock.add(p, 'saturation', 0, 1.6, 0.01).name('renk canlılığı');
 
   const mouse = gui.addFolder('Mouse Davranışı');
   mouse
