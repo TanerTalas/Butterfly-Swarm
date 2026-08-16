@@ -3,6 +3,8 @@ import { WING_DEFAULTS } from '../butterfly/geometry.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
 import { SWARM_DEFAULTS } from '../swarm/Swarm.js';
 import { FLIGHT_DEFAULTS } from '../flight/steering.js';
+import { PRESETS, applyPreset } from './presets.js';
+import { saveSettings, clearSettings, debounce } from './storage.js';
 
 /*
  * Tasarım + animasyon paneli. Amacı kanat siluetini, duruşunu ve çırpmasını
@@ -10,10 +12,32 @@ import { FLIGHT_DEFAULTS } from '../flight/steering.js';
  * dağınıklık, sayı) genişleyecek.
  */
 export function createPanel({ swarm, flight, scene: sceneCtl }) {
-  const gui = new GUI({ title: 'Butterfly Swarm — Aşama 5' });
+  const gui = new GUI({ title: 'Butterfly Swarm' });
 
   const p = swarm.params;
   const rebuild = () => swarm.rebuild();
+
+  const persist = debounce(() => saveSettings(p, flight));
+  const refresh = () => gui.controllersRecursive().forEach((c) => c.updateDisplay());
+
+  // Her denetleyici değişiminde kaydet — lil-gui'nin genel onChange'i
+  gui.onChange(persist);
+
+  const presets = gui.addFolder('Hazır Ayarlar');
+  for (const name of Object.keys(PRESETS)) {
+    presets
+      .add(
+        {
+          [name]: () => {
+            applyPreset(flight, name);
+            refresh();
+            persist();
+          },
+        },
+        name,
+      )
+      .name(name);
+  }
 
   // Bu ayarlar geometriyi değiştirmiyor; per-instance dizileri yeniden
   // türetmek yetiyor. Geometri yeniden inşası yalnızca "Kanat Formu" için.
@@ -62,7 +86,9 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   limits.add(flight, 'screenFill', 0.3, 1.2, 0.01).name('ekranı doldurma');
   limits.add(flight, 'depthSpread', 0.05, 0.9, 0.01).name('derinlik payı');
   limits.add(flight, 'boundsMargin', 0.05, 0.6, 0.01).name('geri itme payı');
-  limits.add(flight, 'boundsForce', 0, 40, 0.5).name('geri itme gücü');
+  // Alt sınır bilinçli olarak 0 değil: 0'da hiçbir şey kelebekleri geri
+  // çağırmıyor ve sürü ekrandan çıkıp bir daha dönmüyor.
+  limits.add(flight, 'boundsForce', 2, 40, 0.5).name('geri itme gücü');
   limits.close();
 
   const form = gui.addFolder('Kanat Formu');
@@ -104,9 +130,10 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
         reset: () => {
           Object.assign(p, WING_DEFAULTS, FLAP_DEFAULTS, SWARM_DEFAULTS);
           Object.assign(flight, FLIGHT_DEFAULTS);
+          clearSettings();
           rebuild();
           swarm.setCount(p.count);
-          gui.controllersRecursive().forEach((c) => c.updateDisplay());
+          refresh();
         },
       },
       'reset',

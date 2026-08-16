@@ -6,6 +6,7 @@ import { WING_DEFAULTS } from './butterfly/geometry.js';
 import { FLAP_DEFAULTS } from './butterfly/flap.js';
 import { FLIGHT_DEFAULTS } from './flight/steering.js';
 import { Pointer } from './input/pointer.js';
+import { loadSettings } from './ui/storage.js';
 import { createPanel } from './ui/panel.js';
 
 // ── Renderer ───────────────────────────────────────────────────────────────
@@ -63,12 +64,14 @@ axes.visible = false;
 scene.add(axes);
 
 // ── Sürü ───────────────────────────────────────────────────────────────────
-const flight = { ...FLIGHT_DEFAULTS };
-const butterflyParams = {
+// Kayıtlı ayarlar varsayılanların üstüne biniyor (yalnızca hâlâ var olan
+// anahtarlar — bkz. ui/storage.js)
+const flight = loadSettings(FLIGHT_DEFAULTS);
+const butterflyParams = loadSettings({
   ...WING_DEFAULTS,
   ...FLAP_DEFAULTS,
   ...SWARM_DEFAULTS,
-};
+});
 
 const swarm = new Swarm({ capacity: 800, params: butterflyParams, flight });
 scene.add(swarm.group);
