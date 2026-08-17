@@ -219,6 +219,54 @@ export function viewBoundsForce(out, position, camera, focusDistance, params) {
   return out;
 }
 
+/**
+ * DÜNYAYA sabitlenmiş sınır: dikey bir silindir.
+ *
+ * `viewBoundsForce`'un kardeşi ama tam tersi felsefede. O, kelebekleri her
+ * zaman EKRANDA tutuyor — kamerayı çevirince uçuş hacmi de dönüyor. Sürü
+ * tek başına bir demo olduğunda doğru davranış buydu.
+ *
+ * Dünyada değil: kelebekler avlunun içinde yaşıyor ve kamera onlara BAKIYOR.
+ * Kamerayı çevirdiğinde sürünün de dönmesi, kelebeklerin sahneye ait
+ * olmadığını anında ele veriyordu — çayırın üstünde kayan bir katman gibi
+ * duruyorlardı.
+ *
+ * Geri itme yine sert clamp değil, kenara yaklaştıkça kareli artan kuvvet.
+ *
+ * @param {{radius: number, minY: number, maxY: number}} bounds
+ */
+export function worldBoundsForce(out, position, bounds, params) {
+  out.set(0, 0, 0);
+
+  const strength = params.boundsForce;
+  const marginFrac = params.boundsMargin;
+
+  // Yatay: merkeze doğru
+  const r = Math.hypot(position.x, position.z);
+  const margin = Math.max(bounds.radius * marginFrac, 1e-3);
+  const over = r - (bounds.radius - margin);
+  if (over > 0 && r > 1e-4) {
+    const t = Math.min(over / margin, 1.5);
+    const push = (t * t * strength) / r;
+    out.x -= position.x * push;
+    out.z -= position.z * push;
+  }
+
+  /*
+   * Dikey: taban ile tavan arası. Taban çimin biraz üstünde — kelebekler
+   * çimin içine girerse hem kayboluyorlar hem de yaprakların arasından
+   * titreşerek görünüyorlar. Tavan ağaç taçlarının altında.
+   */
+  const height = bounds.maxY - bounds.minY;
+  const vMargin = Math.max(height * marginFrac, 1e-3);
+  const mid = (bounds.minY + bounds.maxY) * 0.5;
+  pushAxis(out, UP, position.y - mid, height * 0.5, vMargin, strength);
+
+  return out;
+}
+
+const UP = new THREE.Vector3(0, 1, 0);
+
 /** `axis` ekseninde sınırı aşan bileşeni içeri doğru iter. */
 function pushAxis(out, axis, value, limit, margin, strength) {
   const over = Math.abs(value) - (limit - margin);

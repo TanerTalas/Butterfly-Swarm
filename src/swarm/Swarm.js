@@ -6,6 +6,7 @@ import { createWingMaterial, createBodyMaterial } from '../butterfly/material.js
 import {
   wanderForce,
   viewBoundsForce,
+  worldBoundsForce,
   followForce,
   orbitForce,
   fleeForce,
@@ -316,8 +317,19 @@ export class Swarm {
         }
       }
 
+      /*
+       * İki sınır kipi var ve çağıran taraf seçiyor:
+       *
+       *   ctx.bounds verildiyse  → dünyaya sabit silindir (sakura avlusu)
+       *   verilmediyse           → kameranın görünür alanı (tek başına demo)
+       *
+       * Varsayılan ekran kipi, `index.html`'deki sürü demosu bozulmasın diye
+       * korunuyor.
+       */
       _acc.add(
-        viewBoundsForce(_tmp, _pos, ctx.camera, ctx.focusDistance, fl),
+        ctx.bounds
+          ? worldBoundsForce(_tmp, _pos, ctx.bounds, fl)
+          : viewBoundsForce(_tmp, _pos, ctx.camera, ctx.focusDistance, fl),
       );
       limitLength(_acc, fl.maxForce);
 

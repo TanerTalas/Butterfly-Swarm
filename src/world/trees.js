@@ -111,6 +111,16 @@ export function createTrees(models = []) {
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
 
+      /*
+       * Kameranın başlangıç noktasının çevresinde küçük bir açıklık.
+       * Kamera artık koruda başlıyor; boşluk bırakılmazsa açılışta gövdenin
+       * içinde kalıp ekranı kabuk dokusuyla kapatabiliyor.
+       */
+      const cam = WORLD.camera.start;
+      if (Math.hypot(x - cam.x, z - cam.z) < WORLD.trees.cameraClearance) {
+        continue;
+      }
+
       // Halkada "baskın ağaç" mantığı yok; hepsi birbirine yakın boyda
       // olmalı ki duvar gibi değil koru gibi dursun.
       const scale = 0.82 + rand() * 0.36;
@@ -131,6 +141,24 @@ export function createTrees(models = []) {
        */
       exclusions.push({ x, z, r: 0.75 * scale });
     }
+  }
+
+  /*
+   * Kadrajı çerçeveleyen ağaçlar en SONA ekleniyor.
+   *
+   * Katmanlı örneklemenin dışında duruyorlar çünkü işleri farklı: halkayı
+   * doldurmak değil, açılış görüntüsünde dalların kadraja girmesini garanti
+   * etmek. Şansa bırakılırsa oraya ağaç düşüp düşmemesi tohuma kalıyor.
+   */
+  for (const f of WORLD.trees.framing ?? []) {
+    placements.push({
+      x: f.x,
+      y: groundHeight(f.x, f.z),
+      z: f.z,
+      rotation: rand() * Math.PI * 2,
+      scale: f.scale,
+    });
+    exclusions.push({ x: f.x, z: f.z, r: 0.75 * f.scale });
   }
 
   if (models.length === 0) {

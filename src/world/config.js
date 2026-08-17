@@ -98,6 +98,24 @@ export const WORLD = {
      * artırıyor.
      */
     lodRadius: 20,
+
+    /*
+     * Kadrajı çerçeveleyen ağaçlar. Kameranın başlangıç noktasının hemen
+     * önünde ve iki yanında duruyorlar; dalları görüşün üst köşelerine
+     * giriyor. Uçuş alanının (12) dışındalar.
+     *
+     * Katmanlı örneklemeye bırakılsaydı buraya ağaç düşüp düşmemesi şansa
+     * kalırdı — kadrajın en önemli iki ağacı için kabul edilemez.
+     */
+    framing: [
+      { x: 2.6, z: 12.4, scale: 1.05 },
+      { x: -3.1, z: 13.1, scale: 0.95 },
+    ],
+
+    // Kamera başlangıcının bu yarıçapı içine ağaç ekilmiyor — yoksa
+    // açılışta kamera gövdenin içinde kalabiliyor
+    cameraClearance: 3.0,
+
     minRadius: 14,
     /*
      * Halka derin: en uzak ağaçlar 30 birimde ve sis onları belirgin şekilde
@@ -226,12 +244,22 @@ export const WORLD = {
      * 14'ün altında — yoksa geri çekilirken kamera ağacın içine giriyor ve
      * ekran çiçek dolusuyla kapanıyor.
      */
-    maxDistance: 13,
+    maxDistance: 17,
     // Ufkun altına inip zeminin altını görmeyi engelliyor
     maxPolarAngle: Math.PI * 0.495,
     targetRadius: 5,
-    start: { x: 0, y: 2.2, z: 9 },
-    targetY: 1.2,
+    /*
+     * Kamera AĞAÇLARIN ARASINDA başlıyor (yarıçap 15.5), avlunun içinde
+     * değil. Avlunun ortasından bakınca en yakın ağaç 5 birim uzakta
+     * kalıyor ve çiçekler ekranın üst şeridinde küçük bir bant oluyor;
+     * koruda durunca dallar kadraja giriyor ve sahne "içinde olunan" bir
+     * yere dönüşüyor.
+     *
+     * `trees.framing` bunu şansa bırakmıyor: iki ağaç bilinçli olarak
+     * görüş eksenine yakın yerleştiriliyor.
+     */
+    start: { x: 0, y: 2.4, z: 15.5 },
+    targetY: 1.6,
   },
 };
 

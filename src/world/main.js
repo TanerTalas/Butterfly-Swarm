@@ -2,13 +2,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import GUI from 'lil-gui';
 import { createWorld, WORLD, groundHeight } from './index.js';
+import { createWorldSwarm, enableSwarmFog, SWARM_BOUNDS } from './swarm.js';
+import { Pointer } from '../input/pointer.js';
 
 /*
  * Sakura çayırı — Aşama A geliştirme sayfası.
  *
- * Burada kelebek YOK. Sahne tek başına güzel olmalı; sürü Aşama B'de
- * bağlanacak (bkz. projefikri.md §13). `index.html`'deki sürü demosuna
- * dokunulmadı, ikisi bağımsız çalışıyor.
+ * Sürü buraya Aşama B'de bağlandı. `index.html`'deki tek başına sürü
+ * demosu aynen duruyor; iki sahne aynı motoru farklı sınır kipinde
+ * kullanıyor (bkz. src/world/swarm.js).
  */
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -40,6 +42,18 @@ controls.enablePan = true;
 controls.update();
 
 const world = await createWorld(renderer, scene);
+
+// ── Sürü ───────────────────────────────────────────────────────────────────
+/*
+ * İşletim sistemi "hareketi azalt" diyorsa sürü sakin başlıyor. Sahnenin
+ * geri kalanı zaten neredeyse hareketsiz — tek canlı şey kelebekler ve çim.
+ */
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const { swarm, params: swarmParams, flight } = createWorldSwarm({ reducedMotion });
+enableSwarmFog(swarm);
+scene.add(swarm.group);
+
+const pointer = new Pointer(renderer.domElement, camera);
 
 // ── Kamera kilidi ──────────────────────────────────────────────────────────
 /*
@@ -109,6 +123,21 @@ fogFolder
   .name('sis yoğunluğu')
   .onChange((v) => world.setFog(atmo.fogColor, v));
 
+// ── Kelebek paneli ─────────────────────────────────────────────────────────
+const swarmFolder = gui.addFolder('Kelebekler');
+swarmFolder
+  .add(swarmParams, 'count', 1, 200, 1)
+  .name('sayı')
+  .onChange((v) => swarm.setCount(v));
+swarmFolder
+  .add(flight, 'mode', ['follow', 'flee', 'ignore'])
+  .name('mouse davranışı');
+swarmFolder.add(flight, 'maxSpeed', 0.2, 4, 0.05).name('hız');
+swarmFolder.add(flight, 'wander', 0, 8, 0.1).name('dolanma');
+swarmFolder
+  .add(SWARM_BOUNDS, 'maxY', 1.5, 7, 0.1)
+  .name('tavan');
+
 const dbg = { showShadowCamera: false };
 const helper = new THREE.CameraHelper(world.lights.sun.shadow.camera);
 helper.visible = false;
@@ -134,6 +163,21 @@ renderer.setAnimationLoop(() => {
   clampCamera();
   world.update(timer.getElapsed());
 
+  /*
+   * İmleç düzlemi: kelebeklerin uçtuğu hacmin ortası. `Pointer` odak
+   * mesafesi istiyor — kameradan o düzleme olan uzaklığı veriyoruz ki
+   * imleç zeminde değil kelebeklerin arasında dursun.
+   */
+  camera.updateMatrixWorld();
+  pointer.update(dt, camera.position.distanceTo(controls.target));
+
+  swarm.update(dt, {
+    camera,
+    bounds: SWARM_BOUNDS,
+    target: pointer.active ? pointer.world : null,
+    pointerSpeed: pointer.active ? pointer.speed : 0,
+  });
+
   renderer.render(scene, camera);
 
   frames++;
@@ -158,4 +202,4 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.__world = { scene, camera, controls, renderer, world, WORLD };
+window.__world = { scene, camera, controls, renderer, world, WORLD, swarm, flight, pointer };
