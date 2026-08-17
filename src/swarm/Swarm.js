@@ -119,8 +119,15 @@ export class Swarm {
     this._sizeRand = new Float32Array(n);
     this._speedRand = new Float32Array(n);
     this._hueRand = new Float32Array(n);
-    // Shader'a giden instance attribute'u
-    this.hueShift = new Float32Array(n);
+    /*
+     * Shader'a giden instance attribute'u — KANAT BAŞINA iki bileşen:
+     * [0] ön kanat tonu, [1] arka kanat tonu.
+     *
+     * İkisi eşitse kelebek tek renk. Ayrı renk yalnızca kayıtlı
+     * kullanıcıların kelebeklerinde kullanılıyor (projefikri.md §2);
+     * yerleşik ve misafir kelebekler her zaman tek renk geziyor.
+     */
+    this.hueShift = new Float32Array(n * 2);
 
     for (let i = 0; i < n; i++) this._seed(i);
     this.applyVariation();
@@ -192,8 +199,8 @@ export class Swarm {
       new THREE.InstancedBufferAttribute(this.flapSpeed, 1),
     );
     built.wings.setAttribute(
-      'aHueShift',
-      new THREE.InstancedBufferAttribute(this.hueShift, 1),
+      'aHue',
+      new THREE.InstancedBufferAttribute(this.hueShift, 2),
     );
 
     this.bodyMesh = new THREE.InstancedMesh(
@@ -228,9 +235,33 @@ export class Swarm {
   applyHue() {
     const spread = this.params.hueSpread;
     for (let i = 0; i < this.capacity; i++) {
-      this.hueShift[i] = (this._hueRand[i] - 0.5) * spread;
+      // Tek renk: iki kanat da aynı tonu alıyor
+      const h = (this._hueRand[i] - 0.5) * spread;
+      this.hueShift[i * 2] = h;
+      this.hueShift[i * 2 + 1] = h;
     }
-    const attr = this.wingMesh?.geometry.getAttribute('aHueShift');
+    this._hueNeedsUpdate();
+  }
+
+  /**
+   * Tek bir kelebeğin kanat tonlarını ayarlar.
+   *
+   * `hind` verilmezse arka kanat ön kanatla aynı olur — yani tek renk
+   * kelebek. İki farklı değer vermek yalnızca kayıtlı kullanıcıların
+   * kelebekleri için (projefikri.md §2).
+   *
+   * Değerler ton KAYDIRMASI, mutlak renk değil: desenin kendi gradyanı ve
+   * koyu kenar bandı korunuyor, yalnızca renk çarkında dönüyor. Hex renkten
+   * kaydırmaya çevirmek için `hueShiftFromColor()`.
+   */
+  setWingHues(i, fore, hind = fore) {
+    this.hueShift[i * 2] = fore;
+    this.hueShift[i * 2 + 1] = hind;
+    this._hueNeedsUpdate();
+  }
+
+  _hueNeedsUpdate() {
+    const attr = this.wingMesh?.geometry.getAttribute('aHue');
     if (attr) attr.needsUpdate = true;
   }
 

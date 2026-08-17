@@ -87,15 +87,11 @@ export function createWorldSwarm({ reducedMotion = false } = {}) {
     scale: 0.17,
 
     /*
-     * Ton yayılımı kısıldı. 1.0 tüm renk çarkını veriyor: sahnede parlak
-     * magenta, camgöbeği ve neon yeşil kelebekler dolaşıyor ve sakura
-     * paletiyle kavga ediyorlar.
-     *
-     * Bu GEÇİCİ bir çözüm. Kalıcısı projefikri.md §4'teki 5 renklik palet
-     * ve §11.1'deki iki renkli kanat — o iş yapılınca renk buradan değil
-     * kelebek kaydından gelecek.
+     * `hueSpread` artık kullanılmıyor: renk rastgele bir ton yayılımından
+     * değil, 5 renklik paletten geliyor (`applyPalette` aşağıda).
+     * Sıfır, `applyHue()` bir yerden çağrılırsa paleti bozmasın diye.
      */
-    hueSpread: 0.42,
+    hueSpread: 0,
   };
 
   if (reducedMotion) {
@@ -114,8 +110,65 @@ export function createWorldSwarm({ reducedMotion = false } = {}) {
   const swarm = new Swarm({ capacity: 200, params, flight });
 
   seedPositions(swarm);
+  applyPalette(swarm);
 
   return { swarm, params, flight, bounds: SWARM_BOUNDS };
+}
+
+/*
+ * Desenin kendi taban rengi (`WING_COLORS.mid`, turuncu 0xe8781c) — ton
+ * çarkında ~0.075'te duruyor.
+ *
+ * Shader'a giden değer mutlak renk değil KAYDIRMA olduğu için hedef rengin
+ * tonundan bunun çıkarılması gerekiyor. Sabit olarak yazılı çünkü desenin
+ * taban rengi bir tasarım kararı; değişirse burası da değişmeli.
+ */
+const PATTERN_BASE_HUE = 0.0752;
+
+const _color = new THREE.Color();
+
+/**
+ * Hex renkten ton kaydırmasına çevirir.
+ *
+ * Kayıp bir dönüşüm ve olması gereken de bu: kullanıcı düz bir boya değil
+ * RENK AİLESİ seçiyor. Desenin kendi gradyanı (koyu kök → açık uç), koyu
+ * kenar bandı ve damarları korunuyor; yalnızca renk çarkında dönüyorlar.
+ *
+ * Doygunluk ve parlaklık yok sayılıyor — bu yüzden palet doygun renklerden
+ * kuruldu (bkz. config.js).
+ */
+export function hueShiftFromColor(hex) {
+  const hsl = { h: 0, s: 0, l: 0 };
+  /*
+   * HSL'i sRGB uzayında istiyoruz.
+   *
+   * `getHSL()` varsayılan olarak three'nin ÇALIŞMA uzayında (linear-sRGB)
+   * hesaplıyor. Shader'daki ton döndürmesi ise doku örneklendikten sonra,
+   * yani sRGB algısına yakın değerlerle çalışıyor. İkisi karışınca seçilen
+   * renkle ekrandaki renk tutmuyor — palet turkuaz diyor, kelebek yeşil
+   * çıkıyor.
+   */
+  _color.setHex(hex, THREE.SRGBColorSpace).getHSL(hsl, THREE.SRGBColorSpace);
+  return hsl.h - PATTERN_BASE_HUE;
+}
+
+/**
+ * Yerleşik kelebeklere paletten renk dağıtır.
+ *
+ * Hepsi TEK RENK: ön ve arka kanat aynı tonu alıyor. İki renkli kanat
+ * yalnızca kayıtlı kullanıcıların kelebeklerine özel (projefikri.md §2),
+ * yerleşik ve misafir kelebekler tek renk geziyor.
+ *
+ * Dağıtım tohumdan deterministik — her açılışta aynı kelebek aynı renkte.
+ */
+export function applyPalette(swarm, seed = 0x9a17c) {
+  const rand = mulberry32(seed);
+  const shifts = WORLD.palette.map((c) => hueShiftFromColor(c.hex));
+
+  for (let i = 0; i < swarm.capacity; i++) {
+    const shift = shifts[Math.floor(rand() * shifts.length) % shifts.length];
+    swarm.setWingHues(i, shift);
+  }
 }
 
 /**
@@ -167,6 +220,21 @@ export function enableSwarmFog(swarm) {
     mat.fog = true;
     mat.needsUpdate = true;
   }
+}
+
+/**
+ * Kayıtlı kullanıcı kelebeği: ön ve arka kanat AYRI renkte.
+ *
+ * Aşama C'de veritabanındaki `fore_color` / `hind_color` alanları doğrudan
+ * buraya bağlanacak. Misafir ve yerleşik kelebekler için ÇAĞRILMAMALI —
+ * onlar tek renk (`applyPalette`).
+ */
+export function setUserButterflyColors(swarm, index, foreHex, hindHex) {
+  swarm.setWingHues(
+    index,
+    hueShiftFromColor(foreHex),
+    hueShiftFromColor(hindHex),
+  );
 }
 
 /** Kelebeklerin dünya konumlarını okumak için — Aşama D'deki takip modu. */

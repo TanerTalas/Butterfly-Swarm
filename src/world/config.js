@@ -34,6 +34,26 @@ export const WORLD = {
   // Kimseye ait olmayan, hiç solmayan kelebekler (bkz. projefikri.md §4).
   residentCount: 60,
 
+  /*
+   * KELEBEK PALETİ — 5 sabit renk (projefikri.md §4).
+   *
+   * Yerleşik ve misafir kelebekler bu paletten RASTGELE bir renk alıyor ve
+   * tek renk geziyorlar. Kayıtlı kullanıcılar ya bu paletten seçiyor ya da
+   * ön/arka kanada ayrı renk veriyor.
+   *
+   * Hiçbiri pembe/magenta DEĞİL, bilinçli: sahne baştan aşağı sakura pembesi
+   * ve pembe kelebek zeminde kayboluyor (§4 — sakura tuzağı). Hepsi doygun,
+   * çünkü renk desene ton DÖNDÜRMESİ olarak uygulanıyor; soluk bir renk
+   * dönmek için yeterli tona sahip olmuyor.
+   */
+  palette: [
+    { name: 'turkuaz', hex: 0x17b3a3 },
+    { name: 'derin mavi', hex: 0x2f5fd0 },
+    { name: 'kehribar', hex: 0xe8a01c },
+    { name: 'mor', hex: 0x7a3fc4 },
+    { name: 'zümrüt', hex: 0x2f9e4f },
+  ],
+
   // ── Güneş ────────────────────────────────────────────────────────────────
   // Alçak ve sıcak: sakura arkadan aydınlandığında güzel duruyor.
   sun: {
