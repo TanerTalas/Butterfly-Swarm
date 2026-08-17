@@ -53,6 +53,11 @@ export const FLIGHT_DEFAULTS = {
   fleeRadius: 3.5, // bu mesafeden uzakta kaçış yok
   modeBlend: 2.0, // mod geçişinin yumuşaklığı (1/s)
 
+  // Mouse hızla süpürüldüğünde sürü dalgalanıyor — imleci gerçekten "hava
+  // akımı" gibi hissettiren küçük ama etkili detay
+  gust: 0.35,
+  gustMax: 8.0, // hızın hesaba katılan üst sınırı
+
   // Uçuş hacmi sabit bir dünya kutusu değil, kameranın GÖRÜNÜR alanı.
   // Ekranın ne kadarını doldursunlar; 1.0 tam kenara kadar demek.
   screenFill: 0.94,

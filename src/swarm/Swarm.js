@@ -273,6 +273,10 @@ export class Swarm {
     const climbSin = Math.sin(fl.maxClimbDeg * THREE.MathUtils.DEG2RAD);
     const turn = 1 - Math.exp(-fl.turnRate * dt);
 
+    // Mouse hızlı süpürülünce dolanma güçleniyor: hava akımı hissi
+    const gust =
+      1 + Math.min(ctx.pointerSpeed ?? 0, fl.gustMax) * fl.gust;
+
     for (let i = 0; i < n; i++) {
       const i3 = i * 3;
       _pos.fromArray(this.position, i3);
@@ -283,7 +287,10 @@ export class Swarm {
 
       // ── Kuvvetler ──
       _acc.set(0, 0, 0);
-      _acc.add(wanderForce(_tmp, this.noiseOffset[i], this.time, fl));
+      _acc.addScaledVector(
+        wanderForce(_tmp, this.noiseOffset[i], this.time, fl),
+        gust,
+      );
 
       if (ctx.target) {
         const fm = this.followMix[i];

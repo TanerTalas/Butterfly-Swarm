@@ -12,7 +12,7 @@ import { saveSettings, clearSettings, debounce } from './storage.js';
  * canlı ayarlamak. Aşama 6'da davranış parametreleriyle (takip/kaçış hızı,
  * dağınıklık, sayı) genişleyecek.
  */
-export function createPanel({ swarm, flight, scene: sceneCtl }) {
+export function createPanel({ swarm, flight, scene: sceneCtl, onCalm }) {
   const gui = new GUI({ title: 'Butterfly Swarm' });
 
   const p = swarm.params;
@@ -25,6 +25,18 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   gui.onChange(persist);
 
   const presets = gui.addFolder('Hazır Ayarlar');
+  presets
+    .add(
+      {
+        calm: () => {
+          onCalm?.();
+          refresh();
+          persist();
+        },
+      },
+      'calm',
+    )
+    .name('Sakin (hareketi azalt)');
   for (const name of Object.keys(PRESETS)) {
     presets
       .add(
@@ -66,6 +78,7 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   mouse.add(flight, 'fleeSpeed', 0, 30, 0.1).name('kaçış hızı');
   mouse.add(flight, 'fleeRadius', 0.2, 10, 0.1).name('kaçış yarıçapı');
   mouse.add(flight, 'modeBlend', 0.2, 10, 0.1).name('mod geçiş hızı');
+  mouse.add(flight, 'gust', 0, 1.5, 0.01).name('hava akımı');
   mouse.add(sceneCtl, 'showTarget').name('hedefi göster').onChange(sceneCtl.onTarget);
 
   const fly = gui.addFolder('Uçuş');
@@ -141,7 +154,9 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   view.add(sceneCtl, 'showAxes').name('eksenleri göster').onChange(sceneCtl.onAxes);
   view.add(sceneCtl, 'wireframe').name('tel kafes').onChange(sceneCtl.onWireframe);
   view.add(sceneCtl, 'exposure', 0.3, 2.5, 0.01).name('pozlama').onChange(sceneCtl.onExposure);
-  view.addColor(sceneCtl, 'background').name('arka plan').onChange(sceneCtl.onBackground);
+  view.add(sceneCtl, 'fog', 0, 1, 0.01).name('sis');
+  view.addColor(sceneCtl, 'fogColor').name('sis rengi').onChange(sceneCtl.onFogColor);
+  view.add(sceneCtl, 'rimLight', 0, 5, 0.05).name('arka ışık').onChange(sceneCtl.onRim);
   view.close();
 
   gui

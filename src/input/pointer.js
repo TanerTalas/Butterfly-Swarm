@@ -19,10 +19,13 @@ export class Pointer {
     this.world = new THREE.Vector3();
     /** Mouse hiç hareket etmediyse false; o ana kadar hedef sahne merkezi. */
     this.active = false;
+    /** Yumuşatılmış hız (dünya birimi/sn) — hızlı hareket sürüyü dalgalandırıyor. */
+    this.speed = 0;
 
     this._ndc = new THREE.Vector2();
     this._raw = new THREE.Vector3();
     this._dir = new THREE.Vector3();
+    this._prev = new THREE.Vector3();
     this._hasNdc = false;
 
     this._onMove = (event) => {
@@ -51,7 +54,12 @@ export class Pointer {
       .addScaledVector(this._dir, focusDistance);
 
     // Kare hızından bağımsız yumuşatma
+    this._prev.copy(this.world);
     this.world.lerp(this._raw, 1 - Math.exp(-this.smoothing * dt));
+
+    // Anlık hız gürültülü; yumuşatılmış hâli kullanılıyor
+    const instant = dt > 1e-5 ? this._prev.distanceTo(this.world) / dt : 0;
+    this.speed += (instant - this.speed) * (1 - Math.exp(-6 * dt));
   }
 
   dispose() {
