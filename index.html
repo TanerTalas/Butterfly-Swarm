@@ -2,13 +2,34 @@
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Butterfly Swarm — Aşama 1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1017" />
+    <title>Butterfly Swarm</title>
     <style>
       :root { color-scheme: dark; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { height: 100%; overflow: hidden; background: #0d1017; }
+
+      /* Arka plan ve vinyet CSS'te: renderer alpha ile çiziyor, yani
+         bunların hiçbir render maliyeti yok. Post-processing eklemeden
+         derinlik ve odak hissi veriyorlar. */
+      html, body {
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 85% at 50% 12%, #1c2740 0%, #101725 45%, #0a0e16 100%);
+      }
       canvas { display: block; }
+
+      #vignette {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          115% 80% at 50% 45%,
+          rgba(0, 0, 0, 0) 55%,
+          rgba(0, 0, 0, 0.45) 100%
+        );
+      }
 
       #hud {
         position: fixed;
@@ -18,15 +39,29 @@
         color: #7e8899;
         pointer-events: none;
         user-select: none;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
       }
       #hud b { color: #c8d0dd; font-weight: 600; }
-      #hud .stage { color: #e0a458; }
+      #hud a { color: #e0a458; pointer-events: auto; }
+
+      /* Dar ekranda panel yeri daralıyor; HUD'ı kısaltıyoruz */
+      @media (max-width: 620px) {
+        #hud .wide { display: none; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #hud .reduced { display: inline; }
+      }
+      #hud .reduced { display: none; color: #6f9f7a; }
     </style>
   </head>
   <body>
+    <div id="vignette"></div>
     <div id="hud">
-      <b>Butterfly Swarm</b> — <span class="stage">Aşama 1: statik kelebek</span><br />
-      sürükle: döndür &nbsp;·&nbsp; tekerlek: yakınlaş &nbsp;·&nbsp; sağ tık: kaydır<br />
+      <b>Butterfly Swarm</b>
+      <span class="wide">— mouse'u gezdir &nbsp;·&nbsp; sürükle: döndür &nbsp;·&nbsp; tekerlek: yakınlaş</span>
+      &nbsp;·&nbsp; <a href="/lab.html">kanat detay laboratuvarı →</a>
+      <span class="reduced">&nbsp;·&nbsp; hareket azaltıldı</span><br />
       <span id="stats"></span>
     </div>
     <script type="module" src="/src/main.js"></script>

@@ -30,14 +30,16 @@ import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js
 
 // ── Ayarlanabilir tasarım parametreleri ────────────────────────────────────
 export const WING_DEFAULTS = {
-  foreSpan: 1.15, // ön kanat açıklığı (menteşeden uca)
-  foreChord: 1.0, // ön kanat en/boy oranı çarpanı
-  hindSpan: 0.92, // arka kanat açıklığı
-  hindChord: 1.0,
+  // span x'i, chord y'yi ölçekliyor. Kanadı büyütürken ikisini BİRLİKTE
+  // ölçekle, yoksa siluet gerilmiş görünür.
+  foreSpan: 1.6, // ön kanat açıklığı (menteşeden uca)
+  foreChord: 1.6, // ön kanat en/boy oranı çarpanı
+  hindSpan: 1.16, // arka kanat açıklığı
+  hindChord: 1.26,
   camber: 0.045, // orta açıklıkta yukarı bombe (fazlası kanadı yastığa çeviriyor)
   droop: 0.055, // uca doğru aşağı sarkma
-  edgeWidth: 0.06, // koyu kenar bandının kalınlığı (shape birimi)
-  tessellation: 0.18, // hedef maksimum üçgen kenar uzunluğu
+  edgeWidth: 0.076, // koyu kenar bandının kalınlığı (shape birimi)
+  tessellation: 0.4, // hedef maksimum üçgen kenar uzunluğu
 };
 
 export const WING_COLORS = {
@@ -173,34 +175,43 @@ export function shapeBounds(shape) {
 function buildAbdomen() {
   // Uca doğru incelen profil. LatheGeometry Y ekseni etrafında döner;
   // rotateX(PI/2) ile Y → +Z olur, profili −y'de kurup kuyruğa uzatıyoruz.
+  //
+  // DİKKAT: LatheGeometry profil noktalarının ARTAN y sırasında olmasını
+  // bekler. Ters sırada verilirse üçgen sarımı çevrilir, normaller içeri
+  // döner ve FrontSide culling ile karnın dış yüzeyi atılır — karın
+  // "yarı saydam" görünüp içinden göğüs seçilir.
+  // Bu yüzden liste kuyruk ucundan (en negatif y) göğse doğru sıralı.
   const profile = [
-    [0.0, 0.115],
-    [-0.06, 0.138],
-    [-0.22, 0.142],
-    [-0.4, 0.128],
-    [-0.56, 0.105],
-    [-0.7, 0.077],
-    [-0.82, 0.048],
-    [-0.9, 0.022],
     [-0.94, 0.0],
+    [-0.9, 0.022],
+    [-0.82, 0.048],
+    [-0.7, 0.077],
+    [-0.56, 0.105],
+    [-0.4, 0.128],
+    [-0.22, 0.142],
+    [-0.06, 0.138],
+    [0.0, 0.115],
   ].map(([y, r]) => new THREE.Vector2(r, y - 0.02));
 
-  // Segment sayıları bilinçli olarak düşük: Aşama 5'te bu geometri 500 kez
-  // instance edilecek, kelebek başına vertex bütçesi kritik.
-  const geo = new THREE.LatheGeometry(profile, 12);
+  // Segment sayıları bilinçli olarak düşük.
+  //
+  // Aşama 5 ölçümü: gövde, kelebek başına 1954 üçgenin 1288'ini yiyordu —
+  // %66'sı. Oysa sürüde kelebek ekranın ~%11'i kadar ve gövde birkaç piksel;
+  // görünen şey kanatlar. Aşağıdaki sayılar o ölçümden sonra yarıya indi.
+  const geo = new THREE.LatheGeometry(profile, 8);
   geo.rotateX(Math.PI / 2); // lathe ekseni: +Y → +Z, profil −y → −Z (kuyruk)
   return geo;
 }
 
 function buildThorax() {
-  const geo = new THREE.SphereGeometry(0.16, 14, 9);
+  const geo = new THREE.SphereGeometry(0.16, 10, 6);
   geo.scale(1.0, 1.05, 1.45);
   geo.translate(0, 0.01, 0.06);
   return geo;
 }
 
 function buildHead() {
-  const geo = new THREE.SphereGeometry(0.115, 12, 9);
+  const geo = new THREE.SphereGeometry(0.115, 8, 5);
   geo.scale(1.0, 1.0, 0.9);
   geo.translate(0, 0.02, 0.33);
   return geo;
@@ -213,9 +224,9 @@ function buildAntenna(side) {
     new THREE.Vector3(side * 0.19, 0.38, 0.64),
     new THREE.Vector3(side * 0.27, 0.44, 0.71),
   ]);
-  const tube = new THREE.TubeGeometry(curve, 14, 0.0105, 5, false);
+  const tube = new THREE.TubeGeometry(curve, 8, 0.0105, 4, false);
 
-  const club = new THREE.SphereGeometry(0.027, 8, 6);
+  const club = new THREE.SphereGeometry(0.027, 6, 4);
   const tip = curve.getPoint(1);
   club.translate(tip.x, tip.y, tip.z);
 
@@ -225,7 +236,7 @@ function buildAntenna(side) {
 function buildEyes() {
   const parts = [];
   for (const side of [-1, 1]) {
-    const eye = new THREE.SphereGeometry(0.058, 10, 7);
+    const eye = new THREE.SphereGeometry(0.058, 7, 5);
     eye.translate(side * 0.082, 0.045, 0.375);
     parts.push(eye);
   }
