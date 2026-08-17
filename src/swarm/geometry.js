@@ -29,9 +29,7 @@ export const WING_HIND = 1;
 
 export function buildSwarmGeometry(params = {}) {
   const parts = createButterflyGeometry(params);
-  const atlas = createWingAtlas(parts.shapes, {
-    edgeWidth: params.edgeWidth,
-  });
+  const atlas = createWingAtlas(parts.shapes, params);
 
   const body = buildBody(parts);
   const wings = buildWings(parts, atlas.regions);
@@ -42,7 +40,13 @@ export function buildSwarmGeometry(params = {}) {
   parts.foreWing.dispose();
   parts.hindWing.dispose();
 
-  return { body, wings, atlas: atlas.texture, hinges: parts.hinges };
+  return {
+    body,
+    wings,
+    atlas: atlas.texture,
+    atlasNormal: atlas.normalMap,
+    hinges: parts.hinges,
+  };
 }
 
 // ── Gövde ──────────────────────────────────────────────────────────────────

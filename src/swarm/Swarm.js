@@ -173,8 +173,12 @@ export class Swarm {
     this._geometries = [built.body, built.wings];
     this.hinges = built.hinges;
 
-    if (this.wingMaterial.map) this.wingMaterial.map.dispose();
+    this.wingMaterial.map?.dispose();
+    this.wingMaterial.normalMap?.dispose();
     this.wingMaterial.map = built.atlas;
+    this.wingMaterial.normalMap = built.atlasNormal;
+    // Damarlar ışığı yakalasın ama kanat buruşuk görünmesin
+    this.wingMaterial.normalScale.set(0.55, 0.55);
     this.wingMaterial.needsUpdate = true;
 
     // Instance başına çırpma verisi — yalnızca kanat geometrisinde gerekli
@@ -247,7 +251,8 @@ export class Swarm {
 
   dispose() {
     for (const g of this._geometries) g.dispose();
-    if (this.wingMaterial.map) this.wingMaterial.map.dispose();
+    this.wingMaterial.map?.dispose();
+    this.wingMaterial.normalMap?.dispose();
     this.wingMaterial.dispose();
     this.bodyMaterial.dispose();
   }

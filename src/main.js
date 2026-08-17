@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Swarm, SWARM_DEFAULTS } from './swarm/Swarm.js';
 import { WING_DEFAULTS } from './butterfly/geometry.js';
+import { DETAIL_DEFAULTS } from './butterfly/wingDetail.js';
 import { FLAP_DEFAULTS } from './butterfly/flap.js';
 import { FLIGHT_DEFAULTS } from './flight/steering.js';
 import { Pointer } from './input/pointer.js';
@@ -69,6 +70,7 @@ scene.add(axes);
 const flight = loadSettings(FLIGHT_DEFAULTS);
 const butterflyParams = loadSettings({
   ...WING_DEFAULTS,
+  ...DETAIL_DEFAULTS,
   ...FLAP_DEFAULTS,
   ...SWARM_DEFAULTS,
 });

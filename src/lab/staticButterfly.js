@@ -1,11 +1,11 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { createButterflyGeometry } from '../butterfly/geometry.js';
 import {
   createWingMaterial,
   createBodyMaterial,
   createEyeMaterial,
 } from '../butterfly/material.js';
-import { createDetailedWing } from './wingDetail.js';
+import { createDetailedWing } from '../butterfly/wingDetail.js';
 
 /*
  * Laboratuvar için hareketsiz kelebek.

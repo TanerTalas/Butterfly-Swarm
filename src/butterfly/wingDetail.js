@@ -1,29 +1,24 @@
 import * as THREE from 'three';
-import {
-  shapeBounds,
-  WING_COLORS,
-  WING_DEFAULTS,
-} from '../butterfly/geometry.js';
-import { insetPolygon, dedupe } from '../butterfly/pattern.js';
+import { shapeBounds, WING_COLORS, WING_DEFAULTS } from './geometry.js';
+import { insetPolygon, dedupe } from './shapeUtils.js';
 
 /*
- * KANAT DETAY LABORATUVARI
+ * ZENGİN KANAT DESENİ
  *
- * Sürüdeki desen (butterfly/pattern.js) bilinçli olarak sade: gradyan, koyu
- * kenar bandı, birkaç damar, benekler. Kelebek ekranın %11'i kadarken bu
- * yeterliydi. Yakından bakıldığında ise kanat düz duruyor.
+ * İlk desen bilinçli olarak sadeydi: gradyan, koyu kenar bandı, kökten
+ * kenara giden düz damarlar, yuvarlak benekler. Kelebek ekranın %11'i
+ * kadarken yetiyordu ama yakından bakıldığında kanat düz duruyordu.
  *
- * Burası o eksiği kapatmak için ayrı bir oyun alanı. Her detay bağımsız
- * açılıp kapanabiliyor ki hangisinin gerçekten işe yaradığı görülebilsin;
- * beğenilenler sürüye geri taşınır.
+ * Buradaki katmanlar `lab.html` içinde tek tek denenip seçildi. Her biri
+ * bağımsız açılıp kapanabiliyor.
  *
- * Gerçek kelebek kanadında olup bizde olmayanlar:
- *   - dallanan damar yapısı ve diskal hücre (en belirgin eksik)
+ * Gerçek kelebek kanadında olup ilk desende olmayanlar:
+ *   - dallanan damar yapısı ve diskal hücre (en belirgin eksikti)
  *   - pul dokusu (o pudramsı, dokulu yüzey)
  *   - submarjinal bant + hilal şeklinde kenar işaretleri
  *   - saçak (kenardaki açık/koyu almaşık tarak)
  *   - göz lekesi (ocellus)
- *   - damarların ışığı yakalaması → kabartma
+ *   - damarların ışığı yakalaması → kabartma (normal map)
  */
 
 export const DETAIL_DEFAULTS = {
@@ -35,7 +30,7 @@ export const DETAIL_DEFAULTS = {
   submarginal: true, // ikinci bant
   lunules: true, // hilal kenar işaretleri
   fringe: true, // en dış saçak
-  ocelli: 2, // göz lekesi sayısı
+  ocelli: 3, // göz lekesi sayısı
   relief: true, // damarlardan normal map
 
   veinStrength: 0.55,
@@ -44,25 +39,56 @@ export const DETAIL_DEFAULTS = {
   seed: 7,
 };
 
-const TILE = 1024;
+const SINGLE_TILE = 1024;
 
-/** @returns {{map: THREE.Texture, normalMap: THREE.Texture|null}} */
+/**
+ * Tek kanat için bağımsız texture üretir (laboratuvar bunu kullanıyor).
+ * Sürü, atlas'a çizmek için aşağıdaki `drawDetailedWing`'i doğrudan çağırıyor.
+ *
+ * @returns {{map: THREE.Texture, normalMap: THREE.Texture|null}}
+ */
 export function createDetailedWing(shape, options = {}) {
+  const o = { ...DETAIL_DEFAULTS, ...options };
+  const b = shapeBounds(shape);
+  const aspect = b.width / b.height;
+  const W = Math.round(aspect >= 1 ? SINGLE_TILE : SINGLE_TILE * aspect);
+  const H = Math.round(aspect >= 1 ? SINGLE_TILE / aspect : SINGLE_TILE);
+  const rect = { x: 0, y: 0, w: W, h: H };
+
+  const canvas = makeCanvas(W, H);
+  drawDetailedWing(canvas.getContext('2d'), shape, rect, o);
+  const map = makeTexture(canvas, THREE.SRGBColorSpace);
+
+  let normalMap = null;
+  if (o.relief) {
+    const height = makeCanvas(W, H);
+    const hctx = height.getContext('2d');
+    fillNeutralHeight(hctx, W, H);
+    drawWingHeight(hctx, shape, rect, o);
+    normalMap = makeTexture(heightToNormal(height, o.reliefStrength), null);
+  }
+
+  return { map, normalMap };
+}
+
+/** Yükseklik haritasının nötr zemini — gri = düz yüzey. */
+export function fillNeutralHeight(ctx, w, h) {
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, w, h);
+}
+
+/** Renk katmanını verilen canvas dikdörtgenine çizer. */
+export function drawDetailedWing(ctx, shape, rect, options = {}) {
   const o = { ...DETAIL_DEFAULTS, ...options };
   const colors = { ...WING_COLORS, ...(o.colors || {}) };
   const edgeWidth = o.edgeWidth ?? WING_DEFAULTS.edgeWidth;
 
   const b = shapeBounds(shape);
-  const aspect = b.width / b.height;
-  const W = Math.round(aspect >= 1 ? TILE : TILE * aspect);
-  const H = Math.round(aspect >= 1 ? TILE / aspect : TILE);
-
-  const canvas = makeCanvas(W, H);
-  const ctx = canvas.getContext('2d');
-
-  const px = (x) => ((x - b.minX) / b.width) * W;
-  const py = (y) => (1 - (y - b.minY) / b.height) * H;
-  const toPx = (u) => (u / b.width) * W;
+  const px = (x) => rect.x + ((x - b.minX) / b.width) * rect.w;
+  const py = (y) => rect.y + (1 - (y - b.minY) / b.height) * rect.h;
+  const toPx = (u) => (u / b.width) * rect.w;
+  const W = rect.w;
+  const H = rect.h;
 
   const outline = dedupe(shape.getPoints(64));
   const inner = insetPolygon(outline, edgeWidth);
@@ -83,7 +109,7 @@ export function createDetailedWing(shape, options = {}) {
 
   // Kenar bandı: tüm siluet koyu, sonra içi boyanıyor
   ctx.fillStyle = hex(colors.edge);
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(rect.x, rect.y, W, H);
 
   ctx.save();
   path(inner);
@@ -94,7 +120,7 @@ export function createDetailedWing(shape, options = {}) {
   grad.addColorStop(0.42, hex(colors.mid));
   grad.addColorStop(1.0, hex(colors.tip));
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(rect.x, rect.y, W, H);
 
   if (o.cellShading) drawCellShading(ctx, veins, b, px, py, rng);
   if (o.basalDust) drawBasalDust(ctx, b, px, py, colors);
@@ -109,25 +135,26 @@ export function createDetailedWing(shape, options = {}) {
   ctx.restore(); // outline clip
 
   if (o.fringe) drawFringe(ctx, outline, edgeWidth, px, py, toPx, colors);
+}
 
-  const map = makeTexture(canvas, THREE.SRGBColorSpace);
+/**
+ * Yükseklik katmanı: damarlar yüzeyden kabarık olduğu için açık çiziliyor.
+ * Renk katmanıyla aynı geometriyi kullanıyor ki kabartma desene tam otursun.
+ */
+export function drawWingHeight(ctx, shape, rect, options = {}) {
+  const o = { ...DETAIL_DEFAULTS, ...options };
+  if (!o.venation) return;
 
-  // ── Kabartma katmanı ────────────────────────────────────────────────────
-  let normalMap = null;
-  if (o.relief) {
-    const height = makeCanvas(W, H);
-    const hctx = height.getContext('2d');
-    hctx.fillStyle = '#808080';
-    hctx.fillRect(0, 0, W, H);
-    // Damarlar yüzeyden kabarık: yükseklik haritasında açık
-    drawVeins(hctx, veins, px, py, toPx, HEIGHT_COLORS, {
-      ...o,
-      veinStrength: 1,
-    });
-    normalMap = makeTexture(heightToNormal(height, o.reliefStrength), null);
-  }
+  const edgeWidth = o.edgeWidth ?? WING_DEFAULTS.edgeWidth;
+  const b = shapeBounds(shape);
+  const px = (x) => rect.x + ((x - b.minX) / b.width) * rect.w;
+  const py = (y) => rect.y + (1 - (y - b.minY) / b.height) * rect.h;
+  const toPx = (u) => (u / b.width) * rect.w;
 
-  return { map, normalMap };
+  const outline = dedupe(shape.getPoints(64));
+  const veins = buildVeins(outline, b, edgeWidth, o);
+
+  drawVeins(ctx, veins, px, py, toPx, HEIGHT_COLORS, { ...o, veinStrength: 1 });
 }
 
 // ── Damar yapısı ───────────────────────────────────────────────────────────
@@ -440,7 +467,7 @@ const HEIGHT_COLORS = { vein: 0xe8e8e8 };
  * yüzeyden kabarık olduğu için ışığı yakalıyor ve kanat düz levha olmaktan
  * çıkıyor.
  */
-function heightToNormal(heightCanvas, strength) {
+export function heightToNormal(heightCanvas, strength) {
   const W = heightCanvas.width;
   const H = heightCanvas.height;
   const src = heightCanvas.getContext('2d').getImageData(0, 0, W, H).data;

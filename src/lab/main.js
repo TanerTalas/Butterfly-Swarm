@@ -1,10 +1,10 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import GUI from 'lil-gui';
 import { WING_DEFAULTS } from '../butterfly/geometry.js';
 import { createStaticButterfly } from './staticButterfly.js';
-import { DETAIL_DEFAULTS } from './wingDetail.js';
+import { DETAIL_DEFAULTS } from '../butterfly/wingDetail.js';
 
 /*
  * Kanat detay laboratuvarı.

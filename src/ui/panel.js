@@ -1,5 +1,6 @@
 import GUI from 'lil-gui';
 import { WING_DEFAULTS } from '../butterfly/geometry.js';
+import { DETAIL_DEFAULTS } from '../butterfly/wingDetail.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
 import { SWARM_DEFAULTS } from '../swarm/Swarm.js';
 import { FLIGHT_DEFAULTS } from '../flight/steering.js';
@@ -91,15 +92,34 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
   limits.add(flight, 'boundsForce', 2, 40, 0.5).name('geri itme gücü');
   limits.close();
 
+  // Bu ayarlar geometriyi + atlası yeniden üretiyor; normal map için bir
+  // Sobel geçişi de var. Slider SÜRÜKLENİRKEN değil BIRAKILINCA tetiklensin.
+  const design = gui.addFolder('Kanat Deseni');
+  design.add(p, 'venation').name('damarlar').onFinishChange(rebuild);
+  design.add(p, 'discalCell').name('diskal hücre').onFinishChange(rebuild);
+  design.add(p, 'cellShading').name('hücre gölgeleme').onFinishChange(rebuild);
+  design.add(p, 'scales').name('pul dokusu').onFinishChange(rebuild);
+  design.add(p, 'basalDust').name('kök koyulaşması').onFinishChange(rebuild);
+  design.add(p, 'submarginal').name('submarjinal bant').onFinishChange(rebuild);
+  design.add(p, 'lunules').name('hilaller').onFinishChange(rebuild);
+  design.add(p, 'fringe').name('saçak').onFinishChange(rebuild);
+  design.add(p, 'ocelli', 0, 6, 1).name('göz lekesi').onFinishChange(rebuild);
+  design.add(p, 'relief').name('kabartma').onFinishChange(rebuild);
+  design.add(p, 'veinStrength', 0, 1, 0.01).name('damar koyuluğu').onFinishChange(rebuild);
+  design.add(p, 'scaleDensity', 0, 2.5, 0.05).name('pul yoğunluğu').onFinishChange(rebuild);
+  design.add(p, 'reliefStrength', 0, 8, 0.1).name('kabartma şiddeti').onFinishChange(rebuild);
+  design.add(p, 'seed', 1, 60, 1).name('desen tohumu').onFinishChange(rebuild);
+  design.close();
+
   const form = gui.addFolder('Kanat Formu');
-  form.add(p, 'foreSpan', 0.6, 2.2, 0.01).name('ön kanat açıklık').onChange(rebuild);
-  form.add(p, 'foreChord', 0.6, 2.0, 0.01).name('ön kanat en').onChange(rebuild);
-  form.add(p, 'hindSpan', 0.4, 1.8, 0.01).name('arka kanat açıklık').onChange(rebuild);
-  form.add(p, 'hindChord', 0.6, 2.0, 0.01).name('arka kanat en').onChange(rebuild);
-  form.add(p, 'camber', 0, 0.3, 0.005).name('bombe').onChange(rebuild);
-  form.add(p, 'droop', 0, 0.4, 0.005).name('uç sarkması').onChange(rebuild);
-  form.add(p, 'edgeWidth', 0, 0.2, 0.005).name('kenar bandı').onChange(rebuild);
-  form.add(p, 'tessellation', 0.05, 0.4, 0.01).name('üçgen yoğunluğu').onChange(rebuild);
+  form.add(p, 'foreSpan', 0.6, 2.2, 0.01).name('ön kanat açıklık').onFinishChange(rebuild);
+  form.add(p, 'foreChord', 0.6, 2.0, 0.01).name('ön kanat en').onFinishChange(rebuild);
+  form.add(p, 'hindSpan', 0.4, 1.8, 0.01).name('arka kanat açıklık').onFinishChange(rebuild);
+  form.add(p, 'hindChord', 0.6, 2.0, 0.01).name('arka kanat en').onFinishChange(rebuild);
+  form.add(p, 'camber', 0, 0.3, 0.005).name('bombe').onFinishChange(rebuild);
+  form.add(p, 'droop', 0, 0.4, 0.005).name('uç sarkması').onFinishChange(rebuild);
+  form.add(p, 'edgeWidth', 0, 0.2, 0.005).name('kenar bandı').onFinishChange(rebuild);
+  form.add(p, 'tessellation', 0.05, 0.4, 0.01).name('üçgen yoğunluğu').onFinishChange(rebuild);
   form.close();
 
   const flap = gui.addFolder('Çırpma');
@@ -128,7 +148,13 @@ export function createPanel({ swarm, flight, scene: sceneCtl }) {
     .add(
       {
         reset: () => {
-          Object.assign(p, WING_DEFAULTS, FLAP_DEFAULTS, SWARM_DEFAULTS);
+          Object.assign(
+            p,
+            WING_DEFAULTS,
+            DETAIL_DEFAULTS,
+            FLAP_DEFAULTS,
+            SWARM_DEFAULTS,
+          );
           Object.assign(flight, FLIGHT_DEFAULTS);
           clearSettings();
           rebuild();
