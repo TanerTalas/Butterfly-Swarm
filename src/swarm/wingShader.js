@@ -21,7 +21,15 @@ const VERTEX_COMMON = /* glsl */ `
 attribute float aWingId;
 attribute float aPhase;
 attribute float aFlapSpeed;
-attribute float aHueShift;
+/*
+ * Ton kaydırması KANAT BAŞINA: x = ön kanat, y = arka kanat.
+ *
+ * İkisi eşitse kelebek tek renk (yerleşik ve misafir kelebekler böyle);
+ * farklıysa ön ve arka kanat ayrı renkte olur — kayıtlı kullanıcıların
+ * kelebekleri (projefikri.md §2). Ayrımı veri yapıyor, kod değil: tek yol
+ * var, tek shader var.
+ */
+attribute vec2 aHue;
 
 varying float vHueShift;
 
@@ -67,9 +75,11 @@ vec3  bfHinge;
 float bfAngle;
 float bfTwist;
 float bfSide;
+float bfIsHind;
 
 void bfSetup() {
   float isHind = step(${WING_FORE.toFixed(1)}, aWingId);
+  bfIsHind = isHind;
 
   bfHinge = mix(uForeHinge, uHindHinge, isHind);
   float cycle = uTime * aFlapSpeed + aPhase - isHind * uHindLag;
@@ -169,7 +179,7 @@ export function injectFlapShader(material, hinges) {
         '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
          bfSetup();
-         vHueShift = aHueShift;
+         vHueShift = mix(aHue.x, aHue.y, bfIsHind);
          objectNormal = bfTransformNormal(objectNormal);`,
       )
       .replace(
