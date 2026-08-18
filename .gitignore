@@ -23,3 +23,4 @@ projefikri.md
 # kuralları) açıkça yazıyor ve handoff'un kendisi deponun private olmasını
 # şart koşuyor. Depo private yapılınca bu satır kaldırılmalı.
 design_handoff_butterfly_garden/
+*.tsbuildinfo
