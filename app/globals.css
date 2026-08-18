@@ -115,6 +115,15 @@ button,
   border-radius: 4px;
 }
 
+/*
+ * Edge kendi şifre gösterme ikonunu ekliyor. Bizimki zaten var; ikisi yan
+ * yana durunca kutu kalabalıklaşıyor ve hizalama bozuluyor.
+ */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* Metin girişlerinde imleç metin kirişi kalmalı */
 input,
 textarea {

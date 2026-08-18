@@ -40,3 +40,42 @@ export function Gear({ size = 17 }: { size?: number }) {
     </svg>
   );
 }
+
+/*
+ * Göz ikonları — şifre gösterme düğmesi.
+ *
+ * Kapalı hâli ayrı bir ikon değil, açık hâlin üzerine çizilen bir çizgi:
+ * ikisi arasında geçerken göz aynı yerde kalıyor, yalnızca çizgi beliriyor.
+ * İki farklı silüet arasında sıçramaktan daha sakin duruyor.
+ */
+export function Eye({ size = 17, off = false }: { size?: number; off?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 17 17" aria-hidden>
+      <path
+        d="M1.6 8.5S4 3.9 8.5 3.9 15.4 8.5 15.4 8.5 13 13.1 8.5 13.1 1.6 8.5 1.6 8.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="8.5"
+        cy="8.5"
+        r="2.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
+      {off && (
+        <path
+          d="M3 14 14 3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}

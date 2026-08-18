@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Field, Segmented } from '@/components/ui/Field';
+import { Field, PasswordField, Segmented } from '@/components/ui/Field';
 
 /*
  * Ekran 04 — giriş / kayıt.
@@ -59,9 +59,8 @@ export function SignInCard({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <Field
+        <PasswordField
           label="password"
-          type="password"
           autoComplete={tab === 'in' ? 'current-password' : 'new-password'}
           placeholder="at least 10 characters"
           value={password}

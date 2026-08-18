@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
+import { Eye } from '@/components/ui/Icons';
 
 /*
  * Form alanları.
@@ -19,7 +21,7 @@ export function Label({ children }: { children: ReactNode }) {
   );
 }
 
-type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
+export type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: ReactNode;
   /** Sağ üstte gösterilen ek bilgi — genelde `4/18` sayacı. */
   hint?: ReactNode;
@@ -101,5 +103,63 @@ export function Segmented<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+/*
+ * Şifre alanı — içinde gösterme düğmesiyle.
+ *
+ * Düğme kutunun İÇİNDE sağda duruyor, dışında değil: alanın genişliği
+ * değişmiyor ve etiket/sayaç hizası bozulmuyor.
+ *
+ * Erişilebilirlik ayrıntıları, çünkü bu düğme kolayca yanlış yapılıyor:
+ *   - `type="button"`, yoksa formu gönderiyor
+ *   - `aria-label` duruma göre değişiyor ("show"/"hide")
+ *   - `tabIndex={-1}` YOK: klavyeyle ulaşılabilmeli
+ *   - ikon `aria-hidden`, etiketi düğme taşıyor
+ */
+export function PasswordField({
+  label,
+  hint,
+  note,
+  className = '',
+  ...rest
+}: Omit<FieldProps, 'display' | 'type'>) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="flex items-baseline justify-between gap-3">
+        <Label>{label}</Label>
+        {hint ? (
+          <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
+            {hint}
+          </span>
+        ) : null}
+      </span>
+
+      <span className="relative block">
+        <input
+          type={visible ? 'text' : 'password'}
+          className={`h-12 w-full rounded-[12px] border border-[rgba(44,34,32,0.16)] bg-input pl-4 pr-12 text-[15px] text-ink outline-none transition-colors placeholder:text-[#A99B95] focus:border-[rgba(44,34,32,0.34)] ${className}`}
+          {...rest}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? 'hide password' : 'show password'}
+          aria-pressed={visible}
+          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel hover:text-ink"
+        >
+          <Eye off={visible} />
+        </button>
+      </span>
+
+      {note ? (
+        <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
+          {note}
+        </span>
+      ) : null}
+    </label>
   );
 }
