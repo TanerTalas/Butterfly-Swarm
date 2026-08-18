@@ -1,0 +1,182 @@
+@import 'tailwindcss';
+
+/*
+ * Butterfly Garden — tasarım tokenları.
+ *
+ * Değerlerin tamamı design_handoff_butterfly_garden/README.md'deki
+ * "Design tokens" bölümünden geliyor ve TEK KAYNAK burası. Bileşenlerde
+ * çıplak hex yazılmıyor; bir renk burada yoksa tasarımda da yok demektir.
+ */
+@theme {
+  /* ── Yüzeyler ── */
+  --color-cream: #f7efe9; /* sayfa zemini */
+  --color-card: #fdf6f2;
+  --color-input: #fffbf9;
+  --color-panel: #f4e7e0;
+  --color-track: #f0e2db;
+  --color-disabled: #e2d2cb;
+
+  /* ── Metin ── */
+  --color-ink: #2c2220; /* birincil */
+  --color-body: #4a3b38;
+  --color-body-soft: #5c4b47;
+  --color-label: #6b5a54;
+  --color-muted: #7d6a63;
+  --color-faint: #8a746d;
+  --color-disabled-ink: #9c8a84;
+
+  /* ── Vurgu ── */
+  --color-accent: #a04f63;
+  --color-accent-hover: #8d4256;
+  --color-danger: #a8362b;
+
+  /* ── Kanat renkleri ──
+   * Bunlar sahnedeki `WORLD.palette` ile BİREBİR aynı olmalı
+   * (src/world/config.js). Tasarım da aynı beşliyi kullanıyor. */
+  --color-wing-turquoise: #17b3a3;
+  --color-wing-blue: #2f5fd0;
+  --color-wing-amber: #e8a01c;
+  --color-wing-purple: #7a3fc4;
+  --color-wing-green: #2f9e4f;
+  --color-wing-body: #43332f;
+
+  /* ── Avatar renkleri (altı seçenek) ── */
+  --color-avatar-blue: #4f7fbf;
+  --color-avatar-pink: #d98aa6;
+  --color-avatar-turquoise: #17b3a3;
+  --color-avatar-amber: #e8a01c;
+  --color-avatar-purple: #7a6bc4;
+  --color-avatar-green: #6f8a5a;
+
+  /* ── Yazı aileleri ── */
+  --font-display: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Gölgeler ── */
+  --shadow-card: 0 24px 56px rgba(74, 59, 56, 0.24);
+  --shadow-popover: 0 18px 42px rgba(74, 59, 56, 0.28);
+  --shadow-chip: 0 6px 18px rgba(74, 59, 56, 0.16);
+  --shadow-primary: 0 10px 24px rgba(124, 58, 76, 0.28);
+
+  /* ── Yarıçap ── */
+  --radius-card: 20px;
+  --radius-sheet: 22px; /* mobil alt sayfa */
+  --radius-panel: 14px;
+  --radius-popover: 16px;
+  --radius-input: 12px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Etiket/sayaç tipografisi. Tasarımda her yerde tekrar ediyor:
+ * küçük, harf aralığı açılmış, büyük harf monospace.
+ */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+/*
+ * Birincil buton — tasarımın imzası.
+ *
+ * Hover'da arka plan koyulaşıyor VE iki yanda yumuşak "kanatlar" beliriyor.
+ * Bu bir transform DEĞİL: hiçbir şey yer değiştirmiyor, yalnızca iki kaydırılmış
+ * ve küçültülmüş gölge açılıyor. Süreler de tasarımdan: renk 240ms,
+ * kanat gölgesi 320ms — gölge bilerek daha yavaş, açılma hissi versin diye.
+ */
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-card);
+  box-shadow: var(--shadow-primary);
+  white-space: nowrap;
+  transition:
+    background 240ms ease,
+    box-shadow 320ms ease;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  box-shadow:
+    -22px 0 0 -8px rgba(160, 79, 99, 0.42),
+    22px 0 0 -8px rgba(160, 79, 99, 0.42),
+    var(--shadow-primary);
+}
+/* Küçük butonlarda kanatlar ±18px (tasarım notu) */
+.btn-primary-sm:hover:not(:disabled) {
+  box-shadow:
+    -18px 0 0 -8px rgba(160, 79, 99, 0.42),
+    18px 0 0 -8px rgba(160, 79, 99, 0.42),
+    var(--shadow-primary);
+}
+.btn-primary:disabled {
+  background: var(--color-disabled);
+  color: var(--color-disabled-ink);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(253, 246, 242, 0.72);
+  border: 1px solid rgba(44, 34, 32, 0.22);
+  color: var(--color-ink);
+  white-space: nowrap;
+  transition:
+    background 240ms ease,
+    border-color 240ms ease;
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(253, 246, 242, 0.96);
+  border-color: rgba(44, 34, 32, 0.34);
+}
+
+/*
+ * Seçim halkası — renk örnekleri ve avatarlar.
+ * İki katman: içte kart kremi, dışta koyu. Böylece halka rengin üstünde
+ * değil, etrafında bir boşlukla duruyor.
+ */
+.ring-choice {
+  transition: box-shadow 200ms ease;
+}
+.ring-choice:hover {
+  box-shadow:
+    0 0 0 2px var(--color-card),
+    0 0 0 4px rgba(74, 59, 56, 0.32);
+}
+.ring-choice[data-selected='true'],
+.ring-choice[data-selected='true']:hover {
+  box-shadow:
+    0 0 0 2px var(--color-card),
+    0 0 0 4px #4a3b38;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .vite/
+.next/
+next-env.d.ts
+.env*.local
 *.local
 .DS_Store
 Thumbs.db
@@ -14,3 +17,9 @@ CLAUDE.md
 ROADMAP.md
 .claude/
 projefikri.md
+
+# Tasarım handoff'u — DEPO HERKESE AÇIK OLDUĞU SÜRECE commit'lenmiyor.
+# İçindeki README, kötüye kullanım eşiklerini (rate limit değerleri, moderasyon
+# kuralları) açıkça yazıyor ve handoff'un kendisi deponun private olmasını
+# şart koşuyor. Depo private yapılınca bu satır kaldırılmalı.
+design_handoff_butterfly_garden/
