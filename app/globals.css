@@ -53,11 +53,19 @@
   --font-sans: var(--font-plex), system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* ── Gölgeler ── */
-  --shadow-card: 0 24px 56px rgba(74, 59, 56, 0.24);
+  /* ── Gölgeler ──
+   *
+   * Handoff dört gölge tanımlıyordu; ikisi kullanımda kaldı.
+   *
+   * Kart ve birincil buton gölgeleri KALDIRILDI (sahibinin kararı): canlı ve
+   * hareketli bir çayırın üstünde geniş bulanık gölgeler yüzeyi yüzdürmüyor,
+   * kenarını kirletiyordu. Yerlerini 1px kenar çizgileri aldı.
+   *
+   * Tanımları burada bırakmıyorum — kullanılmayan token, tasarım sisteminde
+   * hâlâ geçerliymiş gibi okunuyor ve bir dahaki sefere yanlışlıkla geri
+   * geliyor. */
   --shadow-popover: 0 18px 42px rgba(74, 59, 56, 0.28);
   --shadow-chip: 0 6px 18px rgba(74, 59, 56, 0.16);
-  --shadow-primary: 0 10px 24px rgba(124, 58, 76, 0.28);
 
   /* ── Yarıçap ── */
   --radius-card: 20px;
@@ -152,40 +160,31 @@ textarea {
 }
 
 /*
- * Birincil buton — tasarımın imzası.
+ * Birincil buton.
  *
- * Hover'da arka plan koyulaşıyor VE iki yanda yumuşak "kanatlar" beliriyor.
- * Bu bir transform DEĞİL: hiçbir şey yer değiştirmiyor, yalnızca iki kaydırılmış
- * ve küçültülmüş gölge açılıyor. Süreler de tasarımdan: renk 240ms,
- * kanat gölgesi 320ms — gölge bilerek daha yavaş, açılma hissi versin diye.
+ * GÖLGE YOK — ne durağan hâlde ne hover'da.
+ *
+ * Tasarımda hem bir düşen gölge hem de hover'da iki yandan açılan yumuşak
+ * "kanatlar" vardı. İkisi de kaldırıldı, çünkü sahibinin isteği gölgenin
+ * hover'da DEĞİŞMEMESİ: kanatlar da birer `box-shadow` olduğu için onları
+ * bırakmak "yoktan bir şeye" geçiş demek olurdu.
+ *
+ * Geriye tek hareket kalıyor: arka planın koyulaşması. Kart gölgeleri de
+ * kaldırıldığı için arayüz genelinde tutarlı — canlı çayırın üstünde düz,
+ * temiz yüzeyler.
  */
 .btn-primary {
   background: var(--color-accent);
   color: var(--color-card);
-  box-shadow: var(--shadow-primary);
   white-space: nowrap;
-  transition:
-    background 240ms ease,
-    box-shadow 320ms ease;
+  transition: background 240ms ease;
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
-  box-shadow:
-    -22px 0 0 -8px rgba(160, 79, 99, 0.42),
-    22px 0 0 -8px rgba(160, 79, 99, 0.42),
-    var(--shadow-primary);
-}
-/* Küçük butonlarda kanatlar ±18px (tasarım notu) */
-.btn-primary-sm:hover:not(:disabled) {
-  box-shadow:
-    -18px 0 0 -8px rgba(160, 79, 99, 0.42),
-    18px 0 0 -8px rgba(160, 79, 99, 0.42),
-    var(--shadow-primary);
 }
 .btn-primary:disabled {
   background: var(--color-disabled);
   color: var(--color-disabled-ink);
-  box-shadow: none;
   cursor: not-allowed;
 }
 

@@ -3,9 +3,8 @@ import type { ButtonHTMLAttributes } from 'react';
 /*
  * Butonlar — tasarımın en çok tekrar eden parçası.
  *
- * Hover davranışı `globals.css`'te (.btn-primary / .btn-secondary), çünkü
- * birincil butonun "kanat" gölgesi çok katmanlı bir box-shadow ve Tailwind
- * yardımcı sınıflarıyla okunaksız hale geliyordu. Ölçüler burada.
+ * Görünüm `globals.css`'te (.btn-primary / .btn-secondary), ölçüler burada.
+ * Birincil butonda gölge yok; hover'da yalnızca arka plan koyulaşıyor.
  */
 
 type Size = 'lg' | 'md' | 'sm';
@@ -31,10 +30,7 @@ export function Button({
 }: Props) {
   const base =
     'inline-flex items-center justify-center gap-2.5 rounded-full text-[15px] font-medium';
-  const skin =
-    variant === 'primary'
-      ? `btn-primary ${size === 'sm' ? 'btn-primary-sm' : ''}`
-      : 'btn-secondary';
+  const skin = variant === 'primary' ? 'btn-primary' : 'btn-secondary';
 
   return (
     <button
