@@ -160,31 +160,46 @@ textarea {
 }
 
 /*
- * Birincil buton.
+ * Birincil buton — tasarımın imzası.
  *
- * GÖLGE YOK — ne durağan hâlde ne hover'da.
+ * Durağan hâlde GÖLGE YOK: altındaki düşen gölge kaldırıldı, çünkü canlı
+ * çayırın üstünde butonu yüzdürmüyor kirletiyordu (kartlarda da aynı karar).
  *
- * Tasarımda hem bir düşen gölge hem de hover'da iki yandan açılan yumuşak
- * "kanatlar" vardı. İkisi de kaldırıldı, çünkü sahibinin isteği gölgenin
- * hover'da DEĞİŞMEMESİ: kanatlar da birer `box-shadow` olduğu için onları
- * bırakmak "yoktan bir şeye" geçiş demek olurdu.
+ * Hover'daki "kanatlar" ise DURUYOR. İki yanda beliren yumuşak çıkıntılar bu
+ * tasarımın imzası. Bir transform değil: hiçbir şey yer değiştirmiyor,
+ * yalnızca iki kaydırılmış ve küçültülmüş gölge açılıyor.
  *
- * Geriye tek hareket kalıyor: arka planın koyulaşması. Kart gölgeleri de
- * kaldırıldığı için arayüz genelinde tutarlı — canlı çayırın üstünde düz,
- * temiz yüzeyler.
+ * Süreler tasarımdan: renk 240ms, kanatlar 320ms — kanatlar bilerek daha
+ * yavaş, açılma hissi versin diye.
+ *
+ * ⚠ Kanatlar butonun 22px DIŞINA taşıyor. Bir kapsayıcıya `overflow` verilirse
+ * kesiliyorlar; MeadowShell'in kaydırma kabı bu yüzden gölge payı kadar
+ * dolgulanmış durumda (bkz. oradaki not).
  */
 .btn-primary {
   background: var(--color-accent);
   color: var(--color-card);
   white-space: nowrap;
-  transition: background 240ms ease;
+  transition:
+    background 240ms ease,
+    box-shadow 320ms ease;
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
+  box-shadow:
+    -22px 0 0 -8px rgba(160, 79, 99, 0.42),
+    22px 0 0 -8px rgba(160, 79, 99, 0.42);
+}
+/* Küçük butonlarda kanatlar ±18px (tasarım notu) */
+.btn-primary-sm:hover:not(:disabled) {
+  box-shadow:
+    -18px 0 0 -8px rgba(160, 79, 99, 0.42),
+    18px 0 0 -8px rgba(160, 79, 99, 0.42);
 }
 .btn-primary:disabled {
   background: var(--color-disabled);
   color: var(--color-disabled-ink);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
