@@ -28,16 +28,16 @@ export function Card({
        * oluşuyordu. Kart sahnenin üstünde duran KAĞIT gibi olmalı, camdan
        * değil.
        *
-       * Gölge de kısıldı ve ince bir kenar eklendi: gölge tek başına kenarı
-       * tanımlamaya çalışırken bulanık bir hâle bırakıyordu, 1px kenar o işi
-       * net yapıyor.
+       * GÖLGE YOK. Önce yumuşatıldı, sonra tamamen kaldırıldı: canlı ve
+       * hareketli bir çayırın üstünde büyük ve bulanık bir gölge kartı
+       * yüzdürmüyor, kirletiyordu. Kenarı 1px çizgi tanımlıyor ve bu yeterli —
+       * kart zaten opak, perdenin üstünde net bir kağıt olarak duruyor.
        */
       className={`flex w-full flex-col gap-6 p-6 max-lg:rounded-t-[22px] lg:rounded-[20px] lg:px-[36px] lg:py-[34px] ${className}`}
       style={{
         maxWidth: `${width}px`,
         backgroundColor: '#FDF6F2',
-        border: '1px solid rgba(44,34,32,0.08)',
-        boxShadow: '0 18px 40px rgba(74,59,56,0.18)',
+        border: '1px solid rgba(44,34,32,0.10)',
       }}
     >
       {children}
