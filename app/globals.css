@@ -80,6 +80,48 @@ body {
 }
 
 /*
+ * ── Etkileşim işaretleri ──────────────────────────────────────────────────
+ *
+ * Tailwind'in preflight'ı `button` elemanlarına `cursor: default` veriyor,
+ * yani hiçbir buton tıklanabilir görünmüyor. Tarayıcı varsayılanına
+ * güvenilemez, açıkça ayarlanıyor.
+ *
+ * Odak halkası da burada: tasarımda çizilmemiş ama klavyeyle gezen biri için
+ * zorunlu. Rengi vurgu rengiyle aynı, `focus-visible` olduğu için fareyle
+ * tıklayanı rahatsız etmiyor.
+ */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+label[for],
+summary,
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+button,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Metin girişlerinde imleç metin kirişi kalmalı */
+input,
+textarea {
+  cursor: text;
+}
+
+/*
  * Etiket/sayaç tipografisi. Tasarımda her yerde tekrar ediyor:
  * küçük, harf aralığı açılmış, büyük harf monospace.
  */
@@ -170,6 +212,18 @@ body {
   box-shadow:
     0 0 0 2px var(--color-card),
     0 0 0 4px #4a3b38;
+}
+
+/* Kartların çapraz geçişi */
+@keyframes fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
