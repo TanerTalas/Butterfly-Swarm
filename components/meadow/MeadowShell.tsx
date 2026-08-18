@@ -68,11 +68,24 @@ export function MeadowShell({
         </div>
 
         {/*
+         * Kaydırılabilir içerik alanı.
+         *
          * `overflow-y-auto` şart: kanat seçimi ve hesap kurulumu kartları
          * kısa bir pencerede ekrandan taşıyor ve birincil buton görünmez
-         * oluyordu. Çubuk gizli, çünkü kabuk kenardan kenara.
+         * oluyordu.
+         *
+         * ⚠ Ama bu kap AYNI ZAMANDA bir kırpma kutusu. CSS'te yalnızca bir
+         * eksende `visible` olamıyor: `overflow-y: auto` verince tarayıcı
+         * `overflow-x`i de `auto` yapıyor. Sonuç: kartın kendi gölgesi
+         * (aşağı 58px uzanıyor) ve birincil butonun hover'daki kanat
+         * gölgeleri (±22px) kutunun kenarında KESİLİYORDU.
+         *
+         * Çözüm dolgu + negatif kenar boşluğu: kap gölgelerin sığacağı
+         * kadar içeriden dolgulanıyor, negatif margin ile yerleşimde
+         * hiçbir şey kaymıyor. Kırpma sınırı gölgelerin dışına itilmiş
+         * oluyor.
          */}
-        <div className="scrollbar-none flex flex-1 items-end overflow-y-auto py-4 lg:items-center">
+        <div className="scrollbar-none -mx-5 -my-6 flex flex-1 items-end overflow-y-auto px-5 py-6 lg:-mx-12 lg:-my-10 lg:px-12 lg:py-10 lg:items-center">
           <div className="w-full">{children}</div>
         </div>
 
