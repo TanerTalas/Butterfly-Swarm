@@ -37,10 +37,21 @@ export function MyButterfliesCard({
   const full = used >= SLOT_LIMIT;
   const empty = Math.max(0, SLOT_LIMIT - used);
 
-  // Sıradaki yuvayı açacak kelebek: ömrü en yakında bitecek olan
-  const next = [...butterflies].sort(
-    (a, b) => daysLeft(a) - daysLeft(b),
-  )[0];
+  /*
+   * SIRALAMA: en çok ömrü kalan üstte, en az kalan altta.
+   *
+   * Yani en yeni salınan başta, gitmesine en az kalan sonda. Liste bir
+   * geri sayım gibi okunuyor ve alttaki satır her zaman "sıradaki veda".
+   * Eşitlikte daha yeni olan üstte kalıyor.
+   */
+  const ordered = [...butterflies].sort(
+    (a, b) =>
+      daysLeft(b) - daysLeft(a) ||
+      b.releasedAt.getTime() - a.releasedAt.getTime(),
+  );
+
+  // Sıradaki yuvayı açacak kelebek: listenin sonuncusu
+  const next = ordered[ordered.length - 1];
 
   return (
     <Card width={500}>
@@ -58,8 +69,19 @@ export function MyButterfliesCard({
         </div>
       </div>
 
-      <ul className="flex flex-col">
-        {butterflies.map((b, i) => (
+      {/*
+       * Liste KART İÇİNDE kayıyor, kartın kendisi değil.
+       *
+       * Beş satır + boş yuvalar kartı 587px'e çıkarıyor ve kısa bir pencerede
+       * kart kabına sığmıyordu: üstü ve altı kırpılıp yuvarlak köşeleri
+       * kayboluyor, kart "kesik" görünüyordu. Yüksekliği burada sınırlamak
+       * başlığı, butonu ve köşeleri her zaman yerinde tutuyor.
+       *
+       * Kaydırma çubuğu GİZLENMİYOR: burada kaydırılabilirliğin fark edilmesi
+       * gerekiyor, yasal bağlantı şeridinden farklı olarak.
+       */}
+      <ul className="scrollbar-slim -mr-2 flex max-h-[min(44vh,340px)] flex-col overflow-y-auto pr-2">
+        {ordered.map((b, i) => (
           <li
             key={b.id}
             className={`flex items-center gap-4 py-4 ${i > 0 ? 'border-t border-[rgba(44,34,32,0.08)]' : ''}`}
@@ -98,7 +120,7 @@ export function MyButterfliesCard({
         {Array.from({ length: empty }).map((_, i) => (
           <li
             key={`empty-${i}`}
-            className={butterflies.length + i > 0 ? 'pt-4' : ''}
+            className={ordered.length + i > 0 ? 'pt-4' : ''}
           >
             <div className="flex h-[54px] items-center justify-center rounded-[12px] border border-dashed border-[rgba(44,34,32,0.2)]">
               <span className="font-mono text-[11px] tracking-[0.14em] text-faint">

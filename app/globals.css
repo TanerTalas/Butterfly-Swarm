@@ -248,6 +248,32 @@ textarea {
   display: none;
 }
 
+/*
+ * İnce kaydırma çubuğu — kart İÇİNDEKİ listeler için.
+ *
+ * Burada çubuk gizlenmiyor: kelebek listesi kayabildiğini belli etmeli.
+ * Ama işletim sisteminin kalın gri çubuğu krem bir kartın içinde yabancı
+ * duruyor ve satırların ilerleme çubuklarına biniyordu. İncelip paletin
+ * rengini alıyor.
+ */
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(44, 34, 32, 0.22) transparent;
+}
+.scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background: rgba(44, 34, 32, 0.22);
+  border-radius: 999px;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: rgba(44, 34, 32, 0.34);
+}
+
 /* Kartların çapraz geçişi */
 /*
  * Yalnızca opaklık — `transform` YOK.
