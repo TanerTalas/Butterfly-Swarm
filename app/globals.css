@@ -226,14 +226,19 @@ textarea {
 }
 
 /* Kartların çapraz geçişi */
+/*
+ * Yalnızca opaklık — `transform` YOK.
+ *
+ * Önce 8px yukarı kayma vardı ama kartı ayrı bir kompozit katmana alıyor ve
+ * yarı saydam evrede yuvarlak köşelerde kirli bir kenar bırakıyordu. Kartın
+ * opak olması gereken bir yüzeyde bu hemen fark ediliyor.
+ */
 @keyframes fade {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 

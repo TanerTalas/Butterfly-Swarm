@@ -103,11 +103,20 @@ export function FarewellView({
 }
 
 /*
- * Hesap rozeti — sağ üstte, sayacın yanında.
+ * Hesap rozeti — sağ üstte, sayacın üstünde.
  *
  * İçinde YALNIZCA avatar var, isim yok (handoff bunu özellikle belirtiyor).
- * Sahnenin üstünde duran her şey mümkün olduğunca az yer kaplamalı.
+ *
+ * İki şey düzeltildi:
+ *
+ * 1. TAM DAİRE. Önceden `p-2` ile 30x24'lük bir kelebeğin etrafına eşit
+ *    dolgu veriliyordu; sonuç 46x40, yani yumurta. Boyut artık sabit ve
+ *    kare, kelebek ortada.
+ * 2. OPAK. Zemin `rgba(...,0.82)` idi ve arkadaki çayır avatarın içinden
+ *    sızıyordu — profil rengi olduğundan soluk görünüyordu. Krem artık tam.
  */
+const CHIP = 48;
+
 export function AccountChip({
   profile,
   onClick,
@@ -120,10 +129,15 @@ export function AccountChip({
       type="button"
       onClick={onClick}
       aria-label="my account"
-      className="flex items-center rounded-full p-2 shadow-chip transition-colors"
-      style={{ background: 'rgba(253,246,242,0.82)' }}
+      className="flex shrink-0 items-center justify-center rounded-full shadow-chip transition-transform hover:scale-105"
+      style={{
+        width: CHIP,
+        height: CHIP,
+        backgroundColor: '#FDF6F2',
+        border: '1px solid rgba(44,34,32,0.08)',
+      }}
     >
-      <Butterfly fore={profile.avatarHex} width={30} height={24} simple />
+      <Butterfly fore={profile.avatarHex} width={28} height={23} simple />
     </button>
   );
 }

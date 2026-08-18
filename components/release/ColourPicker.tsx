@@ -7,35 +7,50 @@ import { fieldColour, parseHex } from '@/lib/colour';
 /*
  * Özel renk seçici.
  *
- * Handoff'un 3 numaralı değişikliği burada: alanda ya da ton şeridinde
- * GEZİNMEK hem hex kutusunu hem yanındaki örneği sürekli güncelliyor.
- * Tıklamak işliyor; tıklamadan çıkmak önceki rengi geri getiriyor.
+ * ── Tıklama artık RENGİ SEÇİYOR ────────────────────────────────────────────
  *
- * Üç ayrı renk durumu var ve karıştırılmamaları işin özü:
- *   initial — kartın hâlihazırda kullandığı renk
- *   draft   — "Use this colour" ile işlenecek olan
- *   hover   — yalnızca imlecin altındaki, hiçbir şeye işlenmeyen
+ * İlk sürümde alana tıklamak yalnızca yerel bir taslağı değiştiriyordu ve
+ * rengin kanada geçmesi için "Use this colour" gerekiyordu. Kullanıcı
+ * açısından tıklamak hiçbir şey yapmıyor gibi görünüyordu: imleç kımıldadığı
+ * an hex kutusu yine değişiyordu.
+ *
+ * Şimdi tıklamak rengi ANINDA kanada uyguluyor ve kilitliyor. Gezinme hâlâ
+ * önizleme yapıyor (handoff'un 3 numaralı değişikliği) ama seçili renk
+ * yalnızca tıklamayla değişiyor. Böylece üç durum net ayrılıyor:
+ *
+ *   selected — kanadın gerçekten taşıdığı renk, yalnızca tıklamayla değişir
+ *   hover    — imlecin altındaki, hiçbir şeye uygulanmayan
+ *   text     — hex kutusunun içeriği; gezinirken hover'ı, yoksa selected'ı gösterir
+ *
+ * ── Çarka tekrar tıklamak kapatıyor ───────────────────────────────────────
+ *
+ * Dışarı tıklamayı yakalayan `mousedown` dinleyicisi çark düğmesini de
+ * "dışarı" sayıyordu: mousedown kapatıyor, hemen ardından gelen click
+ * toggle'ı tekrar açıyordu. Seçici hiç kapanmıyor gibi görünüyordu.
+ * Dinleyici artık `[data-colour-wheel]` taşıyan öğeleri atlıyor; kapatma
+ * kararını toggle'a bırakıyor.
  */
 export function ColourPicker({
-  initial,
-  onCommit,
+  selected,
+  onSelect,
   onClose,
   side = 'right',
 }: {
-  initial: string;
-  onCommit: (hex: string) => void;
+  /** Kanadın hâlihazırda taşıdığı renk. */
+  selected: string;
+  /** Tıklamayla seçilen rengi ANINDA uygular. */
+  onSelect: (hex: string) => void;
   onClose: () => void;
   side?: 'right' | 'left';
 }) {
   const [hue, setHue] = useState(170);
-  const [draft, setDraft] = useState(initial);
   const [hover, setHover] = useState<string | null>(null);
-  const [text, setText] = useState(initial);
+  const [text, setText] = useState(selected);
 
   const fieldRef = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
-  const shown = hover ?? draft;
+  const shown = hover ?? selected;
 
   useEffect(() => {
     setText(shown);
@@ -46,7 +61,11 @@ export function ColourPicker({
       if (e.key === 'Escape') onClose();
     };
     const onDown = (e: MouseEvent) => {
-      if (!popRef.current?.contains(e.target as Node)) onClose();
+      const target = e.target as HTMLElement | null;
+      if (popRef.current?.contains(target)) return;
+      // Çark düğmesi kendi kapatmasını yönetiyor — bkz. üstteki not
+      if (target?.closest('[data-colour-wheel]')) return;
+      onClose();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
@@ -65,11 +84,6 @@ export function ColourPicker({
     return fieldColour(hue, sx, sy);
   }
 
-  /*
-   * Konumlandırma. Prototipte kart hep ekranın solunda durduğu için seçici
-   * sağa açılıyordu. Dar pencerede ya da mobilde oraya sığmıyor; mobilde
-   * kartın üstüne biniyor, masaüstünde çağıran taraf yön verebiliyor.
-   */
   const desktopSide =
     side === 'right'
       ? 'lg:left-[calc(100%+20px)] lg:top-[-4px]'
@@ -80,7 +94,12 @@ export function ColourPicker({
       ref={popRef}
       role="dialog"
       aria-label="custom colour"
-      className={`absolute inset-x-0 bottom-[calc(100%+14px)] z-30 mx-auto w-[240px] rounded-[16px] bg-card p-4 shadow-popover lg:inset-x-auto lg:bottom-auto lg:mx-0 ${desktopSide}`}
+      className={`absolute inset-x-0 bottom-[calc(100%+14px)] z-30 mx-auto w-[240px] rounded-[16px] p-4 lg:inset-x-auto lg:bottom-auto lg:mx-0 ${desktopSide}`}
+      style={{
+        backgroundColor: '#FDF6F2',
+        border: '1px solid rgba(44,34,32,0.08)',
+        boxShadow: '0 18px 42px rgba(74,59,56,0.28)',
+      }}
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="eyebrow">custom colour</span>
@@ -107,7 +126,10 @@ export function ColourPicker({
         onMouseLeave={() => setHover(null)}
         onClick={(e) => {
           const c = pointToColour(e);
-          if (c) setDraft(c);
+          if (c) {
+            onSelect(c);
+            setHover(null); // tıklanan renk kilitlensin, imleç kımıldasa da
+          }
         }}
         className="h-[78px] w-full cursor-crosshair rounded-[8px]"
         style={{
@@ -135,7 +157,8 @@ export function ColourPicker({
           onChange={(e) => {
             setText(e.target.value);
             const parsed = parseHex(e.target.value);
-            if (parsed) setDraft(parsed);
+            // Yazılan geçerli bir renk de anında uygulanıyor
+            if (parsed) onSelect(parsed);
           }}
           spellCheck={false}
           aria-label="hex value"
@@ -148,13 +171,12 @@ export function ColourPicker({
         />
       </div>
 
-      <Button
-        size="sm"
-        fullWidth
-        className="mt-3 h-[40px]"
-        onClick={() => onCommit(draft)}
-      >
-        Use this colour
+      {/*
+       * Renk zaten tıklamayla uygulandığı için bu buton "onayla" değil
+       * "bitti" demek: seçiciyi kapatıyor.
+       */}
+      <Button size="sm" fullWidth className="mt-3 h-[40px]" onClick={onClose}>
+        Done
       </Button>
 
       <p className="mt-2 font-mono text-[10px] leading-[1.5] tracking-[0.12em] text-faint">

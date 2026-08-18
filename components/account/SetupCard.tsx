@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Butterfly } from '@/components/Butterfly';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field, Label } from '@/components/ui/Field';
@@ -17,9 +18,11 @@ import { AVATAR_COLOURS, NAME_MAX } from '@/lib/types';
 export function SetupCard({
   email,
   onDone,
+  onBack,
 }: {
   email: string;
   onDone: (name: string, avatarHex: string) => void;
+  onBack: () => void;
 }) {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<string>(AVATAR_COLOURS[0].hex);
@@ -30,7 +33,10 @@ export function SetupCard({
   return (
     <Card>
       <div className="flex flex-col gap-3">
-        <p className="eyebrow">step 2 of 2</p>
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="eyebrow">step 2 of 2</p>
+          <BackLink label="back" onClick={onBack} />
+        </div>
         <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
           Set up your account
         </h2>

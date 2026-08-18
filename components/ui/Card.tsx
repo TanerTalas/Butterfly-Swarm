@@ -19,8 +19,26 @@ export function Card({
 }) {
   return (
     <div
-      className={`flex w-full flex-col gap-6 bg-card p-6 shadow-card max-lg:rounded-t-[22px] lg:rounded-[20px] lg:px-[36px] lg:py-[34px] ${className}`}
-      style={{ maxWidth: `${width}px` }}
+      /*
+       * Arka plan TAM OPAK ve `background-color` olarak veriliyor.
+       *
+       * Önceden yalnızca `bg-card` yardımcı sınıfıydı ve kartın kenarları
+       * bozuk görünüyordu: altındaki perde yarı saydam, gölge geniş ve
+       * yumuşak, köşeler yuvarlak — üçü birleşince kenarda kirli bir kuşak
+       * oluşuyordu. Kart sahnenin üstünde duran KAĞIT gibi olmalı, camdan
+       * değil.
+       *
+       * Gölge de kısıldı ve ince bir kenar eklendi: gölge tek başına kenarı
+       * tanımlamaya çalışırken bulanık bir hâle bırakıyordu, 1px kenar o işi
+       * net yapıyor.
+       */
+      className={`flex w-full flex-col gap-6 p-6 max-lg:rounded-t-[22px] lg:rounded-[20px] lg:px-[36px] lg:py-[34px] ${className}`}
+      style={{
+        maxWidth: `${width}px`,
+        backgroundColor: '#FDF6F2',
+        border: '1px solid rgba(44,34,32,0.08)',
+        boxShadow: '0 18px 40px rgba(74,59,56,0.18)',
+      }}
     >
       {children}
     </div>

@@ -2,33 +2,32 @@
 
 import { useState } from 'react';
 import { Butterfly } from '@/components/Butterfly';
+import { ButterflyPreview3D } from '@/components/release/ButterflyPreview3D';
+import { ColourPicker } from '@/components/release/ColourPicker';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field, Label } from '@/components/ui/Field';
 import { ColourSwatch, ColourWheelButton } from '@/components/ui/Swatch';
-import { ColourPicker } from '@/components/release/ColourPicker';
 import { NAME_MAX, SLOT_LIMIT, WING_COLOURS } from '@/lib/types';
 
 /*
  * Ekran 07 — kanat seçimi (yalnızca üyeler).
  *
- * Handoff'un 1 numaralı değişikliği: soldaki önizleme CANLI. Kullanıcı renk
- * seçtikçe gerçekten salacağı kelebeği görüyor, statik bir yer tutucu değil.
- *
- * "Preview" eylemi kelebeği büyük halde, çayır bulanıklaştırılmış bir
- * katmanda gösteriyor ve salmadan kapatılabiliyor.
- *
- * ⚠ Handoff bu önizlemenin İDEALDE gerçek 3B kelebek olmasını istiyor
- * (sürünün geometrisi ve materyaliyle, tek instance, yavaş çırpma).
- * Şimdilik aynı SVG büyük boyda kullanılıyor; 3B önizleme ayrı bir iş.
+ * Karttaki küçük önizleme SVG kalıyor: her renk tıklamasında yeniden
+ * çizilmesi bedava ve kartın içinde 124x100 alanda 3B'ye gerek yok.
+ * "Preview" ise GERÇEK kelebeği açıyor — sürünün geometrisi, deseni ve
+ * çırpma shader'ıyla (bkz. ButterflyPreview3D).
  */
 export function WingsCard({
   slotsUsed,
   onRelease,
+  onBack,
   pending,
 }: {
   slotsUsed: number;
   onRelease: (name: string, fore: string, hind: string) => void;
+  onBack: () => void;
   pending?: boolean;
 }) {
   const [fore, setFore] = useState<string>(WING_COLOURS[0].hex);
@@ -52,7 +51,6 @@ export function WingsCard({
         </div>
 
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          {/* Canlı önizleme — seçimle birlikte değişiyor */}
           <div className="flex shrink-0 items-center justify-center self-center rounded-[14px] bg-panel p-3 sm:self-start">
             <Butterfly fore={fore} hind={hind} width={124} height={100} />
           </div>
@@ -66,10 +64,6 @@ export function WingsCard({
               onTogglePicker={() =>
                 setPicker(picker === 'fore' ? null : 'fore')
               }
-              onCommit={(hex) => {
-                setFore(hex);
-                setPicker(null);
-              }}
               onClosePicker={() => setPicker(null)}
             />
             <WingRow
@@ -80,10 +74,6 @@ export function WingsCard({
               onTogglePicker={() =>
                 setPicker(picker === 'hind' ? null : 'hind')
               }
-              onCommit={(hex) => {
-                setHind(hex);
-                setPicker(null);
-              }}
               onClosePicker={() => setPicker(null)}
             />
           </div>
@@ -96,7 +86,7 @@ export function WingsCard({
           placeholder="Mint"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          hint={`${name.length}/${NAME_MAX}`}
+          hint={name.length + '/' + NAME_MAX}
         />
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -110,6 +100,10 @@ export function WingsCard({
           <Button variant="secondary" onClick={() => setPreview(true)}>
             Preview
           </Button>
+        </div>
+
+        <div className="flex justify-center">
+          <BackLink label="not now" onClick={onBack} />
         </div>
       </Card>
 
@@ -132,7 +126,6 @@ function WingRow({
   onSelect,
   pickerOpen,
   onTogglePicker,
-  onCommit,
   onClosePicker,
 }: {
   label: string;
@@ -140,17 +133,18 @@ function WingRow({
   onSelect: (hex: string) => void;
   pickerOpen: boolean;
   onTogglePicker: () => void;
-  onCommit: (hex: string) => void;
   onClosePicker: () => void;
 }) {
-  const named = WING_COLOURS.find((c) => c.hex.toUpperCase() === value.toUpperCase());
+  const named = WING_COLOURS.find(
+    (c) => c.hex.toUpperCase() === value.toUpperCase(),
+  );
 
   return (
     <div className="relative flex flex-col gap-3">
       <span className="flex items-baseline justify-between gap-3">
         <Label>{label}</Label>
         <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-          {named ? `${named.name} · ` : 'custom · '}
+          {named ? named.name + ' · ' : 'custom · '}
           {value.toUpperCase()}
         </span>
       </span>
@@ -170,8 +164,8 @@ function WingRow({
 
       {pickerOpen && (
         <ColourPicker
-          initial={value}
-          onCommit={onCommit}
+          selected={value}
+          onSelect={onSelect}
           onClose={onClosePicker}
         />
       )}
@@ -180,7 +174,7 @@ function WingRow({
 }
 
 /*
- * Önizleme katmanı — kelebeği büyük halde gösteriyor.
+ * Önizleme katmanı — gerçek kelebek, salınmadan önceki hâli.
  * Çayır arkada bulanıklaşıyor ama görünür kalıyor; salmadan kapatılabilir.
  */
 function PreviewOverlay({
@@ -196,7 +190,7 @@ function PreviewOverlay({
 }) {
   return (
     <div
-      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 p-6"
+      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 p-6"
       style={{
         background: 'rgba(247,239,233,0.72)',
         backdropFilter: 'blur(10px)',
@@ -204,7 +198,13 @@ function PreviewOverlay({
       role="dialog"
       aria-label="butterfly preview"
     >
-      <Butterfly fore={fore} hind={hind} width={320} height={258} />
+      <p className="eyebrow">before it goes</p>
+
+      <ButterflyPreview3D
+        fore={fore}
+        hind={hind}
+        className="h-[320px] w-full max-w-[420px]"
+      />
 
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="font-display text-[32px] text-ink">

@@ -83,6 +83,19 @@ function seedButterflies(): Butterfly[] {
 
 export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const [view, setView] = useState<View>('landing');
+
+  /*
+   * Geri donus yigini.
+   *
+   * Her ekranin sabit bir "ustu" yok: kanat secimine cayirdan da,
+   * kelebeklerim listesinden de gelinebiliyor ve geri tusu dogru yere
+   * donmeli. Sabit esleme yazmak yerine gezinme gecmisi tutuluyor.
+   *
+   * Tarayici gecmisi kullanilmiyor: burasi tek sayfa ve gercek rota degisimi
+   * yok (yalnizca yasal sayfalar rota). Adres cubuguna kart durumlari yazmak
+   * sahnenin yeniden kurulmasina yol acardi.
+   */
+  const [history, setHistory] = useState<View[]>([]);
   const [total, setTotal] = useState(initialTotal);
   const [pending, setPending] = useState(false);
 
@@ -101,6 +114,27 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
 
+  /** Yeni ekrana gec ve gecmise ekle. */
+  function go(next: View) {
+    setHistory((h) => [...h, view]);
+    setView(next);
+  }
+
+  /** Bir onceki ekrana don. Gecmis bossa koke. */
+  function back() {
+    setHistory((h) => {
+      const prev = h[h.length - 1];
+      setView(prev ?? (signedIn ? 'meadow' : 'landing'));
+      return h.slice(0, -1);
+    });
+  }
+
+  /** Akis bitti: gecmisi temizleyip yeni bir kok ekrana gec. */
+  function reset(next: View) {
+    setHistory([]);
+    setView(next);
+  }
+
   async function fakeDelay() {
     setPending(true);
     await new Promise((resolve) => setTimeout(resolve, 420));
@@ -117,7 +151,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
       releasedAt: new Date(),
     });
     setTotal((n) => n + 1);
-    setView('released');
+    reset('released');
   }
 
   async function releaseAsMember(name: string, fore: string, hind: string) {
@@ -132,35 +166,35 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     setButterflies((list) => [...list, butterfly]);
     setLastReleased(butterfly);
     setTotal((n) => n + 1);
-    setView('released');
+    reset('released');
   }
 
   function completeSignIn(email: string) {
     setProfile({ name: 'Wren', email, avatarHex: '#4F7FBF' });
     setButterflies(seedButterflies());
-    setView(afterSignIn);
+    reset(afterSignIn);
   }
 
   function signOut() {
     setProfile(null);
     setButterflies([]);
-    setView('landing');
+    reset('landing');
   }
 
   function deleteAccount() {
     // Kelebekler anında çayırdan kalkıyor — uyarıda söz verilen davranış
     setProfile(null);
     setButterflies([]);
-    setView('landing');
+    reset('landing');
   }
 
   /** Salmaya git. Yuvalar doluysa listeye düşürüp nedenini gösteriyor. */
   function goRelease() {
     if (!signedIn) {
-      setView('guest-release');
+      go('guest-release');
       return;
     }
-    setView(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
+    go(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
   }
 
   return (
@@ -169,20 +203,24 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
 
       <MeadowShell
         scrim={view === 'settings' || view === 'farewell' ? 'heavy' : 'default'}
-        counter={<ReleaseCounter total={total} />}
+        counter={
+          view === 'landing' || view === 'meadow' ? (
+            <ReleaseCounter total={total} />
+          ) : null
+        }
         topRight={
           signedIn && profile ? (
-            <AccountChip profile={profile} onClick={() => setView('account')} />
+            <AccountChip profile={profile} onClick={() => go('account')} />
           ) : null
         }
       >
         <div key={view} className="animate-[fade_320ms_ease]">
           {view === 'landing' && (
             <Landing
-              onRelease={() => setView('guest-release')}
+              onRelease={() => go('guest-release')}
               onSignIn={() => {
                 setAfterSignIn('meadow');
-                setView('signin');
+                go('signin');
               }}
             />
           )}
@@ -191,9 +229,10 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <GuestReleaseCard
               pending={pending}
               onRelease={releaseAsGuest}
+              onBack={back}
               onSignIn={() => {
                 setAfterSignIn('wings');
-                setView('signin');
+                go('signin');
               }}
             />
           )}
@@ -201,9 +240,10 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           {view === 'signin' && (
             <SignInCard
               onDone={completeSignIn}
+              onBack={back}
               onNeedsSetup={(email) => {
                 setProfile({ name: '', email, avatarHex: '#4F7FBF' });
-                setView('setup');
+                go('setup');
               }}
             />
           )}
@@ -211,10 +251,11 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           {view === 'setup' && profile && (
             <SetupCard
               email={profile.email}
+              onBack={back}
               onDone={(name, avatarHex) => {
                 setProfile({ ...profile, name, avatarHex });
                 setButterflies(seedButterflies());
-                setView(afterSignIn);
+                reset(afterSignIn);
               }}
             />
           )}
@@ -223,7 +264,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <MemberMeadow
               flyingNow={flyingNow}
               onRelease={goRelease}
-              onMyButterflies={() => setView('butterflies')}
+              onMyButterflies={() => go('butterflies')}
             />
           )}
 
@@ -232,6 +273,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               slotsUsed={flyingNow}
               pending={pending}
               onRelease={releaseAsMember}
+              onBack={back}
             />
           )}
 
@@ -239,10 +281,8 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <ReleasedView
               name={lastReleased.name}
               releasedAt={lastReleased.releasedAt}
-              onMyButterflies={() =>
-                setView(signedIn ? 'butterflies' : 'signin')
-              }
-              onWatch={() => setView(signedIn ? 'meadow' : 'landing')}
+              onMyButterflies={() => reset(signedIn ? 'butterflies' : 'signin')}
+              onWatch={() => reset(signedIn ? 'meadow' : 'landing')}
             />
           )}
 
@@ -250,9 +290,10 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <MyButterfliesCard
               butterflies={butterflies}
               onRelease={goRelease}
+              onBack={back}
               onSelect={(butterfly) => {
                 setExpired(butterfly);
-                setView('farewell');
+                go('farewell');
               }}
             />
           )}
@@ -263,16 +304,17 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               flyingNow={flyingNow}
               releasedTotal={total + butterflies.length}
               memberSince={new Date(2026, 5, 1)}
-              onMyButterflies={() => setView('butterflies')}
-              onSettings={() => setView('settings')}
+              onMyButterflies={() => go('butterflies')}
+              onSettings={() => go('settings')}
               onSignOut={signOut}
+              onBack={back}
             />
           )}
 
           {view === 'settings' && profile && (
             <SettingsCard
               profile={profile}
-              onBack={() => setView('account')}
+              onBack={back}
               onSaveName={(name) => setProfile({ ...profile, name })}
               onSaveAvatar={(avatarHex) => setProfile({ ...profile, avatarHex })}
               onDelete={deleteAccount}
@@ -284,7 +326,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               name={expired.name}
               releasedAt={expired.releasedAt}
               onRelease={goRelease}
-              onMyButterflies={() => setView('butterflies')}
+              onMyButterflies={() => reset('butterflies')}
             />
           )}
         </div>

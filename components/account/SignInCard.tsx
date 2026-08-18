@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field, Segmented } from '@/components/ui/Field';
@@ -19,9 +20,11 @@ import { Field, Segmented } from '@/components/ui/Field';
 export function SignInCard({
   onDone,
   onNeedsSetup,
+  onBack,
 }: {
   onDone: (email: string) => void;
   onNeedsSetup: (email: string) => void;
+  onBack: () => void;
 }) {
   const [tab, setTab] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -31,9 +34,12 @@ export function SignInCard({
 
   return (
     <Card width={440}>
-      <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
-        Enter the meadow
-      </h2>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
+          Enter the meadow
+        </h2>
+        <BackLink label="back" onClick={onBack} />
+      </div>
 
       <Segmented
         value={tab}

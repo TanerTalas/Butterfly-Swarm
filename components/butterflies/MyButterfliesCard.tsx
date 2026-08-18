@@ -1,6 +1,7 @@
 'use client';
 
 import { Butterfly } from '@/components/Butterfly';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -25,10 +26,12 @@ export function MyButterfliesCard({
   butterflies,
   onRelease,
   onSelect,
+  onBack,
 }: {
   butterflies: ButterflyRecord[];
   onRelease: () => void;
   onSelect?: (b: ButterflyRecord) => void;
+  onBack: () => void;
 }) {
   const used = butterflies.length;
   const full = used >= SLOT_LIMIT;
@@ -45,11 +48,14 @@ export function MyButterfliesCard({
         <h2 className="font-display text-[26px] leading-tight text-ink lg:text-[30px]">
           My butterflies
         </h2>
-        <span
-          className={`font-mono text-[12px] tracking-[0.14em] ${full ? 'text-accent' : 'text-faint'}`}
-        >
-          {used}/{SLOT_LIMIT}
-        </span>
+        <div className="flex items-baseline gap-4">
+          <span
+            className={`font-mono text-[12px] tracking-[0.14em] ${full ? 'text-accent' : 'text-faint'}`}
+          >
+            {used}/{SLOT_LIMIT}
+          </span>
+          <BackLink label="back" onClick={onBack} />
+        </div>
       </div>
 
       <ul className="flex flex-col">

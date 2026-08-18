@@ -54,6 +54,12 @@ export function ColourWheelButton({
       aria-label="custom colour"
       aria-expanded={active}
       data-selected={active}
+      /*
+       * Seçicinin dışarı-tıklama dinleyicisi bu işareti görüyor ve düğmeyi
+       * "dışarı" saymıyor. Olmazsa mousedown kapatıyor, ardından gelen click
+       * tekrar açıyor ve seçici hiç kapanmıyor.
+       */
+      data-colour-wheel=""
       className="ring-choice relative rounded-full"
       style={{
         width: size,

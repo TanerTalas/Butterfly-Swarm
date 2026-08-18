@@ -1,6 +1,7 @@
 'use client';
 
 import { Butterfly } from '@/components/Butterfly';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
@@ -18,10 +19,12 @@ import { Card } from '@/components/ui/Card';
 export function GuestReleaseCard({
   onRelease,
   onSignIn,
+  onBack,
   pending,
 }: {
   onRelease: () => void;
   onSignIn: () => void;
+  onBack: () => void;
   pending?: boolean;
 }) {
   return (
@@ -58,6 +61,10 @@ export function GuestReleaseCard({
       >
         sign in to choose the wing colours
       </button>
+
+      <div className="flex justify-center">
+        <BackLink label="not now" onClick={onBack} />
+      </div>
     </Card>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { Butterfly } from '@/components/Butterfly';
+import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Gear } from '@/components/ui/Icons';
@@ -21,6 +22,7 @@ export function AccountCard({
   onMyButterflies,
   onSettings,
   onSignOut,
+  onBack,
 }: {
   profile: Profile;
   flyingNow: number;
@@ -29,12 +31,17 @@ export function AccountCard({
   onMyButterflies: () => void;
   onSettings: () => void;
   onSignOut: () => void;
+  onBack: () => void;
 }) {
   const monthName = memberSince.toLocaleDateString('en-GB', { month: 'short' });
   const yearName = String(memberSince.getFullYear());
 
   return (
     <Card width={480} className="lg:gap-[26px]">
+      <div className="flex justify-end">
+        <BackLink label="the meadow" onClick={onBack} />
+      </div>
+
       <div className="flex items-center gap-4">
         <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-panel">
           <Butterfly fore={profile.avatarHex} width={42} height={34} simple />
