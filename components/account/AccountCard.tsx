@@ -71,16 +71,15 @@ export function AccountCard({
         Settings
       </Button>
 
-      <p className="text-center font-mono text-[11px] tracking-[0.14em] text-faint">
-        signed in with email ·{' '}
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={onSignOut}
-          className="text-accent hover:underline"
+          className="font-mono text-[11px] tracking-[0.14em] text-accent hover:underline"
         >
           sign out
         </button>
-      </p>
+      </div>
     </Card>
   );
 }
