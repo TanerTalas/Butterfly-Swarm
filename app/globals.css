@@ -214,6 +214,17 @@ textarea {
     0 0 0 4px #4a3b38;
 }
 
+/*
+ * Kaydırma çubuğunu gizle. Kabuk kenardan kenara olduğu için çubuk çayırın
+ * üstünde bir çizgi olarak duruyordu; içerik yine kaydırılabilir.
+ */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Kartların çapraz geçişi */
 @keyframes fade {
   from {

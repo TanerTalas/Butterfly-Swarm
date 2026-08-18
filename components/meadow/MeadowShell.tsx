@@ -90,8 +90,14 @@ export function MeadowShell({
         {/*
          * İçerik masaüstünde dikey ortada, mobilde alta yaslı — handoff'un
          * mobil kalıbı: tek sütun, içerik ekranın altına sabitlenmiş.
+         *
+         * `overflow-y-auto` şart: kanat seçimi ve hesap kurulumu kartları
+         * kısa bir pencerede (ya da yatay tutulan telefonda) ekrandan
+         * taşıyor ve birincil buton görünmez oluyordu. Kaydırma çubuğu
+         * gizli, çünkü kabuk kenardan kenara ve çubuk çayırın üstünde
+         * duruyordu.
          */}
-        <div className="flex flex-1 items-end lg:items-center">
+        <div className="scrollbar-none flex flex-1 items-end overflow-y-auto py-4 lg:items-center">
           <div className="w-full">{children}</div>
         </div>
 

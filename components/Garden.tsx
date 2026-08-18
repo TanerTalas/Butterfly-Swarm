@@ -3,57 +3,187 @@
 import { useState } from 'react';
 import { Meadow } from '@/components/meadow/Meadow';
 import { MeadowShell, ReleaseCounter } from '@/components/meadow/MeadowShell';
+import {
+  AccountChip,
+  FarewellView,
+  MemberMeadow,
+} from '@/components/meadow/MemberViews';
 import { Button } from '@/components/ui/Button';
 import { GuestReleaseCard } from '@/components/release/GuestReleaseCard';
 import { ReleasedView } from '@/components/release/ReleasedView';
+import { WingsCard } from '@/components/release/WingsCard';
+import { SignInCard } from '@/components/account/SignInCard';
+import { SetupCard } from '@/components/account/SetupCard';
+import { AccountCard } from '@/components/account/AccountCard';
+import { SettingsCard } from '@/components/account/SettingsCard';
+import { MyButterfliesCard } from '@/components/butterflies/MyButterfliesCard';
+import {
+  SLOT_LIMIT,
+  WING_COLOURS,
+  type Butterfly,
+  type Profile,
+} from '@/lib/types';
 
 /*
  * Bahçe — tek sayfanın durum makinesi.
  *
- * Yasal sayfalar dışında hiçbir şey gerçek bir rota değil. Çayır HİÇ
- * unmount olmuyor; yalnızca üstündeki kart değişiyor ve geçişler çapraz
- * solmayla oluyor. Bu yüzden görünüm durumu burada, sahnenin dışında.
+ * Yasal sayfalar dışında hiçbir şey gerçek bir rota değil. Çayır HİÇ unmount
+ * olmuyor; yalnızca üstündeki kart değişiyor. Bu yüzden görünüm durumu
+ * burada, sahnenin dışında ve üstünde duruyor.
  *
- * ⚠ Salma işlemi şu an YEREL bir taklit. Gerçek kural sunucuda olacak
- * (Aşama C): 5 canlı kelebek sınırı, 7 gün ömür ve sayaç istemcide
- * hesaplanmıyor. Buradaki `release()` yalnızca akışı gezilebilir kılıyor.
+ * ⚠ SUNUCU YOK. Oturum, kelebek listesi ve sayaç bu bileşenin içinde yaşıyor
+ * ve sayfa yenilenince sıfırlanıyor. Handoff'un kuralı net: sunucu tavanın,
+ * ömrün ve sayacın sahibi; istemci uygunluk hesaplamıyor. Buradaki
+ * kontroller yalnızca arayüzü gezilebilir kılmak için. Aşama C'de
+ * `releaseAsGuest`, `completeSignIn` gibi fonksiyonlar birer sunucu
+ * çağrısına dönüşecek, ekranlar aynı kalacak.
  */
 
-type View = 'landing' | 'guest-release' | 'released';
+type View =
+  | 'landing'
+  | 'guest-release'
+  | 'released'
+  | 'signin'
+  | 'setup'
+  | 'meadow'
+  | 'wings'
+  | 'butterflies'
+  | 'account'
+  | 'settings'
+  | 'farewell';
 
-type Released = { name: string | null; at: Date };
+/** Sunucu gelene kadar hesap ekranlarını dolduran örnek kelebekler. */
+function seedButterflies(): Butterfly[] {
+  const day = 86_400_000;
+  const now = Date.now();
+  return [
+    {
+      id: 'seed-mint',
+      name: 'Mint',
+      foreHex: WING_COLOURS[0].hex,
+      hindHex: WING_COLOURS[1].hex,
+      releasedAt: new Date(now - day),
+    },
+    {
+      id: 'seed-olive',
+      name: 'Olive',
+      foreHex: WING_COLOURS[4].hex,
+      hindHex: WING_COLOURS[2].hex,
+      releasedAt: new Date(now - 5 * day),
+    },
+    {
+      id: 'seed-juno',
+      name: 'Juno',
+      foreHex: WING_COLOURS[3].hex,
+      hindHex: WING_COLOURS[3].hex,
+      releasedAt: new Date(now - 3 * day),
+    },
+  ];
+}
 
 export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const [view, setView] = useState<View>('landing');
   const [total, setTotal] = useState(initialTotal);
-  const [released, setReleased] = useState<Released | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function releaseAsGuest() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [butterflies, setButterflies] = useState<Butterfly[]>([]);
+  const [lastReleased, setLastReleased] = useState<Butterfly | null>(null);
+  const [expired, setExpired] = useState<Butterfly | null>(null);
+
+  /*
+   * Girişten sonra nereye dönüleceği. Handoff'un 2 numaralı değişikliği:
+   * misafir "sign in to choose the wing colours" derse, giriş bittiğinde
+   * karşılama ekranına değil salma adımına dönmeli.
+   */
+  const [afterSignIn, setAfterSignIn] = useState<View>('meadow');
+
+  const signedIn = profile !== null && profile.name.length > 0;
+  const flyingNow = butterflies.length;
+
+  async function fakeDelay() {
     setPending(true);
-    // Sunucu çağrısının yerini tutuyor; gecikme akışın hissini korusun diye
-    await new Promise((r) => setTimeout(r, 450));
-    setReleased({ name: null, at: new Date() });
-    setTotal((n) => n + 1);
+    await new Promise((resolve) => setTimeout(resolve, 420));
     setPending(false);
+  }
+
+  async function releaseAsGuest() {
+    await fakeDelay();
+    setLastReleased({
+      id: newId(),
+      name: null,
+      foreHex: WING_COLOURS[0].hex,
+      hindHex: WING_COLOURS[0].hex,
+      releasedAt: new Date(),
+    });
+    setTotal((n) => n + 1);
     setView('released');
+  }
+
+  async function releaseAsMember(name: string, fore: string, hind: string) {
+    await fakeDelay();
+    const butterfly: Butterfly = {
+      id: newId(),
+      name,
+      foreHex: fore,
+      hindHex: hind,
+      releasedAt: new Date(),
+    };
+    setButterflies((list) => [...list, butterfly]);
+    setLastReleased(butterfly);
+    setTotal((n) => n + 1);
+    setView('released');
+  }
+
+  function completeSignIn(email: string) {
+    setProfile({ name: 'Wren', email, avatarHex: '#4F7FBF' });
+    setButterflies(seedButterflies());
+    setView(afterSignIn);
+  }
+
+  function signOut() {
+    setProfile(null);
+    setButterflies([]);
+    setView('landing');
+  }
+
+  function deleteAccount() {
+    // Kelebekler anında çayırdan kalkıyor — uyarıda söz verilen davranış
+    setProfile(null);
+    setButterflies([]);
+    setView('landing');
+  }
+
+  /** Salmaya git. Yuvalar doluysa listeye düşürüp nedenini gösteriyor. */
+  function goRelease() {
+    if (!signedIn) {
+      setView('guest-release');
+      return;
+    }
+    setView(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
   }
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
       <Meadow />
 
-      <MeadowShell counter={<ReleaseCounter total={total} />}>
-        {/*
-         * Çapraz geçiş: görünüm anahtarı değişince eski kart solup yenisi
-         * beliriyor. `key` üzerinden yeniden mount olduğu için giriş
-         * animasyonu her seferinde çalışıyor.
-         */}
+      <MeadowShell
+        scrim={view === 'settings' || view === 'farewell' ? 'heavy' : 'default'}
+        counter={<ReleaseCounter total={total} />}
+        topRight={
+          signedIn && profile ? (
+            <AccountChip profile={profile} onClick={() => setView('account')} />
+          ) : null
+        }
+      >
         <div key={view} className="animate-[fade_320ms_ease]">
           {view === 'landing' && (
             <Landing
               onRelease={() => setView('guest-release')}
-              onSignIn={() => setView('guest-release')}
+              onSignIn={() => {
+                setAfterSignIn('meadow');
+                setView('signin');
+              }}
             />
           )}
 
@@ -61,22 +191,115 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <GuestReleaseCard
               pending={pending}
               onRelease={releaseAsGuest}
-              onSignIn={() => setView('guest-release')}
+              onSignIn={() => {
+                setAfterSignIn('wings');
+                setView('signin');
+              }}
             />
           )}
 
-          {view === 'released' && released && (
+          {view === 'signin' && (
+            <SignInCard
+              onDone={completeSignIn}
+              onNeedsSetup={(email) => {
+                setProfile({ name: '', email, avatarHex: '#4F7FBF' });
+                setView('setup');
+              }}
+            />
+          )}
+
+          {view === 'setup' && profile && (
+            <SetupCard
+              email={profile.email}
+              onDone={(name, avatarHex) => {
+                setProfile({ ...profile, name, avatarHex });
+                setButterflies(seedButterflies());
+                setView(afterSignIn);
+              }}
+            />
+          )}
+
+          {view === 'meadow' && (
+            <MemberMeadow
+              flyingNow={flyingNow}
+              onRelease={goRelease}
+              onMyButterflies={() => setView('butterflies')}
+            />
+          )}
+
+          {view === 'wings' && (
+            <WingsCard
+              slotsUsed={flyingNow}
+              pending={pending}
+              onRelease={releaseAsMember}
+            />
+          )}
+
+          {view === 'released' && lastReleased && (
             <ReleasedView
-              name={released.name}
-              releasedAt={released.at}
-              onMyButterflies={() => setView('landing')}
-              onWatch={() => setView('landing')}
+              name={lastReleased.name}
+              releasedAt={lastReleased.releasedAt}
+              onMyButterflies={() =>
+                setView(signedIn ? 'butterflies' : 'signin')
+              }
+              onWatch={() => setView(signedIn ? 'meadow' : 'landing')}
+            />
+          )}
+
+          {view === 'butterflies' && (
+            <MyButterfliesCard
+              butterflies={butterflies}
+              onRelease={goRelease}
+              onSelect={(butterfly) => {
+                setExpired(butterfly);
+                setView('farewell');
+              }}
+            />
+          )}
+
+          {view === 'account' && profile && (
+            <AccountCard
+              profile={profile}
+              flyingNow={flyingNow}
+              releasedTotal={total + butterflies.length}
+              memberSince={new Date(2026, 5, 1)}
+              onMyButterflies={() => setView('butterflies')}
+              onSettings={() => setView('settings')}
+              onSignOut={signOut}
+            />
+          )}
+
+          {view === 'settings' && profile && (
+            <SettingsCard
+              profile={profile}
+              onBack={() => setView('account')}
+              onSaveName={(name) => setProfile({ ...profile, name })}
+              onSaveAvatar={(avatarHex) => setProfile({ ...profile, avatarHex })}
+              onDelete={deleteAccount}
+            />
+          )}
+
+          {view === 'farewell' && expired && (
+            <FarewellView
+              name={expired.name}
+              releasedAt={expired.releasedAt}
+              onRelease={goRelease}
+              onMyButterflies={() => setView('butterflies')}
             />
           )}
         </div>
       </MeadowShell>
     </main>
   );
+}
+
+/*
+ * `crypto.randomUUID` yalnızca güvenli bağlamlarda var; localhost dışında
+ * http ile açılan bir önizlemede tanımsız oluyor ve salma akışı patlıyordu.
+ * Kimlikler zaten geçici — sunucu gelince gerçek id veritabanından gelecek.
+ */
+function newId(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 function Landing({
