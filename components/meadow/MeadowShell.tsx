@@ -110,8 +110,27 @@ export function MeadowShell({
          * hiçbir şey kaymıyor. Kırpma sınırı gölgelerin dışına itilmiş
          * oluyor.
          */}
-        <div className="scrollbar-none -mx-5 -my-6 flex flex-1 items-end overflow-y-auto px-5 py-6 lg:-mx-12 lg:-my-10 lg:px-12 lg:py-10 lg:items-center">
-          <div className="w-full">{children}</div>
+        {/*
+         * ⚠⚠ ORTALAMA `align-items` İLE DEĞİL, `margin: auto` İLE.
+         *
+         * İkisi kap boşken aynı görünüyor ama içerik taştığında değil.
+         * `align-items: center` taşmayı ikiye bölüp yarısını kabın ÜSTÜNE
+         * taşırıyor ve oraya kaydırarak ULAŞILAMIYOR — `scrollTop` 0'ın
+         * altına inemediği için üstte kalan kısım kalıcı olarak kırpılıyor.
+         *
+         * Ölçüldü: 611px'lik ayarlar kartı 509px'lik kapta 51px'ini üstten
+         * kaybediyordu; kartın üst köşe yarıçapları ve geri bağlantısı hiç
+         * görünmüyordu. Kap `overflow: hidden` sanılıyordu, değildi.
+         *
+         * `margin: auto` aynı ortalamayı yapıyor ama taşma varken otomatik
+         * kenar boşlukları 0'a düşüyor: içerik kabın başına yaslanıyor ve
+         * tamamı kaydırılabilir kalıyor.
+         *
+         * Mobilde `mt-auto` tek başına duruyor — içerik alta yaslanıyor,
+         * eski `items-end` ile aynı sonuç ama aynı tuzağa düşmeden.
+         */}
+        <div className="scrollbar-none -mx-5 -my-6 flex flex-1 overflow-y-auto px-5 py-6 lg:-mx-12 lg:-my-10 lg:px-12 lg:py-10">
+          <div className="mt-auto w-full lg:my-auto">{children}</div>
         </div>
 
         <div className="flex justify-center pt-4 lg:justify-end">
