@@ -21,11 +21,14 @@ export function GuestReleaseCard({
   onSignIn,
   onBack,
   pending,
+  blocked,
 }: {
   onRelease: () => void;
   onSignIn: () => void;
   onBack: () => void;
   pending?: boolean;
+  /** Bugünün misafir hakkı kullanıldı. */
+  blocked?: boolean;
 }) {
   return (
     <Card>
@@ -39,7 +42,7 @@ export function GuestReleaseCard({
         </h2>
         <p className="text-[14px] leading-[1.6] text-body-soft">
           The meadow picks the wings. Guest butterflies are not named and
-          cannot be followed afterwards.
+          cannot be followed afterwards. One a day.
         </p>
       </div>
 
@@ -52,9 +55,31 @@ export function GuestReleaseCard({
         </div>
       </div>
 
-      <Button size="md" fullWidth onClick={onRelease} disabled={pending}>
-        {pending ? 'Letting it go…' : 'Let it go'}
-      </Button>
+      {/*
+       * Engelli hâl "Kelebeklerim"deki dolu yuva kalıbıyla aynı: buton
+       * devre dışı, altında nedenini söyleyen bir satır. Yeni bir görsel
+       * dil uydurmaya gerek yok.
+       */}
+      <div className="flex flex-col gap-2">
+        <Button
+          size="md"
+          fullWidth
+          onClick={onRelease}
+          disabled={pending || blocked}
+        >
+          {blocked
+            ? 'One a day'
+            : pending
+              ? 'Letting it go…'
+              : 'Let it go'}
+        </Button>
+
+        {blocked && (
+          <p className="text-center font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
+            you have let one go today · sign in to release more
+          </p>
+        )}
+      </div>
 
       <button
         type="button"

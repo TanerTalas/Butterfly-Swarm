@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/Button';
  * Kart YOK, bilinçli: salma anı bir form adımı değil, bir duraklama.
  * Metin doğrudan çayırın üstünde duruyor ve sağ üstteki sayaç artmış oluyor.
  *
- * ⚠ Handoff'ta bir çelişki var. Bu ekran misafir akışının altında listeli ve
- * örnek metni "Mint is flying." — ama misafir kelebeklerinin İSMİ YOK
- * ("Guests can release an unnamed butterfly"). Burada isim varsa isim,
- * yoksa isimsiz cümle kuruluyor. Karar sahibinin onayını bekliyor.
+ * İSİM KURALI. Tasarımda örnek metin "Mint is flying." ama misafir
+ * kelebeklerinin ismi yok. Karar verildi: misafire otomatik isim
+ * UYDURULMUYOR, cümle isimsiz kuruluyor — "Your butterfly is flying."
+ *
+ * Sebebi tutarlılık: misafir kelebeğini takip edemiyor, "Mint" diye bir
+ * isim vermek takip edilebilirmiş izlenimi yaratırdı.
  */
 export function ReleasedView({
   name,

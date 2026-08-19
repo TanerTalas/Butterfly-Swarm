@@ -45,15 +45,12 @@ Yani mobil "yazıldı" ama "görülmedi". Kontrol edilmesi gerekenler:
 Tasarımda iki mobil çerçeve var (karşılama, kanat seçimi + isim); onlar
 referans.
 
-### A2. WebGL yedek görseli yok
+### A2. ~~WebGL yedek görseli yok~~ — çözüldü
 
-`components/meadow/Meadow.tsx` WebGL bulunamazsa `/meadow-fallback.jpg`
-gösteriyor ama **o dosya yok**. Şu an WebGL'siz bir tarayıcıda arka plan
-boş kalıyor.
-
-Çözüm: sahneden bir kare yakalayıp `public/meadow-fallback.jpg` olarak
-koymak. Handoff'un `assets/meadow.png`'si de kullanılabilir ama o eski
-sahneden (ağaçlar yer tutucu koniyken) alınmış.
+`public/meadow-fallback.png` eklendi ve `next/image` ile servis ediliyor.
+Kaynak 2124×1464 ve 3.5 MB; Next isteyen ekrana göre küçültüp WebP'ye
+çeviriyor. Yalnızca WebGL bulunamadığında isteniyor, normal kullanıcı
+indirmiyor.
 
 ### A3. Kelebek çizimi geliştirilebilir
 
@@ -94,6 +91,7 @@ Bunlar tasarım değil, davranış. Sıraları sende.
 | **History verisi** | Ekran hazır ve boş durumu gösteriyor; ömrünü tamamlamış kelebek listesi sunucudan gelecek. |
 | **Ayarlardaki 1 günlük kilit** | Arayüz hazır (`lockedUntil` prop'u var) ama kimse doldurmuyor. Kilidi sunucu uygulamalı — istemcideki tarih yenilemede sıfırlanır. |
 | **İletişim formu** | Hiçbir yere göndermiyor. Bal küpü alanı var, Turnstile ve IP sınırı yok. |
+| **Misafir günlük limiti** | Arayüz hazır: günde 1 kelebek, dolduğunda buton *One a day* olup kilitleniyor. Ama sayaç istemcide — sayfa yenilenince sıfırlanıyor. Gerçek sınır sunucuda, **IP başına** olmalı; misafir salma tek kimliksiz yazma noktası, en sıkı korumayı o istiyor. |
 | **Kelebeklerin solması** | 7 günlük ömrün görsel karşılığı (küçülme + dithered kesme) sahnede yazılmadı. |
 | **Taslak kaybı** | Yarım kalmış kelebek (seçilmiş renkler, yazılmış isim) sayfa yenilenince kayboluyor. `sessionStorage` ile korunabilir. |
 
@@ -101,9 +99,10 @@ Bunlar tasarım değil, davranış. Sıraları sende.
 
 ## C. Karar bekleyenler
 
-**Misafir kelebeğinin ismi.** Onay ekranı tasarımda *"Mint is flying."*
-diyor ama misafir kelebekleri isimsiz. Şu an isim varsa isimle, yoksa
-*"Your butterfly is flying."* diye kuruluyor. Otomatik isim verilsin mi?
+**~~Misafir kelebeğinin ismi~~** — karar verildi. Otomatik isim
+uydurulmuyor; misafir onayı *"Your butterfly is flying."* diyor. Sebep
+tutarlılık: misafir kelebeğini takip edemiyor, ona isim vermek takip
+edilebilirmiş izlenimi yaratırdı.
 
 **"signed in with email" satırı.** Yeni tasarımda hâlâ var, sen kaldırmamı
 istemiştin, kaldırıldı. (Onaylandı, kapandı.)

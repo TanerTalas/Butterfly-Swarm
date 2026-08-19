@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 /*
@@ -76,11 +77,24 @@ export function Meadow({ className }: { className?: string }) {
           transition: 'opacity 600ms ease',
         }}
       />
+      {/*
+       * WebGL yoksa sahnenin yakalanmış bir karesi.
+       *
+       * `next/image` ile servis ediliyor, CSS arka planı olarak değil: kaynak
+       * dosya 2124x1464 ve 3.5 MB. Next onu isteyen ekrana göre küçültüp
+       * WebP'ye çeviriyor, yani yedeğe düşen kullanıcı 3.5 MB indirmiyor.
+       *
+       * Yalnızca bu dal çizildiğinde isteniyor — WebGL'i olan kullanıcı
+       * görseli hiç indirmiyor.
+       */}
       {status === 'unsupported' && (
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/meadow-fallback.jpg')" }}
-          aria-hidden
+        <Image
+          src="/meadow-fallback.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
       )}
     </div>

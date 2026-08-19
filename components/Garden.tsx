@@ -23,6 +23,7 @@ import {
   WatchButton,
 } from '@/components/meadow/WatchButton';
 import {
+  GUEST_DAILY_LIMIT,
   SLOT_LIMIT,
   WING_COLOURS,
   type Butterfly,
@@ -136,6 +137,16 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
    */
   const [finished] = useState<Butterfly[]>([]);
 
+  /*
+   * Misafirin bugün kaç kelebek saldığı.
+   *
+   * ⚠ Yalnızca arayüzün doğru şeyi söylemesi için. Gerçek sınır sunucuda,
+   * IP başına uygulanacak; buradaki sayaç sayfa yenilenince sıfırlanıyor,
+   * yani bir korumadan çok bir bilgi.
+   */
+  const [guestReleasesToday, setGuestReleasesToday] = useState(0);
+  const guestBlocked = guestReleasesToday >= GUEST_DAILY_LIMIT;
+
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
 
@@ -176,6 +187,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
       releasedAt: new Date(),
     });
     setTotal((n) => n + 1);
+    setGuestReleasesToday((n) => n + 1);
     reset('released');
   }
 
@@ -259,6 +271,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           {view === 'guest-release' && (
             <GuestReleaseCard
               pending={pending}
+              blocked={guestBlocked}
               onRelease={releaseAsGuest}
               onBack={back}
               onSignIn={() => {

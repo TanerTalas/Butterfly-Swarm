@@ -31,6 +31,19 @@ export const NAME_MAX = 18;
 /** Üyenin aynı anda taşıyabileceği canlı kelebek sayısı. */
 export const SLOT_LIMIT = 5;
 
+/*
+ * Misafirin GÜNDE salabileceği kelebek sayısı.
+ *
+ * Üyedeki 5 sınırı "aynı anda kaç tane uçuyor" demek; buradaki ise bir hız
+ * sınırı. Misafirin kelebeği takip edilemediği için biriktirmesinin anlamı
+ * yok, ama sınırsız salma salma uç noktasını açık bir hedef hâline getiriyor.
+ *
+ * ⚠ Gerçek uygulama SUNUCUDA, IP başına. Buradaki sayı yalnızca arayüzün
+ * doğru şeyi söylemesi için; istemcide tutulan bir sayaç tarayıcı
+ * temizlenince sıfırlanır.
+ */
+export const GUEST_DAILY_LIMIT = 1;
+
 /** Kelebeğin ömrü, gün. */
 export const LIFESPAN_DAYS = 7;
 
