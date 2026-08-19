@@ -8,11 +8,10 @@ import { useEffect, useRef, useState } from 'react';
  *
  * Sahne motoru vanilla JavaScript olarak `src/` altında duruyor ve React'ten
  * habersiz. Bu bileşenin tek işi bir canvas verip `createMeadow`'u çağırmak;
- * karşılığında bir `dispose` alıyor. Sahne React state'ine tepki vermiyor,
- * dolayısıyla react-three-fiber'a gerek yok — handoff'un da önerdiği yol.
+ * karşılığında bir `dispose` alıyor.
  *
  * Sahne HİÇ unmount olmuyor: gezinme sayfa içinde, kartlar çapraz geçişle
- * değişiyor. Bu yüzden bileşen kök düzende (page.tsx) bir kez asılı duruyor.
+ * değişiyor. Bileşen kök düzende bir kez asılı duruyor.
  */
 
 type MeadowHandle = { dispose: () => void };
@@ -23,21 +22,43 @@ export function Meadow({ className }: { className?: string }) {
     'loading',
   );
 
+  /*
+   * TEK KURULUM KİLİDİ.
+   *
+   * React StrictMode geliştirmede her effect'i iki kez çalıştırıyor:
+   * kur → temizle → kur. Sıradan bir effect için zararsız, ama burada
+   * `createMeadow` ASENKRON ve pahalı. İki çağrı aynı anda başlıyor,
+   * ikisi de AYNI canvas üzerinde bir WebGLRenderer kuruyor — bir
+   * canvas'ın tek bağlamı olduğu için iki renderer tek bağlamı paylaşıyor,
+   * iki animasyon döngüsü birden dönüyor ve sahne iki kez inşa ediliyor
+   * (iki kez 46.000 çim, iki gökyüzü pişirmesi, iki gölge geçişi).
+   *
+   * Sonuç ölçüldü: kare hızı 2'ye düşüyordu. Temizlik fonksiyonundaki
+   * `cancelled` bayrağı yetmiyor, çünkü ikinci çağrı birincisi daha
+   * çözülmeden başlıyor.
+   *
+   * Bu yüzden bayrak temizlikte SIFIRLANMIYOR: sahne sayfa ömrü boyunca
+   * tek olmalı ve zaten hiç unmount olmuyor.
+   */
+  const startedRef = useRef(false);
+  const handleRef = useRef<MeadowHandle | null>(null);
+
   useEffect(() => {
+    if (startedRef.current) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     /*
      * WebGL yoksa sahne hiç kurulmuyor ve statik bir çayır görseline
-     * düşülüyor (handoff: "offline or WebGL-unavailable fallback").
+     * düşülüyor.
      */
     if (!hasWebGL()) {
       setStatus('unsupported');
       return;
     }
 
-    let handle: MeadowHandle | null = null;
-    let cancelled = false;
+    startedRef.current = true;
 
     /*
      * Dinamik import: sahne + three.js ~600 kB. İlk boyaya girmemesi için
@@ -46,11 +67,7 @@ export function Meadow({ className }: { className?: string }) {
     import('@scene/world/bootstrap.js')
       .then(({ createMeadow }) => createMeadow(canvas, {}))
       .then((h) => {
-        if (cancelled) {
-          h.dispose();
-          return;
-        }
-        handle = h as MeadowHandle;
+        handleRef.current = h as MeadowHandle;
         setStatus('ready');
       })
       .catch((err) => {
@@ -59,8 +76,14 @@ export function Meadow({ className }: { className?: string }) {
       });
 
     return () => {
-      cancelled = true;
-      handle?.dispose();
+      /*
+       * Sayfa gerçekten kapanırken serbest bırak. StrictMode'un sahte
+       * temizliği de buraya düşüyor ama o an `handleRef` henüz boş, yani
+       * zararsız — ve bayrak sıfırlanmadığı için ikinci kurulum hiç
+       * başlamıyor.
+       */
+      handleRef.current?.dispose();
+      handleRef.current = null;
     };
   }, []);
 
@@ -70,19 +93,19 @@ export function Meadow({ className }: { className?: string }) {
         ref={canvasRef}
         className="block h-full w-full"
         style={{
-          // Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın,
-          // beyaz bir flaş olmasın
+          // Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın
           background: '#e9d3c9',
           opacity: status === 'ready' ? 1 : 0,
           transition: 'opacity 600ms ease',
         }}
       />
+
       {/*
        * WebGL yoksa sahnenin yakalanmış bir karesi.
        *
        * `next/image` ile servis ediliyor, CSS arka planı olarak değil: kaynak
        * dosya 2124x1464 ve 3.5 MB. Next onu isteyen ekrana göre küçültüp
-       * WebP'ye çeviriyor, yani yedeğe düşen kullanıcı 3.5 MB indirmiyor.
+       * WebP'ye çeviriyor.
        *
        * Yalnızca bu dal çizildiğinde isteniyor — WebGL'i olan kullanıcı
        * görseli hiç indirmiyor.
