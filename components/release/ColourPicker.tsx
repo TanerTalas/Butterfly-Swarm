@@ -47,6 +47,20 @@ export function ColourPicker({
   const [hover, setHover] = useState<string | null>(null);
   const [text, setText] = useState(selected);
 
+  /*
+   * Tıklanan noktanın işareti.
+   *
+   * Alanda seçili rengin NEREDE olduğunu gösteren tek şey buydu ve yoktu:
+   * tıkladıktan sonra imleç kımıldayınca geriye hiçbir iz kalmıyordu, hangi
+   * noktayı seçtiğini görmek imkânsızdı. İşaret imlecin artısını taklit
+   * ediyor — tıkladığın yerde duran bir nişan.
+   *
+   * Renk değil KONUM saklanıyor (0–1 aralığında oranlar). Böylece ton
+   * çubuğu oynatıldığında işaret yerinde kalıp yeni tonun aynı doygunluk/
+   * parlaklık noktasını gösterebiliyor.
+   */
+  const [mark, setMark] = useState<{ sx: number; sy: number } | null>(null);
+
   const fieldRef = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
@@ -75,13 +89,13 @@ export function ColourPicker({
     };
   }, [onClose]);
 
-  function pointToColour(e: React.MouseEvent): string | null {
+  function pointAt(e: React.MouseEvent) {
     const el = fieldRef.current;
     if (!el) return null;
     const r = el.getBoundingClientRect();
     const sx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
     const sy = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    return fieldColour(hue, sx, sy);
+    return { sx, sy, hex: fieldColour(hue, sx, sy) };
   }
 
   const desktopSide =
@@ -122,27 +136,74 @@ export function ColourPicker({
 
       <div
         ref={fieldRef}
-        onMouseMove={(e) => setHover(pointToColour(e))}
+        onMouseMove={(e) => setHover(pointAt(e)?.hex ?? null)}
         onMouseLeave={() => setHover(null)}
         onClick={(e) => {
-          const c = pointToColour(e);
-          if (c) {
-            onSelect(c);
+          const p = pointAt(e);
+          if (p) {
+            onSelect(p.hex);
+            setMark({ sx: p.sx, sy: p.sy });
             setHover(null); // tıklanan renk kilitlensin, imleç kımıldasa da
           }
         }}
-        className="h-[78px] w-full cursor-crosshair rounded-[8px]"
+        className="relative h-[78px] w-full cursor-crosshair rounded-[8px]"
         style={{
           background: `linear-gradient(180deg, transparent, #17231F), linear-gradient(90deg, #F6EFE9, ${fieldColour(hue, 1, 0)})`,
         }}
-      />
+      >
+        {mark && (
+          /*
+           * Nişan iki kat çizgiden oluşuyor: altta kalın beyaz, üstte ince
+           * koyu. Alan bir köşesinde neredeyse beyaz, diğerinde neredeyse
+           * siyah — tek renk bir artı ikisinden birinde mutlaka kayboluyor.
+           * İki kat her zeminde okunuyor.
+           *
+           * `pointer-events-none` şart: nişan alanın üstünde duruyor ve
+           * tıklamayı yutarsa kendi üzerine ikinci kez seçim yapılamıyor.
+           */
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 15 15"
+            className="pointer-events-none absolute"
+            style={{
+              left: `${mark.sx * 100}%`,
+              top: `${mark.sy * 100}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
+            aria-hidden
+          >
+            <path
+              d="M7.5 1v13M1 7.5h13"
+              stroke="rgba(255,255,255,0.95)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <path
+              d="M7.5 1v13M1 7.5h13"
+              stroke="rgba(28,22,20,0.85)"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        )}
+      </div>
 
       <input
         type="range"
         min={0}
         max={359}
         value={hue}
-        onChange={(e) => setHue(Number(e.target.value))}
+        onChange={(e) => {
+          const h = Number(e.target.value);
+          setHue(h);
+          /*
+           * İşaret duruyorsa seçili renk onunla birlikte geziyor. Yoksa
+           * arayüz kendiyle çelişirdi: nişan bir noktayı gösterirken kanat
+           * başka bir rengi taşırdı.
+           */
+          if (mark) onSelect(fieldColour(h, mark.sx, mark.sy));
+        }}
         aria-label="hue"
         className="mt-3 h-3 w-full cursor-pointer appearance-none rounded-full"
         style={{
@@ -158,7 +219,15 @@ export function ColourPicker({
             setText(e.target.value);
             const parsed = parseHex(e.target.value);
             // Yazılan geçerli bir renk de anında uygulanıyor
-            if (parsed) onSelect(parsed);
+            if (parsed) {
+              onSelect(parsed);
+              /*
+               * Nişan kalkıyor: elle yazılan rengin alanda bir karşılığı
+               * yok. Bıraksaydık işaret artık seçili olmayan bir noktayı
+               * gösterirdi.
+               */
+              setMark(null);
+            }
           }}
           spellCheck={false}
           aria-label="hex value"
