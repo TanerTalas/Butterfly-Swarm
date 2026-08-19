@@ -79,15 +79,29 @@ export async function createButterflyPreview(canvas, options = {}) {
    *
    * Kelebek konvansiyonu: +Z burun, +Y yukarı, ±X kanat açıklığı. Kamera
    * +Z'de durduğu için ilk hâlinde kelebeğe ÖNDEN, burnundan bakılıyordu ve
-   * açık kanatlar görünmüyordu. `rotation.x = PI/2` sırt tarafını kameraya
-   * çeviriyor; 0.3 geri yatırma ise onu tam düz bir armadan kurtarıp hacim
-   * veriyor.
+   * açık kanatlar görünmüyordu.
+   *
+   * ⚠ Tek başına `rotation.x = +PI/2` YETMİYOR, çünkü aynı anda iki şey
+   * istiyoruz: sırt kameraya dönsün VE baş yukarı baksın. X ekseni etrafında
+   * +90° sırtı kameraya çeviriyor (+Y → +Z) ama burnu AŞAĞI indiriyor
+   * (+Z → −Y) — kelebek baş aşağı duruyordu.
+   *
+   * İkisini birden veren dönüş: önce Z ekseninde 180°, sonra X ekseninde
+   * −90°. Sonuç +Z (burun) → +Y (yukarı), +Y (sırt) → +Z (kameraya).
+   * three Euler'i 'XYZ' sırasında RX·RY·RZ olarak kuruyor, yani vektöre
+   * önce RZ uygulanıyor — istediğimiz sıra bu.
+   *
+   * Yan etki: ±X kanat ekseni de aynalanıyor. Kelebek iki yana simetrik
+   * olduğu için görsel bir karşılığı yok.
+   *
+   * 0.3'lük pay kelebeği tam düz bir armadan kurtarıp hacim veriyor; başı
+   * hafifçe izleyiciye doğru yatırıyor.
    *
    * Salınım DIŞ grupta: iç grup zaten yatırılmış olduğu için onun kendi
    * ekseninde döndürmek kelebeği yalpalatıyordu.
    */
   const tilt = new THREE.Group();
-  tilt.rotation.x = Math.PI / 2 - 0.3;
+  tilt.rotation.set(-Math.PI / 2 + 0.3, 0, Math.PI);
   tilt.add(swarm.group);
 
   const sway = new THREE.Group();
