@@ -38,9 +38,7 @@ export function AccountCard({
 
   return (
     <Card width={480} className="lg:gap-[26px]">
-      <div className="flex justify-end">
-        <BackLink label="the meadow" onClick={onBack} />
-      </div>
+      <BackLink label="back to the meadow" onClick={onBack} />
 
       <div className="flex items-center gap-4">
         <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-panel">

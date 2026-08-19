@@ -7,8 +7,9 @@
 export function ArrowLeft({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      {/* Tasarımın yolu: chevron + gövde çizgisi */}
       <path
-        d="M13 8H3m0 0 4-4M3 8l4 4"
+        d="M9.5 3.5 5 8l4.5 4.5M13 8H5.4"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.4"

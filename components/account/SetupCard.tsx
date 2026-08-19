@@ -32,11 +32,10 @@ export function SetupCard({
 
   return (
     <Card>
+      <BackLink label="back" onClick={onBack} />
+
       <div className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="eyebrow">step 2 of 2</p>
-          <BackLink label="back" onClick={onBack} />
-        </div>
+        <p className="eyebrow">step 2 of 2</p>
         <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
           Set up your account
         </h2>

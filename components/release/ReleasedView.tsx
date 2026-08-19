@@ -47,11 +47,11 @@ export function ReleasedView({
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-        <Button size="md" onClick={onMyButterflies}>
-          My butterflies
+        <Button size="md" onClick={onWatch}>
+          Follow {name ?? 'it'} in the meadow
         </Button>
-        <Button size="md" variant="secondary" onClick={onWatch}>
-          Watch the meadow
+        <Button size="md" variant="secondary" onClick={onMyButterflies}>
+          My butterflies
         </Button>
       </div>
     </div>

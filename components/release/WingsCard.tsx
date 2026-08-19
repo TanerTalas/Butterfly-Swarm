@@ -41,6 +41,8 @@ export function WingsCard({
   return (
     <>
       <Card width={520}>
+        <BackLink label="back to the meadow" onClick={onBack} />
+
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
             Choose its wings
@@ -102,9 +104,6 @@ export function WingsCard({
           </Button>
         </div>
 
-        <div className="flex justify-center">
-          <BackLink label="not now" onClick={onBack} />
-        </div>
       </Card>
 
       {preview && (

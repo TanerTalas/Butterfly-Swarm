@@ -23,19 +23,44 @@ export function MeadowShell({
   scrim = 'default',
   counter,
   topRight,
+  aside,
+  hidden,
 }: {
   children: ReactNode;
   scrim?: 'default' | 'heavy';
   counter?: ReactNode;
   topRight?: ReactNode;
+  /** Sahnenin sag kenarinda duran denetim ("Watch the meadow"). */
+  aside?: ReactNode;
+  /** Izleme kipi: kabuk tamamen cekiliyor, sahne yalniz kaliyor. */
+  hidden?: boolean;
 }) {
   const gradient =
     scrim === 'heavy'
       ? 'linear-gradient(90deg, rgba(247,239,233,0.96) 0%, rgba(247,239,233,0.80) 34%, rgba(247,239,233,0) 62%)'
       : 'linear-gradient(90deg, rgba(247,239,233,0.94) 0%, rgba(247,239,233,0.74) 34%, rgba(247,239,233,0) 60%)';
 
+  /*
+   * Izleme kipinde kabuk unmount EDILMIYOR, gorunmez yapiliyor: kartlarin
+   * durumu (yazilmis isim, secilmis renkler) korunuyor ve geri donuldugunde
+   * kullanici kaldigi yerden devam ediyor.
+   */
   return (
-    <>
+    <div
+      className={`transition-opacity duration-500 ${hidden ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+      /*
+       * `inert` şart: yalnızca opaklığı sıfırlamak arayüzü GÖRÜNMEZ yapıyor
+       * ama yok etmiyor. Sekme tuşuyla gezen biri izleme kipindeyken
+       * görünmeyen butonların içinde dolaşıyor, ekran okuyucu da onları
+       * okumaya devam ediyordu. `inert` alt ağacı odaktan ve erişilebilirlik
+       * ağacından çıkarıyor; `display: none` ise geçiş animasyonunu
+       * öldürürdü.
+       */
+      inert={hidden}
+      aria-hidden={hidden}
+    >
+      {aside}
+
       <div
         className="pointer-events-none absolute inset-0 max-lg:hidden"
         style={{ background: gradient }}
@@ -119,7 +144,7 @@ export function MeadowShell({
           </nav>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -147,6 +172,10 @@ export function ReleaseCounter({ total }: { total: number }) {
       </div>
       <div className="mt-2 font-display text-[34px] leading-none text-ink">
         {total.toLocaleString('en-US')}
+      </div>
+      {/* Sayının ne olduğunu söyleyen alt satır — yeni tasarımda eklendi */}
+      <div className="mt-1 font-mono text-[11px] leading-none tracking-[0.14em] text-faint">
+        butterflies
       </div>
     </div>
   );

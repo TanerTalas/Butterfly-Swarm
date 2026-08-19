@@ -34,19 +34,18 @@ export function SignInCard({
 
   return (
     <Card width={440}>
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
-          Enter the meadow
-        </h2>
-        <BackLink label="back" onClick={onBack} />
-      </div>
+      <BackLink label="back to the meadow" onClick={onBack} />
+
+      <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
+        Enter the meadow
+      </h2>
 
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
           { value: 'in', label: 'Sign in' },
-          { value: 'up', label: 'Create account' },
+          { value: 'up', label: 'Sign up' },
         ]}
       />
 
@@ -75,7 +74,7 @@ export function SignInCard({
         disabled={!canSubmit}
         onClick={() => (tab === 'in' ? onDone(email) : onNeedsSetup(email))}
       >
-        {tab === 'in' ? 'Sign in' : 'Create account'}
+        {tab === 'in' ? 'Sign in' : 'Sign up'}
       </Button>
 
       <button
@@ -88,7 +87,7 @@ export function SignInCard({
       </button>
 
       <p className="font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
-        by continuing you agree to the{' '}
+        by signing in you accept the{' '}
         <a href="/legal/terms" className="text-accent hover:underline">
           terms
         </a>

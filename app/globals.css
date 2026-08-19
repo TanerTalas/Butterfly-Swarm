@@ -218,6 +218,27 @@ textarea {
 }
 
 /*
+ * "Watch the meadow" düğmesi.
+ *
+ * Birincil butonun kanat hareketini taşıyor ama krem zeminli ve koyu metinli:
+ * sahnenin üstünde duran, vurgu rengini çalmayan bir denetim. Gölgesi burada
+ * DURUYOR (kartlardan farklı olarak), çünkü hiçbir perdenin üstünde değil —
+ * doğrudan çayırın üstünde ve kendi zeminini ayırması gerekiyor.
+ */
+.btn-watch {
+  background: var(--color-card);
+  box-shadow: 0 10px 24px rgba(74, 59, 56, 0.2);
+  white-space: nowrap;
+  transition: box-shadow 320ms ease;
+}
+.btn-watch:hover {
+  box-shadow:
+    -22px 0 0 -8px rgba(44, 34, 32, 0.14),
+    22px 0 0 -8px rgba(44, 34, 32, 0.14),
+    0 10px 24px rgba(74, 59, 56, 0.2);
+}
+
+/*
  * Seçim halkası — renk örnekleri ve avatarlar.
  * İki katman: içte kart kremi, dışta koyu. Böylece halka rengin üstünde
  * değil, etrafında bir boşlukla duruyor.

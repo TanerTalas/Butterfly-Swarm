@@ -17,6 +17,11 @@ import { SetupCard } from '@/components/account/SetupCard';
 import { AccountCard } from '@/components/account/AccountCard';
 import { SettingsCard } from '@/components/account/SettingsCard';
 import { MyButterfliesCard } from '@/components/butterflies/MyButterfliesCard';
+import { HistoryCard } from '@/components/butterflies/HistoryCard';
+import {
+  StopWatchingButton,
+  WatchButton,
+} from '@/components/meadow/WatchButton';
 import {
   SLOT_LIMIT,
   WING_COLOURS,
@@ -50,6 +55,7 @@ type View =
   | 'butterflies'
   | 'account'
   | 'settings'
+  | 'history'
   | 'farewell';
 
 /** Sunucu gelene kadar hesap ekranlarını dolduran örnek kelebekler. */
@@ -110,6 +116,25 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
    * karşılama ekranına değil salma adımına dönmeli.
    */
   const [afterSignIn, setAfterSignIn] = useState<View>('meadow');
+
+  /*
+   * Izleme kipi: arayuz tamamen cekiliyor ve yalnizca sahne kaliyor.
+   * Kartlarin ustunde degil, kabugun tamaminin ustunde bir anahtar —
+   * cikis icin alt ortada acik bir dugme birakiliyor.
+   */
+  const [watching, setWatching] = useState(false);
+
+  /*
+   * Ömrünü tamamlamış kelebekler — History ekranının kaynağı.
+   *
+   * Gezinme yığını da `history` adını taşıdığı için burası `finished`:
+   * ikisi tamamen farklı şeyler ve karışmaları kolay.
+   *
+   * ⚠ Sunucu gelene kadar boş. Ayrıca gizlilik metniyle çelişiyor: orada
+   * yedi günü dolan kaydın silindiği yazıyor, geçmiş listesi ise onu
+   * saklamayı gerektiriyor. Aşama C'de ya metin ya saklama düzeltilmeli.
+   */
+  const [finished] = useState<Butterfly[]>([]);
 
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
@@ -197,15 +222,21 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     go(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
   }
 
+  const onMeadowView = view === 'landing' || view === 'meadow';
+
   return (
     <main className="relative h-dvh w-full overflow-hidden">
       <Meadow />
 
+      {watching && <StopWatchingButton onClick={() => setWatching(false)} />}
+
       <MeadowShell
+        hidden={watching}
         scrim={view === 'settings' || view === 'farewell' ? 'heavy' : 'default'}
-        counter={
-          view === 'landing' || view === 'meadow' ? (
-            <ReleaseCounter total={total} />
+        counter={onMeadowView ? <ReleaseCounter total={total} /> : null}
+        aside={
+          onMeadowView ? (
+            <WatchButton onClick={() => setWatching(true)} />
           ) : null
         }
         topRight={
@@ -291,11 +322,17 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               butterflies={butterflies}
               onRelease={goRelease}
               onBack={back}
-              onSelect={(butterfly) => {
-                setExpired(butterfly);
-                go('farewell');
+              onHistory={() => go('history')}
+              onWatch={() => {
+                // Kelebege kilitlenen kamera Asama D'nin isi; simdilik
+                // izleme kipine gecerek sahneyi acik biraikiyor
+                setWatching(true);
               }}
             />
+          )}
+
+          {view === 'history' && (
+            <HistoryCard butterflies={finished} onBack={back} />
           )}
 
           {view === 'account' && profile && (
@@ -315,8 +352,9 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <SettingsCard
               profile={profile}
               onBack={back}
-              onSaveName={(name) => setProfile({ ...profile, name })}
-              onSaveAvatar={(avatarHex) => setProfile({ ...profile, avatarHex })}
+              onSave={(name, avatarHex) =>
+                setProfile({ ...profile, name, avatarHex })
+              }
               onDelete={deleteAccount}
             />
           )}
@@ -360,8 +398,8 @@ function Landing({
       </h1>
 
       <p className="max-w-[32ch] font-display text-[19px] leading-[1.45] text-body lg:text-[22px]">
-        Release a butterfly into the meadow. It flies for seven days, then it
-        goes.
+        Let one butterfly go. It flies the meadow for seven days, then the
+        wind takes it.
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">

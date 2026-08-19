@@ -5,13 +5,10 @@ import { ArrowLeft } from '@/components/ui/Icons';
 /*
  * Geri dönüş.
  *
- * Tasarımda yalnızca ayarlar ekranında çizilmişti ("my account" + sol ok) ama
- * her kartta gerekiyor: kanat seçimine giren kullanıcı çıkamıyordu, yani
- * sistem onu kelebek yaratmaya zorluyordu. Bir akışa girmenin geri dönüşü
- * olmalı.
- *
- * Ayarlar ekranındaki dil aynen kullanılıyor — 16px çizgi ok, monospace
- * etiket, vurgu rengi. Yeni bir görsel dil uydurmaya gerek yok.
+ * Yeni tasarımda her kartın EN ÜSTÜNDE, kendi satırında duruyor — başlıkla
+ * aynı hizada değil, onun üzerinde. Etiket çoğu yerde "back to the meadow";
+ * ayarlarda "my account", geçmişte "my butterflies", kayıt adımında "back".
+ * Yani etiket nereye döneceğini söylüyor, sadece "geri" demiyor.
  */
 export function BackLink({
   label,

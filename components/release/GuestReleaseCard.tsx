@@ -29,6 +29,8 @@ export function GuestReleaseCard({
 }) {
   return (
     <Card>
+      <BackLink label="back to the meadow" onClick={onBack} />
+
       <p className="eyebrow text-accent">guest</p>
 
       <div className="flex flex-col gap-3">
@@ -36,8 +38,8 @@ export function GuestReleaseCard({
           A butterfly at random
         </h2>
         <p className="text-[14px] leading-[1.6] text-body-soft">
-          We pick the wings for you. It joins the meadow straight away and
-          flies for seven days.
+          The meadow picks the wings. Guest butterflies are not named and
+          cannot be followed afterwards.
         </p>
       </div>
 
@@ -59,12 +61,8 @@ export function GuestReleaseCard({
         onClick={onSignIn}
         className="meta text-center text-accent underline-offset-4 transition-colors hover:underline"
       >
-        sign in to choose the wing colours
+        Sign in to choose the wing colours
       </button>
-
-      <div className="flex justify-center">
-        <BackLink label="not now" onClick={onBack} />
-      </div>
     </Card>
   );
 }
