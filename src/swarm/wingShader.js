@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { FLAP_DEFAULTS } from '../butterfly/flap.js';
 
 /*
  * Kanat çırpmasının GPU tarafı.
@@ -31,7 +32,25 @@ attribute float aFlapSpeed;
  */
 attribute vec2 aHue;
 
+/*
+ * Doygunluk ve parlaklık ÇARPANI, yine kanat başına (x = ön, y = arka).
+ *
+ * Ton tek başına yetmiyordu: ton döndürmesi doygunluğu ve parlaklığı aynen
+ * bırakıyor, dolayısıyla desenden beyaz, siyah veya pastel bir kanat
+ * ÜRETİLEMİYORDU. Beyaz seçen kullanıcı kırmızı kanat alıyordu, çünkü
+ * doygunluğu sıfır bir rengin tonu tanımsız (0 = kırmızı) ve kod yalnızca
+ * o tona bakıyordu.
+ *
+ * Çarpan olarak taşınıyorlar, mutlak değer olarak değil: desenin kendi
+ * gradyanı (koyu kök → açık uç), koyu kenar bandı ve damarları korunuyor.
+ * 1.0 = deseni olduğu gibi bırak.
+ */
+attribute vec2 aSat;
+attribute vec2 aVal;
+
 varying float vHueShift;
+varying float vSat;
+varying float vVal;
 
 uniform float uTime;
 uniform vec3  uForeHinge;
@@ -122,6 +141,8 @@ vec3 bfTransformNormal(vec3 n) {
  */
 const FRAGMENT_COMMON = /* glsl */ `
 varying float vHueShift;
+varying float vSat;
+varying float vVal;
 uniform float uSaturation;
 
 vec3 bfRgb2Hsv(vec3 c) {
@@ -142,7 +163,9 @@ vec3 bfHsv2Rgb(vec3 c) {
 vec3 bfTint(vec3 rgb) {
   vec3 hsv = bfRgb2Hsv(rgb);
   hsv.x = fract(hsv.x + vHueShift);
-  hsv.y = clamp(hsv.y * uSaturation, 0.0, 1.0);
+  // uSaturation genel panel ayarı, vSat ise bu kanadın seçilen rengi
+  hsv.y = clamp(hsv.y * uSaturation * vSat, 0.0, 1.0);
+  hsv.z = clamp(hsv.z * vVal, 0.0, 1.0);
   return bfHsv2Rgb(hsv);
 }
 `;
@@ -156,17 +179,28 @@ vec3 bfTint(vec3 rgb) {
  * Bu yüzden kurulum normal bloğunda yapılıp konum bloğunda tekrar kullanılıyor.
  */
 export function injectFlapShader(material, hinges) {
+  /*
+   * Başlangıç değerleri `FLAP_DEFAULTS`tan okunuyor, elle YAZILMIYOR.
+   *
+   * Önce burada 0.42 / 0.12 / 0.85 gibi sayılar sabit duruyordu ve aynı
+   * değerlerin ikinci bir kopyasıydı. Varsayılanlar değiştiğinde (arka kanat
+   * gecikmesi 0'a çekildiğinde) bu kopya sessizce eskidi: ilk `syncFlapUniforms`
+   * çağrısına kadar kanatlar hâlâ eski gecikmeyle çırpıyordu.
+   *
+   * İlk kare çizilmeden önce senkron çalıştığı için görünür bir hata
+   * değildi, ama iki doğruluk kaynağı olması sorunun kendisi.
+   */
   const uniforms = {
     uTime: { value: 0 },
     uForeHinge: { value: hinges.fore.clone() },
     uHindHinge: { value: hinges.hind.clone() },
     uFlapUp: { value: 0 },
     uFlapDown: { value: 0 },
-    uDownstroke: { value: 0.42 },
-    uAmplitude: { value: 1 },
+    uDownstroke: { value: FLAP_DEFAULTS.downstrokeFraction },
+    uAmplitude: { value: FLAP_DEFAULTS.flapAmplitude },
     uTwist: { value: 0 },
-    uHindLag: { value: 0.12 },
-    uHindAmp: { value: 0.85 },
+    uHindLag: { value: FLAP_DEFAULTS.hindLag },
+    uHindAmp: { value: FLAP_DEFAULTS.hindAmplitude },
     uSaturation: { value: 1 },
   };
 
@@ -180,6 +214,8 @@ export function injectFlapShader(material, hinges) {
         `#include <beginnormal_vertex>
          bfSetup();
          vHueShift = mix(aHue.x, aHue.y, bfIsHind);
+         vSat = mix(aSat.x, aSat.y, bfIsHind);
+         vVal = mix(aVal.x, aVal.y, bfIsHind);
          objectNormal = bfTransformNormal(objectNormal);`,
       )
       .replace(

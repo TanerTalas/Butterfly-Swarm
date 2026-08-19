@@ -43,8 +43,12 @@ export const WORLD = {
    *
    * Hiçbiri pembe/magenta DEĞİL, bilinçli: sahne baştan aşağı sakura pembesi
    * ve pembe kelebek zeminde kayboluyor (§4 — sakura tuzağı). Hepsi doygun,
-   * çünkü renk desene ton DÖNDÜRMESİ olarak uygulanıyor; soluk bir renk
-   * dönmek için yeterli tona sahip olmuyor.
+   * çünkü uzaktan bakılan küçük bir nesnede rengin okunması için doygunluk
+   * gerekiyor — soluk kelebek çimenle karışıyor.
+   *
+   * (Teknik bir zorunluluk DEĞİL artık: renk artık ton + doygunluk +
+   * parlaklık olarak taşınıyor, yani soluk ve koyu renkler de doğru
+   * çalışıyor. Buradaki tercih görünürlükle ilgili.)
    */
   palette: [
     { name: 'turkuaz', hex: 0x17b3a3 },

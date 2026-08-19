@@ -129,6 +129,17 @@ export class Swarm {
      */
     this.hueShift = new Float32Array(n * 2);
 
+    /*
+     * Doygunluk ve parlaklık ÇARPANLARI, yine kanat başına.
+     *
+     * 1 = deseni olduğu gibi bırak; hepsi böyle başlıyor. Yalnızca gerçek
+     * bir hex renk seçildiğinde 1'den ayrılıyorlar — beyaz kanat için
+     * doygunluk 0'a, siyah için parlaklık 0'a gidiyor. Ton tek başına bu
+     * iki rengi üretemiyor (bkz. wingShader.js).
+     */
+    this.wingSat = new Float32Array(n * 2).fill(1);
+    this.wingVal = new Float32Array(n * 2).fill(1);
+
     for (let i = 0; i < n; i++) this._seed(i);
     this.applyVariation();
   }
@@ -202,6 +213,14 @@ export class Swarm {
       'aHue',
       new THREE.InstancedBufferAttribute(this.hueShift, 2),
     );
+    built.wings.setAttribute(
+      'aSat',
+      new THREE.InstancedBufferAttribute(this.wingSat, 2),
+    );
+    built.wings.setAttribute(
+      'aVal',
+      new THREE.InstancedBufferAttribute(this.wingVal, 2),
+    );
 
     this.bodyMesh = new THREE.InstancedMesh(
       built.body,
@@ -260,9 +279,31 @@ export class Swarm {
     this._hueNeedsUpdate();
   }
 
+  /**
+   * Bir kelebeğin kanat rengini TAM olarak ayarlar: ton + doygunluk +
+   * parlaklık. `wingTintFromColor()` bir hex'i bu üçlüye çeviriyor.
+   *
+   * `setWingHues` yalnızca tonu değiştirip doygunluk/parlaklığı olduğu gibi
+   * bırakıyor; gerçek bir renk uygulamak için BU kullanılmalı, yoksa beyaz
+   * ve siyah gibi doygunluğu olmayan renkler kırmızıya düşüyor.
+   */
+  setWingTint(i, fore, hind = fore) {
+    this.hueShift[i * 2] = fore.hue;
+    this.hueShift[i * 2 + 1] = hind.hue;
+    this.wingSat[i * 2] = fore.sat;
+    this.wingSat[i * 2 + 1] = hind.sat;
+    this.wingVal[i * 2] = fore.val;
+    this.wingVal[i * 2 + 1] = hind.val;
+    this._hueNeedsUpdate();
+  }
+
   _hueNeedsUpdate() {
-    const attr = this.wingMesh?.geometry.getAttribute('aHue');
-    if (attr) attr.needsUpdate = true;
+    const geometry = this.wingMesh?.geometry;
+    if (!geometry) return;
+    for (const name of ['aHue', 'aSat', 'aVal']) {
+      const attr = geometry.getAttribute(name);
+      if (attr) attr.needsUpdate = true;
+    }
   }
 
   setCount(n) {

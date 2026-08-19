@@ -4,7 +4,7 @@ import { WING_DEFAULTS } from '../butterfly/geometry.js';
 import { DETAIL_DEFAULTS } from '../butterfly/wingDetail.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
 import { FLIGHT_DEFAULTS } from '../flight/steering.js';
-import { hueShiftFromColor } from './swarm.js';
+import { wingTintFromColor } from './swarm.js';
 
 /*
  * Tek kelebek önizlemesi — salınmadan önceki hâli.
@@ -164,10 +164,10 @@ export async function createButterflyPreview(canvas, options = {}) {
 }
 
 function setColours(swarm, fore, hind) {
-  swarm.setWingHues(
+  swarm.setWingTint(
     0,
-    hueShiftFromColor(hexToInt(fore)),
-    hueShiftFromColor(hexToInt(hind ?? fore)),
+    wingTintFromColor(hexToInt(fore)),
+    wingTintFromColor(hexToInt(hind ?? fore)),
   );
 }
 
