@@ -125,7 +125,14 @@ export function MeadowShell({
            * adası, perdeyi büyütmeye gerek kalmıyor.
            */}
           <nav
-            className="flex gap-[18px] rounded-full px-4 py-2"
+            /*
+             * Boşluk 2px, çünkü bağlantıların KENDİ dolgusu var (px-2).
+             * Dolgu, hover'daki arka plan lekesinin metne yapışmaması için
+             * gerekli; ikisi toplanınca metinler arası mesafe tasarımdaki
+             * 18px'e denk geliyor. Dolgu hover'da eklenseydi yerleşim
+             * oynardı.
+             */
+            className="flex gap-[2px] rounded-full px-3 py-1.5"
             style={{
               background: 'rgba(253,246,242,0.86)',
               backdropFilter: 'blur(6px)',
@@ -136,7 +143,15 @@ export function MeadowShell({
               <Link
                 key={l.href}
                 href={l.href}
-                className="font-mono text-[11px] tracking-[0.14em] text-muted transition-colors hover:text-accent"
+                /*
+                 * Renk tasarımın kendi bağlantı kuralından geliyor: vurgu
+                 * rengi, hover'da koyulaşıyor ve altı çiziliyor. Önceden
+                 * soluk griydiler ve tıklanabilir görünmüyorlardı.
+                 *
+                 * Üstüne yumuşak bir zemin lekesi: sahne canlı olduğu için
+                 * yalnızca renk değişimi bazı karelerde fark edilmiyor.
+                 */
+                className="rounded-full px-2 py-1 font-mono text-[11px] tracking-[0.14em] text-accent underline-offset-4 transition-colors duration-200 hover:bg-[rgba(160,79,99,0.12)] hover:text-[#7D3A4C] hover:underline"
               >
                 {l.label}
               </Link>

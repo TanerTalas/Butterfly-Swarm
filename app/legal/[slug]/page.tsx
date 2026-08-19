@@ -65,10 +65,14 @@ export default async function LegalPage({
                 key={p.slug}
                 href={`/legal/${p.slug}`}
                 aria-current={current ? 'page' : undefined}
-                className={`text-[14px] transition-colors ${
+                /*
+                 * Menüde de aynı hover dili: renk koyulaşıyor ve altı
+                 * çiziliyor. Geçerli sayfa zaten koyu ve kalın, hover almıyor.
+                 */
+                className={`text-[14px] underline-offset-4 transition-colors duration-200 ${
                   current
                     ? 'font-semibold text-ink'
-                    : 'text-muted hover:text-body'
+                    : 'text-muted hover:text-accent hover:underline'
                 }`}
               >
                 {p.navLabel}
