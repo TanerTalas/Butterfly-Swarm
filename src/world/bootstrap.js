@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createWorld, WORLD, groundHeight } from './index.js';
 import { createWorldSwarm, enableSwarmFog, SWARM_BOUNDS } from './swarm.js';
-import { Pointer } from '../input/pointer.js';
 
 /*
  * Sahnenin GÖMÜLEBİLİR giriş noktası.
@@ -130,7 +129,22 @@ export async function createMeadow(canvas, options = {}) {
   enableSwarmFog(swarm);
   scene.add(swarm.group);
 
-  const pointer = new Pointer(canvas, camera);
+  /*
+   * İMLEÇ TAKİBİ YOK — bilerek.
+   *
+   * `Pointer` burada kurulu değil: çayırdaki kelebekler fareyi ne takip
+   * ediyor ne de ondan kaçıyor, her zaman kendi hâllerinde uçuyorlar.
+   *
+   * Sebep sahnenin rolü. Burası oynanacak bir demo değil, arayüzün arkasında
+   * duran bir manzara; kullanıcı imleci kart okumak veya düğmeye basmak için
+   * gezdiriyor ve sürünün her fare hareketinde toplanıp dağılması sahneyi
+   * huzurlu bir bahçeden imlece tepki veren bir oyuncağa çeviriyordu.
+   *
+   * `Pointer` sınıfı duruyor ve bağımsız demolarda (`src/main.js`,
+   * `src/world/main.js`) hâlâ kullanılıyor — kaldırılan yalnızca bu sahnedeki
+   * bağlantı. Yan fayda: her karedeki ışın izleme ve canvas dinleyicileri de
+   * gitti (dispose'da zaten temizlenmiyorlardı).
+   */
 
   // ── Kamera kilidi ────────────────────────────────────────────────────────
   const flat = new THREE.Vector2();
@@ -187,14 +201,10 @@ export async function createMeadow(canvas, options = {}) {
     world.update(timer.getElapsed());
 
     camera.updateMatrixWorld();
-    pointer.update(dt, camera.position.distanceTo(controls.target));
 
-    swarm.update(dt, {
-      camera,
-      bounds: SWARM_BOUNDS,
-      target: pointer.active ? pointer.world : null,
-      pointerSpeed: pointer.active ? pointer.speed : 0,
-    });
+    // target/pointerSpeed verilmiyor: `Swarm.update` ikisini de opsiyonel
+    // okuyor, yoksa takip/kaçış kuvvetleri hiç devreye girmiyor
+    swarm.update(dt, { camera, bounds: SWARM_BOUNDS });
 
     renderer.render(scene, camera);
   });
