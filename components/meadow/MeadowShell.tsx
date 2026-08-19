@@ -133,9 +133,19 @@ export function MeadowShell({
              * oynardı.
              */
             className="flex gap-[2px] rounded-full px-3 py-1.5"
+            /*
+             * `backdrop-filter` KALDIRILDI, bilerek.
+             *
+             * Altındaki çayır her karede yeniden çiziliyor; bulanıklık her
+             * karede o alanı yeniden okuyup işlemek demek. Tümleşik grafik
+             * kartında (Intel Iris Xe) bu tek başına kare hızını yerle bir
+             * ediyordu.
+             *
+             * Zemin biraz daha opak yapıldı; görsel fark yok, çünkü şerit
+             * zaten küçük ve metnin arkasını kapatması yeterli.
+             */
             style={{
-              background: 'rgba(253,246,242,0.86)',
-              backdropFilter: 'blur(6px)',
+              background: 'rgba(253,246,242,0.94)',
               boxShadow: '0 4px 14px rgba(74,59,56,0.12)',
             }}
           >
@@ -176,9 +186,9 @@ export function ReleaseCounter({ total }: { total: number }) {
   return (
     <div
       className="rounded-[14px] px-4 py-3 text-right"
+      /* Bulanıklık yok — bkz. yasal şeritteki not. */
       style={{
-        background: 'rgba(253,246,242,0.88)',
-        backdropFilter: 'blur(6px)',
+        background: 'rgba(253,246,242,0.94)',
         boxShadow: '0 6px 18px rgba(74,59,56,0.16)',
       }}
     >

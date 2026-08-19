@@ -190,10 +190,11 @@ function PreviewOverlay({
   return (
     <div
       className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 p-6"
-      style={{
-        background: 'rgba(247,239,233,0.72)',
-        backdropFilter: 'blur(10px)',
-      }}
+      /*
+       * Bulanıklık yok: arkada çayır dönmeye devam ediyor ve her karede
+       * bulanıklaştırmak pahalı. Daha opak bir krem aynı işi görüyor.
+       */
+      style={{ background: 'rgba(247,239,233,0.94)' }}
       role="dialog"
       aria-label="butterfly preview"
     >
