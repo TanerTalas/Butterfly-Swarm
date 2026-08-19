@@ -17,14 +17,20 @@ export { WORLD, groundHeight };
  * `WORLD.meadowRadius` gibi birkaç değeri okuyor. Aşama B'de sürü buraya
  * bağlanırken bu sınır korunmalı.
  */
-export async function createWorld(renderer, scene) {
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+export async function createWorld(renderer, scene, options = {}) {
+  const shadows = options.shadows ?? true;
+
+  renderer.shadowMap.enabled = shadows;
+  /*
+   * PCFSoftShadowMap three tarafından kullanımdan kaldırıldı ve zaten
+   * PCFShadowMap'e düşüyordu; doğrudan onu istiyoruz.
+   */
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   scene.fog = new THREE.FogExp2(WORLD.fog.color, WORLD.fog.density);
 
   const sky = createSky(renderer, scene);
-  const lights = createLights(scene, sky);
+  const lights = createLights(scene, sky, options.shadowMapSize);
 
   const ground = createGround();
   scene.add(ground);

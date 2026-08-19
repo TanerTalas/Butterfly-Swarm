@@ -25,22 +25,44 @@ import { Pointer } from '../input/pointer.js';
  */
 export const QUALITY = {
   high: {
-    pixelRatio: 2,
+    /*
+     * 1'de sabit, cihazın oranını takip ETMİYOR.
+     *
+     * Doldurma maliyeti piksel sayısıyla doğrusal: 1.25 oran, %56 daha fazla
+     * piksel demek. Bu sahnede çim ve yaprak kartları alfa kesmeli, yani
+     * üst üste binen katmanlar defalarca boyanıyor — tümleşik grafik
+     * kartında darboğaz burası. Arka planda duran bir manzarada 1 ile 1.25
+     * arasındaki fark gözle seçilmiyor.
+     */
+    pixelRatio: 1,
     shadows: true,
-    shadowMapSize: 2048,
-    grassCount: 46000,
-    grassRadius: 34,
-    treeCount: 84,
-    flowerCount: 1400,
+    shadowMapSize: 1024,
+    grassCount: 34000,
+    grassRadius: 32,
+    treeCount: 64,
+    flowerCount: 1100,
+    /*
+     * Sahne 30 kare/saniyede çiziliyor, 60'ta değil.
+     *
+     * Bunun tek sebebi arayüz. Çayır ekranın tamamını kaplıyor ve her kare
+     * tarayıcının çizim bütçesinden yiyor; 60'ta çizildiğinde hover ve
+     * tıklama gibi tepkiler sahnenin arkasında kuyruğa giriyordu. 30'a
+     * inince yarı bütçe arayüze kalıyor.
+     *
+     * Görsel bedeli düşük: kelebekler yavaş, çim rüzgârda salınıyor, kamera
+     * duruyor. Hızlı hareket eden hiçbir şey yok.
+     */
+    fps: 30,
   },
   low: {
-    pixelRatio: 1.5,
+    pixelRatio: 1,
     shadows: false,
     shadowMapSize: 1024,
     grassCount: 12000,
     grassRadius: 20,
     treeCount: 40,
     flowerCount: 500,
+    fps: 30,
   },
 };
 
@@ -94,7 +116,10 @@ export async function createMeadow(canvas, options = {}) {
   controls.maxPolarAngle = cam.maxPolarAngle;
   controls.update();
 
-  const world = await createWorld(renderer, scene);
+  const world = await createWorld(renderer, scene, {
+    shadows: quality.shadows,
+    shadowMapSize: quality.shadowMapSize,
+  });
 
   const reducedMotion = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
@@ -125,7 +150,35 @@ export async function createMeadow(canvas, options = {}) {
   const timer = new THREE.Timer();
   timer.connect(document);
 
-  renderer.setAnimationLoop(() => {
+  /*
+   * Kare sınırı.
+   *
+   * Tarayıcı 60 kez/saniye çağırıyor; biz yalnızca hedef aralığa ulaşınca
+   * çalışıyoruz. Atlanan karelerde HİÇBİR ŞEY yapılmıyor — ne fizik ne
+   * çizim — yani hem GPU hem CPU boşta kalıyor ve arayüzün tepkilerine
+   * yer açılıyor.
+   */
+  const stepMs = 1000 / (quality.fps ?? 60);
+  let lastRender = 0;
+
+  renderer.setAnimationLoop((time) => {
+    /*
+     * Kapı DUVAR SAATİNE bakıyor, `THREE.Timer`a değil.
+     *
+     * Timer, Page Visibility API'sine bağlı ve sekme gizlenince duruyor;
+     * ona bakan bir kare sınırı, biriken süre hiç artmadığı için sahneyi
+     * tamamen durduruyordu. rAF'ın kendi zaman damgası bu bağımlılığı
+     * ortadan kaldırıyor.
+     */
+    if (time - lastRender < stepMs) return;
+    lastRender = time;
+
+    /*
+     * `timer.update()` yalnızca ÇİZİLEN karelerde çağrılıyor, dolayısıyla
+     * `getDelta()` iki çizim arasındaki gerçek süreyi veriyor — atlanan
+     * kareler dahil. Hareket hızı bu yüzden kare sınırından etkilenmiyor:
+     * 30'da da 60'ta da kelebek aynı hızda uçuyor.
+     */
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.1);
 
@@ -158,6 +211,61 @@ export async function createMeadow(canvas, options = {}) {
   resize();
 
   options.onReady?.();
+
+  /*
+   * Teşhis kancası. Sahne performansını tarayıcı konsolundan ölçebilmek
+   * için; `renderer.info` üçgen ve draw call sayısını, elle bir render
+   * çağrısı da kare maliyetini veriyor.
+   *
+   * Sekme arka plandayken `requestAnimationFrame` boğulduğu için normal
+   * fps ölçümü yanıltıcı oluyor — bu kanca senkron ölçüme izin veriyor.
+   */
+  if (process.env.NODE_ENV !== 'production') {
+    window.__meadow = {
+      scene,
+      camera,
+      renderer,
+      swarm,
+      /** Bir kareyi elle çizip süresini döndürür (ms). */
+      timeFrame(samples = 20) {
+        const times = [];
+        for (let i = 0; i < samples; i++) {
+          const t0 = performance.now();
+          renderer.render(scene, camera);
+          times.push(performance.now() - t0);
+        }
+        times.sort((a, b) => a - b);
+        return {
+          medyan: +times[Math.floor(times.length / 2)].toFixed(2),
+          enIyi: +times[0].toFixed(2),
+          enKotu: +times[times.length - 1].toFixed(2),
+          ucgen: renderer.info.render.triangles,
+          drawCall: renderer.info.render.calls,
+        };
+      },
+      /**
+       * Döngünün GERÇEKTEN kaç kare çizdiğini sayar.
+       *
+       * `timeFrame` tek bir karenin maliyetini veriyor; bu ise kare
+       * sınırının işleyip işlemediğini gösteriyor. Sekme ÖNDE olmalı —
+       * arka planda tarayıcı `requestAnimationFrame`i tamamen durduruyor
+       * ve sonuç 0 çıkıyor.
+       */
+      async measureFps(seconds = 3) {
+        if (document.hidden) {
+          return { hata: 'sekme arka planda, ölçüm anlamsız' };
+        }
+        const before = renderer.info.render.frame;
+        const t0 = performance.now();
+        await new Promise((r) => setTimeout(r, seconds * 1000));
+        const gecen = (performance.now() - t0) / 1000;
+        return {
+          fps: +((renderer.info.render.frame - before) / gecen).toFixed(1),
+          hedef: quality.fps ?? 60,
+        };
+      },
+    };
+  }
 
   return {
     scene,

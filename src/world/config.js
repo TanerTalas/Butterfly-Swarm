@@ -117,7 +117,14 @@ export const WORLD = {
      * (bkz. trees.js — LOD). Değeri büyütmek kaliteyi, küçültmek fps'i
      * artırıyor.
      */
-    lodRadius: 20,
+    /*
+     * 20'den 15'e indi. Bu yarıçapın içindeki ağaçlar hem pahalı modeli
+     * kullanıyor hem GÖLGE düşürüyor, yani iki kez çiziliyorlar. Ölçümde
+     * ağaçlar bütün sahnenin %52'siydi (498.667 üçgen) ve bunun yarısı
+     * gölge geçişiydi. 15'te gölge düşüren ağaç sayısı belirgin azalıyor,
+     * kaybedilen şey ise avlunun dışındaki gölgeler — kimsenin bakmadığı yer.
+     */
+    lodRadius: 15,
 
     /*
      * Kadrajı çerçeveleyen ağaçlar. Kameranın başlangıç noktasının hemen
