@@ -42,7 +42,6 @@ export function SettingsCard({
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
 
-  const current = AVATAR_COLOURS.find((c) => c.hex === avatar);
   const locked = Boolean(lockedUntil && lockedUntil > new Date());
   const changed =
     (name.trim() !== profile.name || avatar !== profile.avatarHex) &&
@@ -72,12 +71,7 @@ export function SettingsCard({
       />
 
       <div className="flex flex-col gap-2.5">
-        <span className="flex items-baseline justify-between gap-3">
-          <Label>profile photo</Label>
-          <span className="font-mono text-[11px] tracking-[0.14em] text-muted">
-            {current?.name} · {avatar}
-          </span>
-        </span>
+        <Label>profile photo</Label>
 
         <div className="flex flex-wrap gap-2.5 rounded-[14px] bg-panel px-5 py-[18px]">
           {AVATAR_COLOURS.map((c) => (
