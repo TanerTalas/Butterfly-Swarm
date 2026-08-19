@@ -220,10 +220,13 @@ textarea {
 /*
  * "Watch the meadow" düğmesi.
  *
- * Birincil butonun kanat hareketini taşıyor ama krem zeminli ve koyu metinli:
- * sahnenin üstünde duran, vurgu rengini çalmayan bir denetim. Gölgesi burada
- * DURUYOR (kartlardan farklı olarak), çünkü hiçbir perdenin üstünde değil —
- * doğrudan çayırın üstünde ve kendi zeminini ayırması gerekiyor.
+ * Birincil butonun kanat hareketini taşıyor ama ZEMİNİ krem ve metni koyu:
+ * sahnenin üstünde duran, kendini birincil eylem gibi sunmayan bir denetim.
+ * Vurgu rengi yalnızca hover kanatlarında beliriyor, dolgusunda değil.
+ *
+ * Gölgesi burada DURUYOR (kartlardan farklı olarak), çünkü hiçbir perdenin
+ * üstünde değil — doğrudan çayırın üstünde ve kendi zeminini ayırması
+ * gerekiyor.
  */
 .btn-watch {
   background: var(--color-card);
@@ -231,10 +234,22 @@ textarea {
   white-space: nowrap;
   transition: box-shadow 320ms ease;
 }
+/*
+ * Kanatlar birincil butonun GÜL rengini kullanıyor, mürekkep siyahını değil.
+ *
+ * Önce `rgba(44,34,32,0.14)` idi ve görünmüyordu: bu buton durgun hâlde de
+ * gölge taşıyor (`0 10px 24px`), koyu ve %14 opak kanatlar da o hazır
+ * halenin içine düşüp gri bir bulanıklığa dönüşüyordu. Renk ayrımı olmadan
+ * kanat, gölgeden ayrışamıyor.
+ *
+ * Gül renginde ise hem primary ile aynı opaklığa (0.42) çıkıyor hem de tonu
+ * gölgeden farklı — kanat olduğu anlaşılıyor. Hareketin dili böylece sitede
+ * tek: kanatlar nerede belirirse belirsin aynı renk, aynı ±22px, aynı 320ms.
+ */
 .btn-watch:hover {
   box-shadow:
-    -22px 0 0 -8px rgba(44, 34, 32, 0.14),
-    22px 0 0 -8px rgba(44, 34, 32, 0.14),
+    -22px 0 0 -8px rgba(160, 79, 99, 0.42),
+    22px 0 0 -8px rgba(160, 79, 99, 0.42),
     0 10px 24px rgba(74, 59, 56, 0.2);
 }
 
