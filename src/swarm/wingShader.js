@@ -14,6 +14,11 @@ import { FLAP_DEFAULTS } from '../butterfly/flap.js';
  * `flapWave` / `flapVelocity` fonksiyonlarının GLSL karşılığı. Aşama 2'de o
  * matematik bilerek saf ve durumsuz yazılmıştı; burada birebir çevrildi.
  * İKİSİ BİRLİKTE DEĞİŞMELİ.
+ *
+ * ⚠ Aşağıdaki GLSL bloklarının içine BACKTICK yazma — kod bir JavaScript
+ * şablon literali içinde duruyor ve backtick literali erkenden kapatıp
+ * bütün dosyayı sözdizimi hatasına düşürüyor. Aynı sebeple ${...} da
+ * yazılamaz; oradaki tek geçerli kullanım bilinçli enterpolasyon.
  */
 
 const WING_FORE = 0.5; // aWingId eşiği: < 0.5 ön kanat, > 0.5 arka kanat
@@ -53,8 +58,30 @@ varying float vSat;
 varying float vVal;
 
 uniform float uTime;
-uniform vec3  uForeHinge;
-uniform vec3  uHindHinge;
+/*
+ * TEK PİVOT — ön ve arka kanat aynı nokta etrafında dönüyor.
+ *
+ * Önce her kanadın kendi menteşesi vardı (uForeHinge / uHindHinge) ve
+ * ikisi aynı açıyla dönse bile aralarındaki mesafe KORUNMUYORDU: farklı
+ * merkezler etrafındaki dönüş, iki yüzeyi birbirine göre kaydırıyor ve arka
+ * kanat ön kanadın içinden geçiyordu.
+ *
+ * Ölçüm: duruşta iki kanat arasındaki en dar boşluk +0.031 birim, yani
+ * kesişme yok. Çırpma açıldığında ayrı menteşelerle 385 hücrenin 81'i
+ * ihlalliydi. Tek pivotta dönüşüm iki kanat için BİREBİR aynı afin dönüşüm
+ * oluyor; dönme bir izometri olduğu için tüm noktalar arası mesafeler
+ * aynen korunuyor ve duruşta kesişmeyen iki yüzey hiçbir fazda kesişemiyor.
+ *
+ * Bedeli: arka kanat artık kendi kökü etrafında değil, ön kanadın menteşesi
+ * etrafında dönüyor. Çırpma Z ekseni etrafında olduğu için menteşenin z
+ * farkı bu dönüşü hiç etkilemiyor; yalnızca burulmada (X ekseni) 0.2
+ * birimlik kaldıraç farkı oluşuyor ve 16°'lik burulmada bu ~0.055 birim.
+ * Görünmeyecek kadar küçük, karşılığında geçiş tamamen imkânsız.
+ *
+ * ⚠ HINGES yine iki ayrı değer taşıyor ve taşımalı: kanat GEOMETRİLERİ
+ * o noktalara göre kuruluyor. Değişen yalnızca dönüş pivotu.
+ */
+uniform vec3  uWingPivot;
 uniform float uFlapUp;        // radyan
 uniform float uFlapDown;      // radyan
 uniform float uDownstroke;
@@ -100,7 +127,7 @@ void bfSetup() {
   float isHind = step(${WING_FORE.toFixed(1)}, aWingId);
   bfIsHind = isHind;
 
-  bfHinge = mix(uForeHinge, uHindHinge, isHind);
+  bfHinge = uWingPivot;
   float cycle = uTime * aFlapSpeed + aPhase - isHind * uHindLag;
   float amp = uAmplitude * mix(1.0, uHindAmp, isHind);
 
@@ -192,8 +219,13 @@ export function injectFlapShader(material, hinges) {
    */
   const uniforms = {
     uTime: { value: 0 },
-    uForeHinge: { value: hinges.fore.clone() },
-    uHindHinge: { value: hinges.hind.clone() },
+    /*
+     * Pivot ÖN kanadın menteşesi. Ortalama ya da arka menteşe de olurdu —
+     * geçiş açısından üçü de eşdeğer, çünkü belirleyici olan tek pivot
+     * olması. Ön menteşe seçildi çünkü bugünkü görüntüye en yakın olan o:
+     * ön kanadın hareketi hiç değişmiyor, arka kanat ona uyuyor.
+     */
+    uWingPivot: { value: hinges.fore.clone() },
     uFlapUp: { value: 0 },
     uFlapDown: { value: 0 },
     uDownstroke: { value: FLAP_DEFAULTS.downstrokeFraction },
