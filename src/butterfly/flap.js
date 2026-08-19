@@ -13,8 +13,26 @@ export const FLAP_DEFAULTS = {
   flapUpDeg: 72, // vuruşun tepesi
   flapDownDeg: -14, // vuruşun dibi
   downstrokeFraction: 0.42, // vuruşun ne kadarı aşağı hamlesi
-  hindLag: 0.12, // arka kanadın faz gecikmesi (vuruş kesri)
-  hindAmplitude: 0.85,
+  /*
+   * ÖN VE ARKA KANAT SENKRON ÇIRPIYOR — gecikme 0, genlik eşit.
+   *
+   * Önce 0.12 gecikme ve 0.85 genlik vardı; gerçek bir kelebekte arka kanat
+   * ön kanadı hafifçe takip ettiği için doğru görünüyordu. Ama iki kanat
+   * plan görünüşünde ÜST ÜSTE biniyor: farklı açılardayken arka kanat ön
+   * kanadın düzleminden geçip içinden çıkıyordu.
+   *
+   * Aynı açı + aynı burulma verildiğinde geçiş matematiksel olarak imkânsız.
+   * İki kanat kendi menteşesi etrafında dönüyor ve menteşeler farklı
+   * (fore y=0.10 z=+0.10, hind y=0.06 z=−0.10), ama aynı R dönüşü altında
+   * aralarındaki ayrım R·d + (I−R)·e ile veriliyor; çırpma aralığında
+   * (−14°…+72°) bu hep pozitif kalıyor. Yani menteşe farkı sorun değildi,
+   * FAZ farkıydı.
+   *
+   * Denetleyiciler panelde duruyor (laboratuvarda denenebilsin diye);
+   * değişen yalnızca varsayılan.
+   */
+  hindLag: 0, // arka kanadın faz gecikmesi (vuruş kesri)
+  hindAmplitude: 1,
   twistDeg: 16, // kanadın açıklık ekseni etrafında burulması
 };
 
