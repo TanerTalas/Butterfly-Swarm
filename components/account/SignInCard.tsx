@@ -49,33 +49,55 @@ export function SignInCard({
         ]}
       />
 
-      <div className="flex flex-col gap-4">
-        <Field
-          label="email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <PasswordField
-          label="password"
-          autoComplete={tab === 'in' ? 'current-password' : 'new-password'}
-          placeholder="at least 10 characters"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          note={tab === 'up' ? 'at least 10 characters' : undefined}
-        />
-      </div>
-
-      <Button
-        size="md"
-        fullWidth
-        disabled={!canSubmit}
-        onClick={() => (tab === 'in' ? onDone(email) : onNeedsSetup(email))}
+      {/*
+       * GERÇEK <form>. Alanlar önce çıplak duruyordu ve Enter'a basmak
+       * hiçbir şey yapmıyordu: gönderilecek bir form olmayınca tarayıcının
+       * örtük gönderimi (implicit submission) devreye girmiyor.
+       *
+       * Form ayrıca şifre yöneticilerinin alanları bir giriş formu olarak
+       * tanımasını sağlıyor; `autoComplete` ipuçları ancak form içinde tam
+       * anlamıyla işe yarıyor.
+       *
+       * `gap-6` burada tekrarlanıyor çünkü form artık kartın tek bir flex
+       * çocuğu; olmasaydı alanlarla buton arasındaki boşluk kapanırdı.
+       */}
+      <form
+        className="flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!canSubmit) return;
+          if (tab === 'in') onDone(email);
+          else onNeedsSetup(email);
+        }}
       >
-        {tab === 'in' ? 'Sign in' : 'Sign up'}
-      </Button>
+        <div className="flex flex-col gap-4">
+          <Field
+            label="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <PasswordField
+            label="password"
+            autoComplete={tab === 'in' ? 'current-password' : 'new-password'}
+            placeholder="at least 10 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            note={tab === 'up' ? 'at least 10 characters' : undefined}
+          />
+        </div>
+
+        {/*
+         * Formun VARSAYILAN düğmesi. Devre dışıyken Enter da formu
+         * göndermiyor — tarayıcı örtük gönderimde bu düğmeyi arıyor.
+         * Yani doğrulama tek yerde kalıyor, iki kez yazılmıyor.
+         */}
+        <Button size="md" type="submit" fullWidth disabled={!canSubmit}>
+          {tab === 'in' ? 'Sign in' : 'Sign up'}
+        </Button>
+      </form>
 
       <button
         type="button"

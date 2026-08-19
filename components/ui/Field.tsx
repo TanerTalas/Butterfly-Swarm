@@ -89,6 +89,13 @@ export function Segmented<T extends string>({
         return (
           <button
             key={o.value}
+            /*
+             * `type="button"` ŞART. Sekmeler artık bir <form> içinde
+             * duruyor ve tipi verilmemiş bir <button> formda varsayılan
+             * olarak SUBMIT oluyor — "Sign up" sekmesine tıklamak formu
+             * gönderirdi.
+             */
+            type="button"
             role="tab"
             aria-selected={active}
             onClick={() => onChange(o.value)}

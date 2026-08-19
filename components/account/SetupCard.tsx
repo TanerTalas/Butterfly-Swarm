@@ -62,49 +62,55 @@ export function SetupCard({
         </div>
       </div>
 
-      <Field
-        label="name"
-        display
-        maxLength={NAME_MAX}
-        placeholder="Wren"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        hint={`${name.length}/${NAME_MAX}`}
-        note="shown next to the butterflies you release"
-      />
-
-      <div className="flex flex-col gap-3">
-        <span className="flex items-baseline justify-between gap-3">
-          <Label>profile photo</Label>
-          <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-            {current?.name} · {avatar}
-          </span>
-        </span>
-
-        <div className="flex flex-wrap gap-3">
-          {AVATAR_COLOURS.map((c) => (
-            <button
-              key={c.hex}
-              type="button"
-              onClick={() => setAvatar(c.hex)}
-              aria-label={c.name}
-              aria-pressed={c.hex === avatar}
-              data-selected={c.hex === avatar}
-              className="ring-choice flex h-[46px] w-[46px] items-center justify-center rounded-full bg-panel"
-            >
-              <Butterfly fore={c.hex} width={28} height={23} simple />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Button
-        fullWidth
-        disabled={trimmed.length === 0}
-        onClick={() => onDone(trimmed, avatar)}
+      {/* İsim alanında Enter'a basmak kurulumu tamamlıyor — bkz. SignInCard */}
+      <form
+        className="flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (trimmed.length === 0) return;
+          onDone(trimmed, avatar);
+        }}
       >
-        Enter the meadow
-      </Button>
+        <Field
+          label="name"
+          display
+          maxLength={NAME_MAX}
+          placeholder="Wren"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          hint={`${name.length}/${NAME_MAX}`}
+          note="shown next to the butterflies you release"
+        />
+
+        <div className="flex flex-col gap-3">
+          <span className="flex items-baseline justify-between gap-3">
+            <Label>profile photo</Label>
+            <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
+              {current?.name} · {avatar}
+            </span>
+          </span>
+
+          <div className="flex flex-wrap gap-3">
+            {AVATAR_COLOURS.map((c) => (
+              <button
+                key={c.hex}
+                type="button"
+                onClick={() => setAvatar(c.hex)}
+                aria-label={c.name}
+                aria-pressed={c.hex === avatar}
+                data-selected={c.hex === avatar}
+                className="ring-choice flex h-[46px] w-[46px] items-center justify-center rounded-full bg-panel"
+              >
+                <Butterfly fore={c.hex} width={28} height={23} simple />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Button type="submit" fullWidth disabled={trimmed.length === 0}>
+          Enter the meadow
+        </Button>
+      </form>
     </Card>
   );
 }

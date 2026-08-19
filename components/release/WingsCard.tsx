@@ -81,28 +81,49 @@ export function WingsCard({
           </div>
         </div>
 
-        <Field
-          label="name"
-          display
-          maxLength={NAME_MAX}
-          placeholder="Mint"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          hint={name.length + '/' + NAME_MAX}
-        />
+        {/*
+         * İsim alanında Enter salıveriyor — formun varsayılan düğmesi
+         * "Let it go". İsim yazıp Enter'a basmak bu ekranın doğal bitişi.
+         *
+         * ⚠ "Preview" AYNI form içinde ve `type="button"` olmak zorunda:
+         * tipi verilmemiş bir <button> formda submit sayılıyor, yani
+         * önizleme açmak isteyen kullanıcı kelebeği salıvermiş olurdu.
+         */}
+        <form
+          className="flex flex-col gap-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (pending || trimmed.length === 0) return;
+            onRelease(trimmed, fore, hind);
+          }}
+        >
+          <Field
+            label="name"
+            display
+            maxLength={NAME_MAX}
+            placeholder="Mint"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            hint={name.length + '/' + NAME_MAX}
+          />
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            className="flex-1"
-            disabled={pending || trimmed.length === 0}
-            onClick={() => onRelease(trimmed, fore, hind)}
-          >
-            {pending ? 'Letting it go…' : 'Let it go'}
-          </Button>
-          <Button variant="secondary" onClick={() => setPreview(true)}>
-            Preview
-          </Button>
-        </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              className="flex-1"
+              type="submit"
+              disabled={pending || trimmed.length === 0}
+            >
+              {pending ? 'Letting it go…' : 'Let it go'}
+            </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setPreview(true)}
+            >
+              Preview
+            </Button>
+          </div>
+        </form>
 
       </Card>
 

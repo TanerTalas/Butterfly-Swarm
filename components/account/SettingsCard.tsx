@@ -60,52 +60,71 @@ export function SettingsCard({
         Settings
       </h2>
 
-      <Field
-        label="name"
-        display
-        maxLength={NAME_MAX}
-        value={name}
-        disabled={locked}
-        onChange={(e) => setName(e.target.value)}
-        hint={name.length + '/' + NAME_MAX}
-      />
+      {/*
+       * Form yalnızca İSİM + RENK + Save'i sarıyor.
+       *
+       * Aşağıdaki silme onayı bilerek DIŞARIDA: aynı formun içinde olsaydı
+       * hesap adını yazarken Enter'a basmak formu gönderirdi ve orada
+       * hangi düğmenin varsayılan sayılacağı ince bir ayrıntıya kalırdı.
+       * Hesap silmenin klavyeyle kazara tetiklenebilmesi kabul edilebilir
+       * bir risk değil; o adım tıklamayla kalıyor.
+       */}
+      <form
+        className="flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (locked || !changed) return;
+          onSave(name.trim(), avatar);
+        }}
+      >
+        <Field
+          label="name"
+          display
+          maxLength={NAME_MAX}
+          value={name}
+          disabled={locked}
+          onChange={(e) => setName(e.target.value)}
+          hint={name.length + '/' + NAME_MAX}
+        />
 
-      <div className="flex flex-col gap-2.5">
-        <Label>profile photo</Label>
+        <div className="flex flex-col gap-2.5">
+          <Label>profile photo</Label>
 
-        <div className="flex flex-wrap gap-2.5 rounded-[14px] bg-panel px-5 py-[18px]">
-          {AVATAR_COLOURS.map((c) => (
-            <button
-              key={c.hex}
-              type="button"
-              disabled={locked}
-              onClick={() => setAvatar(c.hex)}
-              aria-label={c.name}
-              aria-pressed={c.hex === avatar}
-              data-selected={c.hex === avatar}
-              className="ring-choice flex h-10 w-10 items-center justify-center rounded-full bg-card disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Butterfly fore={c.hex} width={24} height={19} simple />
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2.5 rounded-[14px] bg-panel px-5 py-[18px]">
+            {AVATAR_COLOURS.map((c) => (
+              <button
+                key={c.hex}
+                type="button"
+                disabled={locked}
+                onClick={() => setAvatar(c.hex)}
+                aria-label={c.name}
+                aria-pressed={c.hex === avatar}
+                data-selected={c.hex === avatar}
+                className="ring-choice flex h-10 w-10 items-center justify-center rounded-full bg-card disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Butterfly fore={c.hex} width={24} height={19} simple />
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-2">
-        <Button
-          size="md"
-          fullWidth
-          disabled={locked || !changed}
-          onClick={() => onSave(name.trim(), avatar)}
-        >
-          Save
-        </Button>
-        <p className="text-center font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
-          {locked
-            ? 'name and colour are locked for now, try again tomorrow'
-            : 'once saved, name and colour cannot be changed again for 1 day'}
-        </p>
-      </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            size="md"
+            type="submit"
+            fullWidth
+            disabled={locked || !changed}
+          >
+            Save
+          </Button>
+
+          <p className="text-center font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
+            {locked
+              ? 'name and colour are locked for now, try again tomorrow'
+              : 'once saved, name and colour cannot be changed again for 1 day'}
+          </p>
+        </div>
+      </form>
 
       {/* Tehlikeli bölge */}
       <div className="flex flex-col gap-3 border-t border-[rgba(44,34,32,0.1)] pt-5">
