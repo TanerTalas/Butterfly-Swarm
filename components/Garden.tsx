@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Meadow, useMeadowBridge } from '@/components/meadow/Meadow';
-import { MeadowShell, ReleaseCounter } from '@/components/meadow/MeadowShell';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Meadow,
+  useMeadowBridge,
+  type MeadowStatus,
+} from '@/components/meadow/Meadow';
+import {
+  MeadowShell,
+  ReleaseCounter,
+  SceneNotice,
+} from '@/components/meadow/MeadowShell';
 import {
   AccountChip,
   FarewellView,
@@ -22,12 +30,17 @@ import {
   StopWatchingButton,
   WatchButton,
 } from '@/components/meadow/WatchButton';
+import { clearDraft } from '@/lib/draft';
+import { isNoticeDismissed, dismissNotice } from '@/lib/dismissed';
 import {
+  expiresAt,
   GUEST_DAILY_LIMIT,
   SLOT_LIMIT,
   WING_COLOURS,
   type Butterfly,
   type Profile,
+  type ReleaseFailure,
+  type SignInError,
 } from '@/lib/types';
 
 /*
@@ -106,6 +119,26 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const [total, setTotal] = useState(initialTotal);
   const [pending, setPending] = useState(false);
 
+  /*
+   * Reddedilen salma ve reddedilen giriş (D3-2 / D4 / D5 / D6).
+   *
+   * ⚠ Bunlara SUNUCU karar verecek; istemci uygunluk hesaplamıyor. Bugün
+   * hiçbiri kendiliğinden oluşmuyor — `failNext` ile denenebiliyorlar
+   * (aşağıdaki geliştirme kancası). Aşama C'de `releaseAsGuest` /
+   * `completeSignIn` birer sunucu çağrısına dönüştüğünde cevabı buraya
+   * yazacaklar; kartlar aynı kalacak.
+   */
+  const [releaseFailure, setReleaseFailure] =
+    useState<ReleaseFailure | null>(null);
+  const [signInError, setSignInError] = useState<SignInError | null>(null);
+
+  /*
+   * Bir sonraki denemeyi ZORLA düşürecek hata. Geliştirme kancası yazıyor,
+   * deneme onu okuyup TÜKETİYOR — bir kez düşüp geçmesi gerekiyor, yoksa
+   * ekran bir daha çalışmaz hâle gelir.
+   */
+  const forcedFailure = useRef<ReleaseFailure | SignInError | null>(null);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [butterflies, setButterflies] = useState<Butterfly[]>([]);
   const [lastReleased, setLastReleased] = useState<Butterfly | null>(null);
@@ -132,6 +165,29 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
    */
   const [watching, setWatching] = useState(false);
   const [watched, setWatched] = useState<string | null>(null);
+
+  /*
+   * Sahnenin durumu ve "çayır çizilemiyor" şeridi (D8).
+   *
+   * Durum sahnede doğuyor ama şerit KABUKTA çiziliyor: sayaç ve rozetle aynı
+   * akışta durunca hiçbir genişlikte çakışamıyor. Eskiden sahne katmanına
+   * mutlak konumla yapıştırılmıştı ve 390px'te sayacın üstüne biniyordu.
+   */
+  const [sceneStatus, setSceneStatus] = useState<MeadowStatus>('loading');
+  const [noticeHidden, setNoticeHidden] = useState(true);
+
+  /*
+   * Kapatılmışlık MONTAJDAN SONRA okunuyor, `useState` başlangıcında değil:
+   * sunucu depoyu göremez ve istemcinin ilk render'ı ondan farklı çizerse
+   * hidrasyon uyuşmazlığı olur (taslakla aynı tuzak, bkz. `lib/draft.ts`).
+   * Bu yüzden başlangıç `true` — şerit bir kare gecikmeyle beliriyor, ki
+   * sahne zaten o kareden sonra hazır oluyor.
+   */
+  useEffect(() => {
+    setNoticeHidden(isNoticeDismissed());
+  }, []);
+
+  const showSceneNotice = sceneStatus === 'unsupported' && !noticeHidden;
 
   function startWatching(id: string | null) {
     setWatched(id);
@@ -188,7 +244,23 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const meadow = useMeadowBridge();
 
   useEffect(() => {
-    meadow.sync([...butterflies, ...guestButterflies]);
+    /*
+     * Ömrün bitiş anı burada EKLENİYOR, sahnede hesaplanmıyor: kaç günlük
+     * bir ömür olduğu bir ürün kuralı ve `lib/types.ts`te duruyor. Sahne
+     * yalnızca iki mutlak an görüyor ve aradaki oranı çiziyor.
+     */
+    meadow.sync([
+      ...butterflies.map((b) => ({
+        ...b,
+        kind: 'member' as const,
+        expiresAt: expiresAt(b),
+      })),
+      ...guestButterflies.map((b) => ({
+        ...b,
+        kind: 'guest' as const,
+        expiresAt: expiresAt(b),
+      })),
+    ]);
   }, [meadow, butterflies, guestButterflies]);
 
   /*
@@ -199,14 +271,78 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     meadow.watch(watching ? watched : null);
   }, [meadow, watching, watched]);
 
+  /*
+   * ── Geliştirme kancası ──────────────────────────────────────────────────
+   *
+   * D1 ve D3-2/D4/D5/D6 hiçbiri kendiliğinden OLUŞMUYOR: birincisi için
+   * hesabın hiç kelebeği olmaması, diğerleri için reddeden bir sunucu
+   * gerekiyor ve ikisi de bugün yok. Tasarlanmış ama hiç çizilmeyen bir
+   * durum, çizilmemiş bir durumdur — bu kanca onları tarayıcı konsolundan
+   * açılabilir yapıyor:
+   *
+   *     __garden.failNext({ kind: 'slots-full' })   sonraki salma reddedilsin
+   *     __garden.failNext({ kind: 'credentials' })  sonraki giriş reddedilsin
+   *     __garden.clearButterflies()                 D1: liste boşalsın
+   *     __garden.sceneStatus('unsupported')         D8: çayır çizilemiyor
+   *     __garden.sceneStatus('ready')               geri al
+   *
+   * Üretimde HİÇ derlenmiyor: `process.env.NODE_ENV` Next tarafından sabit
+   * olarak değiştiriliyor ve blok tamamen eleniyor.
+   */
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+
+    const w = window as unknown as Record<string, unknown>;
+    w.__garden = {
+      failNext(failure: ReleaseFailure | SignInError) {
+        forcedFailure.current = failure;
+      },
+      clearButterflies() {
+        setButterflies([]);
+      },
+      /*
+       * Sahne durumunu elle kur. WebGL'i olan bir tarayıcıda D8'e başka
+       * türlü girilemiyor ve bunun için kodu düzenleyip geri almak, tam
+       * olarak unutulup açık kalan türden bir iş.
+       *
+       * Kapatılmışlığı EZMİYOR: şerit bu sekmede kapatıldıysa yine
+       * görünmüyor — yoksa kanca, doğrulamak istediğimiz davranışın
+       * kendisini gizlerdi. Yeniden görmek için depo anahtarını silip
+       * sayfayı yenile (`butterfly-garden:scene-notice-dismissed`).
+       */
+      sceneStatus(next: MeadowStatus) {
+        setSceneStatus(next);
+      },
+    };
+    return () => {
+      delete w.__garden;
+    };
+  }, []);
+
+  /*
+   * Reddin ömrü DENEMENİN ömrü kadar.
+   *
+   * Kart terk edildiğinde red de gitmeli: kullanıcı çayıra dönüp geri
+   * geldiğinde bu artık başka bir ziyaret ve o an geçerli olup olmadığını
+   * yalnızca sunucu bilir. Ekranda bırakmak, bir daha sorulmamış bir sorunun
+   * eski cevabını göstermek olurdu — en görünür hâliyle: ağ hatası
+   * düzeldikten sonra bile buton hâlâ "olmadı" diyor.
+   */
+  function clearAttempts() {
+    setReleaseFailure(null);
+    setSignInError(null);
+  }
+
   /** Yeni ekrana gec ve gecmise ekle. */
   function go(next: View) {
+    clearAttempts();
     setHistory((h) => [...h, view]);
     setView(next);
   }
 
   /** Bir onceki ekrana don. Gecmis bossa koke. */
   function back() {
+    clearAttempts();
     setHistory((h) => {
       const prev = h[h.length - 1];
       setView(prev ?? (signedIn ? 'meadow' : 'landing'));
@@ -216,6 +352,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
 
   /** Akis bitti: gecmisi temizleyip yeni bir kok ekrana gec. */
   function reset(next: View) {
+    clearAttempts();
     setHistory([]);
     setView(next);
   }
@@ -226,8 +363,28 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     setPending(false);
   }
 
+  /**
+   * Zorlanmış hatayı okur ve TÜKETİR.
+   *
+   * Tüketmek şart: kalsaydı bir kez denenen hata kalıcı olur ve ekran bir
+   * daha salamaz hâle gelirdi.
+   */
+  function takeForcedFailure<T>(): T | null {
+    const f = forcedFailure.current as T | null;
+    forcedFailure.current = null;
+    return f;
+  }
+
   async function releaseAsGuest() {
+    // Yeni deneme, temiz sayfa: önceki red ekranda kalmamalı
+    setReleaseFailure(null);
     await fakeDelay();
+
+    const failure = takeForcedFailure<ReleaseFailure>();
+    if (failure) {
+      setReleaseFailure(failure);
+      return;
+    }
 
     /*
      * Rengi ÇAYIR seçiyor — kartın sözü bu ("The meadow picks the wings").
@@ -257,7 +414,15 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   }
 
   async function releaseAsMember(name: string, fore: string, hind: string) {
+    setReleaseFailure(null);
     await fakeDelay();
+
+    const failure = takeForcedFailure<ReleaseFailure>();
+    if (failure) {
+      setReleaseFailure(failure);
+      return;
+    }
+
     const butterfly: Butterfly = {
       id: newId(),
       name,
@@ -268,10 +433,24 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     setButterflies((list) => [...list, butterfly]);
     setLastReleased(butterfly);
     setTotal((n) => n + 1);
+
+    /*
+     * Taslak artık bir KELEBEK. Silme burada, kartta değil: salmanın
+     * gerçekten olduğunu bilen tek yer burası — kart yalnızca istekte
+     * bulunuyor ve reddedilen bir istekten sonra taslağın durması şart
+     * (D4/D5'in "renkleriniz ve isminiz duruyor" sözü).
+     */
+    clearDraft();
     reset('released');
   }
 
   function completeSignIn(email: string) {
+    const failure = takeForcedFailure<SignInError>();
+    if (failure) {
+      setSignInError(failure);
+      return;
+    }
+
     setProfile({ name: 'Wren', email, avatarHex: '#4F7FBF' });
     setButterflies(seedButterflies());
     reset(afterSignIn);
@@ -306,16 +485,83 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     go(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
   }
 
+  /*
+   * ── Kart geçişlerinde odak (§6.3) ───────────────────────────────────────
+   *
+   * Burası tek sayfa ve gerçek bir rota değişimi yok: kart değişince
+   * tarayıcı odağı taşımıyor, çünkü tarayıcıya göre hiçbir şey olmadı. Sekme
+   * tuşuyla gezen biri "Release a butterfly"a basıp yeni karta geçtiğinde
+   * odak hâlâ artık var olmayan bir düğmedeydi, yani BODY'ye düşüyordu ve
+   * bir sonraki Tab onu sayfanın en başına götürüyordu.
+   *
+   * Çözüm gezinme çerçevesinin odaklanabilir olması: sarmalayıcı `view`
+   * değiştiğinde zaten yeniden kuruluyor (`key={view}`), o yüzden odak
+   * doğal olarak yeni kartın başına düşüyor ve Tab oradan devam ediyor.
+   *
+   * Üç şey bilerek:
+   *
+   *   - **İlk render'da odak ÇALINMIYOR.** Sayfa açıldığında kullanıcı
+   *     henüz bir yere gitmedi; açılışta odağı kaçırmak hem şaşırtıyor hem
+   *     de ekran okuyucunun sayfa başlığını okumasını kesiyor.
+   *   - **İzleme kipinde atlanıyor**, çünkü kabuk o sırada `inert` ve inert
+   *     bir ağaçtaki elemana odak verilemiyor — çağrı sessizce düşerdi.
+   *     Bağımlılıkta `watching` var, yani izlemeden ÇIKINCA odak karta geri
+   *     dönüyor; eskiden "Leave the meadow" düğmesi kaybolunca odak da
+   *     kayboluyordu.
+   *   - **`preventScroll`**: kabuğun kaydırma kabı ekranın kendisi
+   *     (bkz. MeadowShell) ve odak verirken tarayıcının kendiliğinden
+   *     kaydırması kartı geçiş animasyonunun ortasında sıçratıyordu.
+   */
+  const viewRef = useRef<HTMLDivElement>(null);
+  const exitRef = useRef<HTMLButtonElement>(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+
+    /*
+     * İzleme kipinde odak ÇIKIŞ DÜĞMESİNE gidiyor, karta değil.
+     *
+     * Kabuk o sırada `inert` ama odak kendiliğinden dışarı çıkmıyor: Chrome,
+     * odaklı bir elemanın atası sonradan `inert` olduğunda odağı bırakmıyor
+     * (ölçüldü). Sonuç, kullanıcının göremediği ve etkileşemediği bir yerde
+     * duran bir odak — oradan Tab'a basmak bütün turu dolaşıp geliyordu,
+     * çünkü çıkış düğmesi DOM'da kabuktan ÖNCE duruyor.
+     *
+     * İzleme kipinde ekranda tek bir denetim var ve klavyeyle gezen birinin
+     * ihtiyacı olan tam olarak o.
+     */
+    if (watching) {
+      exitRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
+    viewRef.current?.focus({ preventScroll: true });
+  }, [view, watching]);
+
   const onMeadowView = view === 'landing' || view === 'meadow';
 
   return (
     <main className="meadow-stage">
-      <Meadow bridge={meadow} />
+      <Meadow bridge={meadow} onStatus={setSceneStatus} />
 
-      {watching && <StopWatchingButton onClick={stopWatching} />}
+      {watching && <StopWatchingButton ref={exitRef} onClick={stopWatching} />}
 
       <MeadowShell
         hidden={watching}
+        notice={
+          showSceneNotice ? (
+            <SceneNotice
+              onDismiss={() => {
+                setNoticeHidden(true);
+                dismissNotice();
+              }}
+            />
+          ) : null
+        }
         scrim={view === 'settings' || view === 'farewell' ? 'heavy' : 'default'}
         counter={onMeadowView ? <ReleaseCounter total={total} /> : null}
         aside={
@@ -335,7 +581,12 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           ) : null
         }
       >
-        <div key={view} className="view-fade">
+        {/*
+         * `tabIndex={-1}`: odak PROGRAMLA veriliyor, Tab sırasına girmiyor.
+         * Sekmeyle gezen biri bu kutuda takılmamalı — burası bir denetim
+         * değil, yalnızca odağın konacağı yer.
+         */}
+        <div key={view} ref={viewRef} tabIndex={-1} className="view-fade">
           {view === 'landing' && (
             <Landing
               onRelease={() => go('guest-release')}
@@ -350,6 +601,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <GuestReleaseCard
               pending={pending}
               blocked={guestBlocked}
+              failure={releaseFailure}
               onRelease={releaseAsGuest}
               onBack={back}
               onSignIn={() => {
@@ -361,6 +613,8 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
 
           {view === 'signin' && (
             <SignInCard
+              error={signInError}
+              onAttempt={() => setSignInError(null)}
               onDone={completeSignIn}
               onBack={back}
               onNeedsSetup={(email) => {
@@ -394,7 +648,9 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <WingsCard
               slotsUsed={flyingNow}
               pending={pending}
+              failure={releaseFailure}
               onRelease={releaseAsMember}
+              onGoToList={() => go('butterflies')}
               onBack={back}
             />
           )}
@@ -420,6 +676,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           {view === 'butterflies' && (
             <MyButterfliesCard
               butterflies={butterflies}
+              historyCount={finished.length}
               onRelease={goRelease}
               onBack={back}
               onHistory={() => go('history')}

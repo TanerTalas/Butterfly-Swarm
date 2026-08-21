@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field, PasswordField, Segmented } from '@/components/ui/Field';
+import { PASSWORD_MIN, type SignInError } from '@/lib/types';
 
 /*
  * Ekran 04 — giriş / kayıt.
@@ -13,24 +14,77 @@ import { Field, PasswordField, Segmented } from '@/components/ui/Field';
  * taşıyor (handoff bunu açıkça yazıyor); marka işaretleri yeniden
  * renklendirilmiyor.
  *
- * ⚠ Hata metinleri kullanıcı sayımına izin vermemeli: "email or password is
- * wrong" — hangi alanın yanlış olduğu söylenmez (handoff güvenlik notu).
- * Doğrulama sunucuya bağlanınca buraya gelecek.
+ * ── D6: hata hâlleri ──────────────────────────────────────────────────────
+ *
+ * ⚠ TEK MESAJ: "email or password is wrong". Hangi alanın yanlış olduğu
+ * SÖYLENMEZ — söylenirse e-postanın kayıtlı olup olmadığı ele verilir ve
+ * kullanıcı sayımına izin verilmiş olur. Bu bir tasarım tercihi değil,
+ * güvenlik kuralı.
+ *
+ * Bunun görsel sonucu var ve bilerek: hata çerçevesi İKİ ALANA birden
+ * düşüyor. Yalnızca birini işaretlemek, mesajın söylemediğini renkle
+ * söylemek olurdu.
+ *
+ * Yer: alanların ALTI, butonun ÜSTÜ. Alanların üstüne konsaydı yerleşim
+ * aşağı kayıp kullanıcının bastığı düğme parmağının altından kaçardı.
+ *
+ * Ekran okuyucu: mesaj `role="alert"` taşıyor (örtük `aria-live=assertive`)
+ * — kullanıcının kendi gönderiminin cevabı, yani kesintiye değer. Odak
+ * şifre alanına taşınıyor: e-posta genelde doğru, yeniden yazılacak olan
+ * şifre. Alan da temizleniyor, yoksa kullanıcı yanlış şifrenin üstüne
+ * yazmaya çalışıyor.
+ *
+ * Hız sınırında buton KİLİTLENİYOR. Diğer iki hatada kilitlenmiyor: orada
+ * tekrar denemek doğru davranış, burada tekrar denemek sınırı uzatıyor.
  */
 export function SignInCard({
   onDone,
   onNeedsSetup,
   onBack,
+  error,
+  onAttempt,
+  status = 'idle',
 }: {
   onDone: (email: string) => void;
   onNeedsSetup: (email: string) => void;
   onBack: () => void;
+  /** Sunucunun reddi. `null` iken kart temiz. */
+  error?: SignInError | null;
+  /** Her gönderimde çağrılıyor — `Garden` önceki hatayı buradan siliyor. */
+  onAttempt?: () => void;
+  /**
+   * `verify`: kayıt alındı, e-posta doğrulaması bekleniyor.
+   *
+   * ⚠ Bugün bu hâle GİRİLMİYOR ve girilmemeli: doğrulama bir sunucu işi ve
+   * akışı şimdiden oraya sokmak, kayıt olan kullanıcıyı hiç açılmayacak bir
+   * kapının önünde bırakırdı. Tasarımı hazır, tetikleyicisi §3'te.
+   */
+  status?: 'idle' | 'verify';
 }) {
   const [tab, setTab] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const passwordRef = useRef<HTMLInputElement>(null);
 
-  const canSubmit = email.includes('@') && password.length >= 10;
+  const short = password.length > 0 && password.length < PASSWORD_MIN;
+  const locked = error?.kind === 'rate-limit';
+  const canSubmit =
+    email.includes('@') && password.length >= PASSWORD_MIN && !locked;
+
+  /*
+   * Hata GELDİĞİNDE şifreyi temizleyip odağı oraya taşı.
+   *
+   * `error` nesnesinin kimliğine bakılıyor, içeriğine değil: aynı hatayı
+   * ikinci kez almak da bir olay ve alan yine temizlenmeli. `Garden` her
+   * denemede `null`a çekip yeniden yazdığı için bu tetikleniyor.
+   */
+  useEffect(() => {
+    if (!error || error.kind === 'rate-limit') return;
+    setPassword('');
+    passwordRef.current?.focus();
+  }, [error]);
+
+  if (status === 'verify') return <VerifyCard email={email} onBack={onBack} />;
 
   return (
     <Card width={440}>
@@ -65,11 +119,16 @@ export function SignInCard({
         onSubmit={(e) => {
           e.preventDefault();
           if (!canSubmit) return;
+          onAttempt?.();
           if (tab === 'in') onDone(email);
           else onNeedsSetup(email);
         }}
       >
         <div className="field-group">
+          {/*
+           * `aria-invalid` İKİ ALANDA birden — mesaj hangisinin yanlış
+           * olduğunu söylemiyor, çerçeve de söylememeli.
+           */}
           <Field
             label="email"
             type="email"
@@ -77,16 +136,28 @@ export function SignInCard({
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            invalid={error?.kind === 'credentials'}
           />
           <PasswordField
+            ref={passwordRef}
             label="password"
             autoComplete={tab === 'in' ? 'current-password' : 'new-password'}
-            placeholder="at least 10 characters"
+            placeholder={`at least ${PASSWORD_MIN} characters`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            note={tab === 'up' ? 'at least 10 characters' : undefined}
+            invalid={error?.kind === 'credentials' || (tab === 'up' && short)}
+            /*
+             * Kayıt sekmesinde uzunluk kuralı SÜREKLİ yazılı, ve kullanıcı
+             * kısa bir şifre yazdığında uyarı rengine geçiyor. Önce yalnızca
+             * buton kilitleniyordu: kullanıcı neden gönderemediğini
+             * göremiyordu.
+             */
+            note={tab === 'up' ? `at least ${PASSWORD_MIN} characters` : undefined}
+            noteDanger={tab === 'up' && short}
           />
         </div>
+
+        {error && <SignInAlert error={error} />}
 
         {/*
          * Formun VARSAYILAN düğmesi. Devre dışıyken Enter da formu
@@ -94,7 +165,7 @@ export function SignInCard({
          * Yani doğrulama tek yerde kalıyor, iki kez yazılmıyor.
          */}
         <Button size="md" type="submit" fullWidth disabled={!canSubmit}>
-          {tab === 'in' ? 'Sign in' : 'Sign up'}
+          {locked ? 'Too many attempts' : tab === 'in' ? 'Sign in' : 'Sign up'}
         </Button>
       </form>
 
@@ -115,6 +186,52 @@ export function SignInCard({
        */}
       <p className="consent-note">
         by signing in you accept the <a href="/legal/terms">terms</a>
+      </p>
+    </Card>
+  );
+}
+
+/*
+ * Hata satırı. Kalıp "Kelebeklerim"deki dolu yuvanınkiyle aynı: bir
+ * denetimin altında nedenini söyleyen tek satır not — yalnızca rengi
+ * uyarıya dönüyor. Yeni bir kutu icat edilmedi.
+ */
+function SignInAlert({ error }: { error: SignInError }) {
+  return (
+    <p className="note note--center note--danger" role="alert">
+      {error.kind === 'credentials'
+        ? 'email or password is wrong'
+        : error.kind === 'rate-limit'
+          ? error.retryInSeconds
+            ? `too many attempts · try again in ${error.retryInSeconds}s`
+            : 'too many attempts · wait a moment before trying again'
+          : 'that did not reach us · try again'}
+    </p>
+  );
+}
+
+/*
+ * Kayıt alındı, e-posta doğrulaması bekleniyor.
+ *
+ * Ayrı bir EKRAN değil, aynı kartın bir hâli: başlık ve genişlik aynı, form
+ * yerini tek bir bildirime bırakıyor. Buton yok — kullanıcının burada
+ * yapabileceği bir şey yok, yapacağı şey posta kutusunda.
+ */
+function VerifyCard({ email, onBack }: { email: string; onBack: () => void }) {
+  return (
+    <Card width={440}>
+      <BackLink label="back to the meadow" onClick={onBack} />
+
+      <div className="card-intro">
+        <h2 className="card-title card-title--lead">Check your inbox</h2>
+        <p className="body-text">
+          We sent a link to {email || 'your address'}. The meadow opens once
+          you follow it.
+        </p>
+      </div>
+
+      <p className="note note--center">
+        the link lasts an hour · nothing is released until you are in
       </p>
     </Card>
   );

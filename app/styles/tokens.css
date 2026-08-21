@@ -60,6 +60,16 @@
   /* Sahnenin üstünde duran okunabilirlik adaları */
   --surface-float: rgba(253, 246, 242, 0.94);
 
+  /* ── Çayırın yer tutucusu ──
+   * Sahne inerken çizilen gökyüzü/ufuk/zemin bandı (D7). Üçü de canlı
+   * sahnenin karşılıklarından örneklendi: `--meadow-horizon` doğrudan
+   * `WORLD.fog.color`, yani yer tutucudan sahneye geçiş ufukta dikişsiz.
+   * Kendi renkleri olarak duruyorlar çünkü bir GÖRSELİN yerini tutuyorlar,
+   * arayüzün bir parçası değiller. */
+  --meadow-sky: #ece4e1;
+  --meadow-horizon: #e9d3c9;
+  --meadow-ground: #b6c691;
+
   /* ── Kanat renkleri ──
    * Bunlar sahnedeki `WORLD.palette` ile BİREBİR aynı olmalı
    * (src/world/config.js). Tasarım da aynı beşliyi kullanıyor. */

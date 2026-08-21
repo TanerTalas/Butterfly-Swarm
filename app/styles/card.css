@@ -187,3 +187,38 @@
 .empty-slot--block {
   height: 96px;
 }
+
+/*
+ * Boş durumun İÇİ (D1, D2) — iki satır, ortalanmış.
+ *
+ * Yükseklik `min-height`e dönüyor: 96px tek satır içindi, iki satır dar
+ * ekranda üçe kırılıp kutudan taşıyordu. Kutu artık içeriğiyle büyüyor ve
+ * asgari ölçüsü aynı kalıyor, yani dolu listeyle yan yana konduğunda
+ * yerleşim sıçramıyor.
+ */
+.empty-state {
+  flex-direction: column;
+  gap: 6px;
+  min-height: 96px;
+  height: auto;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+/*
+ * Reddedilen salmanın notu (D3-2 / D4 / D5).
+ *
+ * Butonun ALTINDA duruyor ve `action-stack`in kendi aralığını tekrarlamıyor:
+ * iki not satırı birbirine yakın olmalı (tek bir cümlenin iki yarısı gibi
+ * okunuyorlar), eylem düğmesi ise ayrılmalı.
+ */
+.release-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.release-notice .button {
+  margin-top: 8px;
+}

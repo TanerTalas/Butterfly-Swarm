@@ -15,11 +15,20 @@ export const WING_COLOURS = [
   { name: 'green', hex: '#2F9E4F' },
 ] as const;
 
-/** Profil avatarı için altı seçenek (handoff: unisex, all six). */
+/*
+ * Profil avatarı için beş seçenek.
+ *
+ * Handoff altı istiyordu; turkuaz (#17B3A3) çıkarıldı. İki sebep birden:
+ * kanat paletindeki turkuazla BİREBİR aynı hex'ti, yani profil rozeti ile
+ * kelebek rengi aynı şeymiş gibi okunuyordu — oysa ikisi ayrı seçim. Ve
+ * yeşille yan yana durduğunda ayırt edilmesi zordu.
+ *
+ * ⚠ Kaldırılan renk `WING_COLOURS`ta DURUYOR; oradan silme, sahnedeki
+ * `WORLD.palette` ile birebir eşleşmek zorunda (src/world/config.js).
+ */
 export const AVATAR_COLOURS = [
   { name: 'blue', hex: '#4F7FBF' },
   { name: 'pink', hex: '#D98AA6' },
-  { name: 'turquoise', hex: '#17B3A3' },
   { name: 'amber', hex: '#E8A01C' },
   { name: 'purple', hex: '#7A6BC4' },
   { name: 'green', hex: '#6F8A5A' },
@@ -44,6 +53,14 @@ export const SLOT_LIMIT = 5;
  */
 export const GUEST_DAILY_LIMIT = 1;
 
+/**
+ * En kısa şifre.
+ *
+ * ⚠ Sunucuda da UYGULANMALI. Buradaki sayı yalnızca arayüzün aynı şeyi
+ * söylemesi için: alan notu, hata rengi ve buton kilidi üçü de bunu okuyor.
+ */
+export const PASSWORD_MIN = 10;
+
 /** Kelebeğin ömrü, gün. */
 export const LIFESPAN_DAYS = 7;
 
@@ -62,6 +79,55 @@ export type Profile = {
   avatarHex: string;
 };
 
+/*
+ * ── Reddedilen salma ──────────────────────────────────────────────────────
+ *
+ * Kullanıcı butona BASTIKTAN sonra salmanın olmaması. Kart açılırken zaten
+ * engelli olma hâlinden ayrı bir şey: orada buton hiç basılmıyor, burada
+ * basıldı ve bir şey olmadı.
+ *
+ * Üçü tek bir tip, çünkü ikisi iki ayrı kartta birden görünüyor
+ * (`network` hem misafir salmada hem kanat seçiminde). Ayrı ayrı
+ * tanımlansalardı iki kart aynı şeyi iki farklı dille söylerdi.
+ *
+ * ⚠ Bunlara SUNUCU karar veriyor. İstemci uygunluk hesaplamıyor; buradaki
+ * tip yalnızca cevabın şekli. Bugün hiçbiri kendiliğinden oluşmuyor —
+ * geliştirmede `window.__garden.failNext()` ile denenebiliyor
+ * (`Garden.tsx`).
+ */
+export type ReleaseFailure =
+  /**
+   * Misafir günlük hakkı. Sınır bir ÇEREZDE tutuluyor, yani bu tarayıcıya
+   * ait — aynı ağdaki başka bir kişiyi engellemiyor.
+   */
+  | { kind: 'guest-limit' }
+  /** SENİN beş yuvan doldu (başka sekme, ya da istek sunucuda tavana takıldı). */
+  | { kind: 'slots-full' }
+  /**
+   * ÇAYIRIN üye alanı doldu — senin yuvan boş olsa bile.
+   *
+   * `slots-full`tan bambaşka bir şey ve ayrı olması şart: orada tavana çarpan
+   * kullanıcının kendisi, burada çayır. "Beş hakkını doldurdun" demek yanlış
+   * olurdu ve kullanıcı bakıp iki kelebeği olduğunu görürdü.
+   */
+  | { kind: 'meadow-full' }
+  /** İstek ulaşmadı ya da 5xx döndü. Kural ihlali yok: tekrar denenebilir. */
+  | { kind: 'network' };
+
+/*
+ * ── Giriş hatası ──────────────────────────────────────────────────────────
+ *
+ * ⚠ `credentials` TEK bir mesaja karşılık geliyor: "email or password is
+ * wrong". Hangi alanın yanlış olduğu SÖYLENMEZ — söylenirse e-postanın
+ * kayıtlı olup olmadığı ele verilir ve kullanıcı sayımına izin verilmiş
+ * olur. Bu bir tasarım tercihi değil, güvenlik kuralı.
+ */
+export type SignInError =
+  | { kind: 'credentials' }
+  /** Çok deneme. Sunucu ne kadar bekleneceğini söylüyorsa taşınıyor. */
+  | { kind: 'rate-limit'; retryInSeconds?: number }
+  | { kind: 'network' };
+
 export type Session =
   | { kind: 'guest' }
   | { kind: 'member'; profile: Profile };
@@ -74,6 +140,21 @@ export type Session =
 export function daysLeft(b: Butterfly, now = new Date()): number {
   const elapsed = (now.getTime() - b.releasedAt.getTime()) / 86_400_000;
   return Math.max(0, Math.ceil(LIFESPAN_DAYS - elapsed));
+}
+
+/**
+ * Kelebeğin yedi gününün dolduğu an.
+ *
+ * `daysLeft` gün sayıyor ve tavana yuvarlıyor — sayaç için doğru, çayırdaki
+ * solma için değil: yuvarlanmış bir sayı kelebeği günde bir kez sıçratırdı.
+ * Bu ise ham an, ve çayıra giden tek ömür bilgisi.
+ *
+ * ⚠ `LIFESPAN_DAYS`i okuyan TEK yer burasıyla `daysLeft`. Sahne motoru ömrün
+ * kaç gün olduğunu bilmiyor, yalnızca iki mutlak an alıyor
+ * (`src/world/visitors.js`) — kural değişince çayır kendiliğinden uyuyor.
+ */
+export function expiresAt(b: Butterfly): Date {
+  return new Date(b.releasedAt.getTime() + LIFESPAN_DAYS * 86_400_000);
 }
 
 export function formatReleased(d: Date): string {

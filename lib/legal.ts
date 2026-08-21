@@ -9,9 +9,31 @@
  *
  * ⚠ BU METİN YER TUTUCU. Ürünün gerçek davranışına göre sade bir dille
  * yazıldı ama hukuki metin DEĞİL. KVKK ve GDPR uyumlu sürümleriyle
- * değiştirilmesi gerekiyor. Özellikle "How long" bölümü bir söz veriyor:
- * yedi günü dolan kelebek kaydının silindiği. O sözü tutan zamanlanmış
- * görev yazılmadan bu metin yayına çıkmamalı.
+ * değiştirilmesi gerekiyor.
+ *
+ * ── Metin ÜRÜNÜN sözü ─────────────────────────────────────────────────────
+ *
+ * Buradaki her cümle bir davranış taahhüdü ve ürün onu tutmak zorunda. Üç
+ * çelişki bulunup düzeltildi; üçü de aynı türdendi — metin, ürünün yapmadığı
+ * (ya da yapacağı) bir şeyi söylüyordu:
+ *
+ *   1. "How long" yedi günü dolan kelebek kaydının SİLİNDİĞİNİ söylüyordu,
+ *      oysa History ekranı tam olarak o kayıtları listeliyor. Silme sözü
+ *      verip bir liste göstermek mümkün değil.
+ *   2. "What we keep" misafirin çerezinden hiç bahsetmiyordu. Günlük sınır
+ *      ÇEREZLE tutuluyor (bkz. EKSIKLER §1.2) ve bir çerez, kullanıldığı yerde
+ *      yazılmak zorunda — hem gizlilik hem çerez metninde.
+ *   3. "Preferences" tarayıcıda hiçbir şey saklanmadığını söylüyordu.
+ *      Yarım kalmış kelebek artık `sessionStorage`da duruyor
+ *      (`lib/draft.ts`).
+ *
+ * ⚠ Yeni bir davranış eklerken BU DOSYAYA dön. Taslak koruması eklendiğinde
+ * çerez metni bir turdur yanlıştı ve bunu kimse fark etmemişti.
+ *
+ * ⚠ Hesap silme KALICI ve geri alma penceresi YOK. Bu bir varsayım değil:
+ * arayüz üç yerde birden söz veriyor — ayarlardaki not ("cannot be brought
+ * back"), butonun kendisi ("Delete for good") ve aşağıdaki "at once". Bir
+ * geri alma penceresi eklenecekse üçünün de birlikte değişmesi gerekir.
  */
 
 export type LegalSection = { heading: string; body: string };
@@ -31,11 +53,11 @@ export const LEGAL_PAGES: LegalPage[] = [
     slug: 'privacy',
     navLabel: 'Privacy Policy',
     title: 'Privacy Policy',
-    updated: 'last updated 18 august 2026',
+    updated: 'last updated 21 august 2026',
     sections: [
       {
         heading: 'What we keep',
-        body: 'If you release a butterfly as a guest, we store the butterfly itself and nothing about you. If you have an account, we store your email address, the name and colour you chose for your profile, and the butterflies you have released.',
+        body: 'If you release a butterfly as a guest, we store the butterfly itself and nothing about you. The one-a-day limit is kept in a cookie in your own browser, not in a record here. If you have an account, we store your email address, the name and colour you chose for your profile, and the butterflies you have released.',
       },
       {
         heading: 'Why',
@@ -43,7 +65,7 @@ export const LEGAL_PAGES: LegalPage[] = [
       },
       {
         heading: 'How long',
-        body: 'A butterfly record is removed once its seven days are over. Deleting your account removes your profile and every butterfly attached to it at once. The only thing that outlives either is the count of how many butterflies have been released, which is a single number and is not attached to anyone.',
+        body: 'After seven days a butterfly stops flying, and what is left of it is a line in your own history: the name you gave it and the day you released it. Its colours and its place in the meadow are gone. That line stays until you delete your account, which removes your profile and every butterfly attached to it at once and for good; there is no recovery period. The only thing that outlives either is the count of how many butterflies have been released, which is a single number and is not attached to anyone.',
       },
       {
         heading: 'Third parties',
@@ -83,15 +105,15 @@ export const LEGAL_PAGES: LegalPage[] = [
     slug: 'cookies',
     navLabel: 'Cookie Policy',
     title: 'Cookie Policy',
-    updated: 'last updated 18 august 2026',
+    updated: 'last updated 21 august 2026',
     sections: [
       {
         heading: 'Necessary',
-        body: 'If you sign in, one cookie keeps you signed in. Without it there is no way to know which butterflies are yours. It cannot be turned off while you are signed in, and it goes away when you sign out.',
+        body: 'If you sign in, one cookie keeps you signed in. Without it there is no way to know which butterflies are yours. It cannot be turned off while you are signed in, and it goes away when you sign out. A second cookie remembers that a guest has let a butterfly go today, which is how the one-a-day limit works. It holds a date and nothing else, and it expires by itself.',
       },
       {
         heading: 'Preferences',
-        body: 'We remember nothing else about your visit. Wing colours, camera position and everything else are recalculated each time the page loads.',
+        body: 'One thing is kept in your browser and never sent to us: a butterfly you have started but not released yet, so that reloading the page does not lose the colours and the name you chose. It lives in the tab and disappears when you close it or when the butterfly goes. Nothing else is remembered — the camera position and everything else are recalculated each time the page loads.',
       },
       {
         heading: 'Measurement',

@@ -1,5 +1,6 @@
 'use client';
 
+import type { Ref } from 'react';
 import { Eye } from '@/components/ui/Icons';
 
 /*
@@ -30,10 +31,27 @@ export function WatchButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** İzleme kipinden çıkış — alt ortada. */
-export function StopWatchingButton({ onClick }: { onClick: () => void }) {
+/**
+ * İzleme kipinden çıkış — alt ortada.
+ *
+ * `ref` dışarıya açık, çünkü izleme kipine geçildiğinde odak buraya
+ * taşınıyor: kabuk o sırada `inert` ve bu, ekrandaki TEK denetim
+ * (bkz. Garden.tsx).
+ */
+export function StopWatchingButton({
+  onClick,
+  ref,
+}: {
+  onClick: () => void;
+  ref?: Ref<HTMLButtonElement>;
+}) {
   return (
-    <button type="button" onClick={onClick} className="meadow-control-exit">
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className="meadow-control-exit"
+    >
       <Eye off />
       Leave the meadow
     </button>

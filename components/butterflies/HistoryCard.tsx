@@ -13,10 +13,23 @@ import { formatReleased, type Butterfly } from '@/lib/types';
  * rengi, kalan gün, ilerleme çubuğu yok — hepsi artık geçersiz. Bu bir
  * envanter değil, bir kayıt defteri.
  *
- * ⚠ Bu ekran gizlilik metniyle çelişebilir. Orada "yedi günü dolan kelebek
- * kaydı siliniyor" yazıyor; bir geçmiş listesi tutmak o kaydı saklamak
- * demek. Aşama C'de ya metin ya da saklama süresi düzeltilmeli — silinen
- * kaydın geçmişte görünmesi mümkün değil.
+ * ── Ne SAKLANIYOR ─────────────────────────────────────────────────────────
+ *
+ * Satırın sadeliği bir tasarım tercihi değil, saklama kuralının kendisi:
+ * yedi gün dolunca kelebeğin rengi ve çayırdaki yeri GİDİYOR, geriye isim ve
+ * tarih kalıyor. Gizlilik metni ("How long", `lib/legal.ts`) tam olarak bunu
+ * söylüyor.
+ *
+ * ⚠ Bu satıra bir alan eklemek gizlilik metnini de değiştirmek demek.
+ * Eskiden metin kaydın SİLİNDİĞİNİ söylüyordu ve bu ekran onu yalanlıyordu.
+ *
+ * ── D2: geçmiş boş ────────────────────────────────────────────────────────
+ *
+ * Boş kutu "burada bir şey yok" diyordu; söylemesi gereken "buraya
+ * birikecek". Fark zaman kipinde: geçmiş bugün boş olduğu için değil, henüz
+ * hiçbir kelebek yedi gününü doldurmadığı için boş — ve bu geçici.
+ *
+ * Aynı kutuda iki satır: ne olmadığı, ve buranın ne olduğu.
  */
 
 const PAGE_SIZE = 5;
@@ -52,8 +65,11 @@ export function HistoryCard({
       </div>
 
       {ordered.length === 0 ? (
-        <div className="empty-slot empty-slot--block">
-          <span className="note">nothing has finished its seven days yet</span>
+        <div className="empty-slot empty-slot--block empty-state">
+          <p className="empty-state-title">Nothing has finished yet</p>
+          <p className="note note--center">
+            every butterfly lands here after its seven days
+          </p>
         </div>
       ) : (
         <>

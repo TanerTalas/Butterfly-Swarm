@@ -20,6 +20,21 @@ export function ArrowLeft({ size = 16 }: { size?: number }) {
   );
 }
 
+/** Kapatma çarpısı — kapatılabilir bildirimlerde. */
+export function Close({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M4 4l8 8M12 4l-8 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function Gear({ size = 17 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 17 17" aria-hidden>

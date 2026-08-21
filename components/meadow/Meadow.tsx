@@ -8,6 +8,29 @@ export type MeadowVisitor = {
   id: string;
   foreHex: string;
   hindHex: string;
+  /**
+   * Ömrün iki ucu — kelebeğin çayırda ne kadar solmuş görüneceği bu
+   * aralıktan türüyor. İkisi birden verilmezse kelebek hiç solmuyor.
+   *
+   * Sahne kalan oranı her karede kendisi hesaplıyor, yani liste yeniden
+   * gönderilmese de solma ilerliyor.
+   *
+   * Bu bir GÖSTERİM değeri, uygunluk değil: kelebeğin ne zaman listeden
+   * düşeceğine sunucu karar veriyor, sahne yalnızca gördüğünü çiziyor —
+   * `daysLeft()`in ilerleme çubuğunu çizmesi gibi. Tam solmuş bir kelebek
+   * çayırda görünmez olur ama KALKMAZ.
+   */
+  releasedAt?: Date;
+  expiresAt?: Date;
+  /**
+   * Misafir mi üye mi — çayırdaki iki kontenjandan hangisine sayılacağı.
+   *
+   * Verilmezse misafir sayılıyor: yanlış tarafa düşmesi hâlinde daha
+   * güvenli olan taraf o (misafir kontenjanı küçük ve dolduğunda sessizce
+   * yem kelebeğe düşülüyor; üye kontenjanına yanlışlıkla sayılan bir
+   * kelebek gerçek bir üyenin yerini yerdi).
+   */
+  kind?: 'guest' | 'member';
 };
 
 /*
@@ -136,17 +159,27 @@ export function useMeadowBridge(): MeadowBridge {
  * değişiyor. Bileşen kök düzende bir kez asılı duruyor.
  */
 
+/** Sahnenin kurulum durumu — `Garden` bunu kabuğa taşıyor. */
+export type MeadowStatus = 'loading' | 'ready' | 'unsupported';
+
 export function Meadow({
   className,
   bridge,
+  onStatus,
 }: {
   className?: string;
   bridge?: MeadowBridge;
+  /**
+   * Sahne hazır olduğunda / olamadığında haber veriyor.
+   *
+   * Sahne kendi başına bir açıklama ÇİZMİYOR (bkz. aşağıdaki not): açıklama
+   * kabuğun işi, çünkü kabuk sayaç ve rozetle aynı akışta duruyor ve orada
+   * hiçbir genişlikte çakışma olmuyor.
+   */
+  onStatus?: (status: MeadowStatus) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'unsupported'>(
-    'loading',
-  );
+  const [status, setStatus] = useState<MeadowStatus>('loading');
 
   /*
    * TEK KURULUM KİLİDİ.
@@ -168,6 +201,20 @@ export function Meadow({
    */
   const startedRef = useRef(false);
   const handleRef = useRef<MeadowHandle | null>(null);
+
+  /*
+   * Durum değişimi kurulum effect'inden AYRI bildiriliyor.
+   *
+   * `onStatus`u doğrudan `setStatus`un yanında çağırmak, `Garden`ın render'ı
+   * sürerken orada durum güncellemek demek. Ayrı bir effect bunu commit
+   * sonrasına taşıyor — ve `onStatus` her render'da yeni bir fonksiyon olsa
+   * bile bağımlılıkta `status` olduğu için yalnızca durum değişince
+   * çalışıyor.
+   */
+  useEffect(() => {
+    onStatus?.(status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -217,6 +264,38 @@ export function Meadow({
 
   return (
     <div className={`meadow-layer ${className ?? ''}`.trim()}>
+      {/*
+       * D7 — YER TUTUCU.
+       *
+       * Sahne + three.js ~600 kB ve ayrı bir parça olarak iniyor; kartlar
+       * hemen görünüyor ama arkadaki çayır boş. Eskiden o boşluk düz bir
+       * ufuk rengiydi ve yavaş bağlantıda kullanıcı bir şeyin yüklendiğini
+       * hiç bilmiyordu.
+       *
+       * Yer tutucu YAKALANMIŞ BİR KARE DEĞİL, tokenlardan çizilmiş bir
+       * gökyüzü/ufuk/zemin gradyanı. `meadow-fallback.png` duruyor ama 3.5
+       * MB: yükleme sırasında indirmek, yükleme göstergesini yüklemenin
+       * kendisinden pahalı yapardı. Gradyan bedava ve ilk boyada hazır.
+       *
+       * Yükleniyor SİNYALİ ufuk boyunca yavaşça geçen bir ışık. Metin
+       * bilerek yok: karşılama başlığı bu katmanın üstünde duruyor ve
+       * sahnenin arka planı onunla konuşmaya kalkmamalı. Ekran okuyucuya
+       * ise söyleniyor — aşağıdaki `role="status"`.
+       *
+       * `aria-hidden`: gördüğü şey bir resim değil, henüz olmayan bir
+       * sahnenin yeri.
+       */}
+      {status === 'loading' && (
+        <>
+          <div className="meadow-placeholder" aria-hidden>
+            <div className="meadow-placeholder-sweep" />
+          </div>
+          <p className="visually-hidden" role="status">
+            the meadow is loading
+          </p>
+        </>
+      )}
+
       <canvas
         ref={canvasRef}
         className={`meadow-canvas ${status === 'ready' ? 'meadow-canvas--ready' : ''}`.trim()}
@@ -231,6 +310,15 @@ export function Meadow({
        *
        * Yalnızca bu dal çizildiğinde isteniyor — WebGL'i olan kullanıcı
        * görseli hiç indirmiyor.
+       */}
+      {/*
+       * D8 — sahne çizilemedi.
+       *
+       * Burada yalnızca yakalanmış kare var; AÇIKLAMA kabukta
+       * (`MeadowShell` → `SceneNotice`). Bir zamanlar buradaydı ve sahne
+       * katmanına mutlak konumla yapıştırılmıştı: 390px'te sağ üstteki
+       * sayacın üstüne biniyordu. Kabukta akışın içinde durduğu için artık
+       * hiçbir genişlikte hiçbir şeye binemiyor.
        */}
       {status === 'unsupported' && (
         <Image

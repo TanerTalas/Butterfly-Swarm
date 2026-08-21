@@ -384,3 +384,77 @@
   color: var(--color-accent-deep);
   text-decoration: underline;
 }
+
+/*
+ * ── Sahne bildirimi (D8) ──────────────────────────────────────────────────
+ *
+ * Kabuğun EN ÜSTÜNDE, akışın içinde ve yatayda ortalı.
+ *
+ * Mutlak konumlu değil, ve sebebi ölçüldü: köşeye yapıştırılmış hâli 390px'te
+ * sayacın ("released into the meadow") üstüne biniyordu. Akışta duran bir
+ * satır aynı sütundaki her şeyi aşağı itiyor, dolayısıyla hiçbir genişlikte
+ * hiçbir şeye binemiyor — ayrı bir mobil kuralına da gerek kalmıyor.
+ */
+.meadow-notice-row {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 16px;
+}
+
+/*
+ * Kenarlık krem zeminden bir tık koyu.
+ *
+ * Sayaç ve yasal şerit kenarlıksız duruyor çünkü ikisi de tanıdık, sürekli
+ * orada olan parçalar. Bu ise bir kez beliren ve kapatılan bir bildirim:
+ * sınırının belli olması gerekiyor, hem altındaki görselden ayrışmak hem de
+ * "bu bir katman, sahnenin parçası değil" demek için.
+ *
+ * Uyarı rengi YOK — ortada kullanıcının düzeltebileceği bir hata yok
+ * (bkz. MeadowShell.tsx → SceneNotice).
+ */
+.scene-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: min(420px, 100%);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line-strong);
+  padding: 10px 10px 10px 14px;
+  /* Bulanıklık yok — sayaçtaki nota bakın. */
+  background: var(--surface-float);
+  box-shadow: var(--shadow-chip);
+}
+
+.scene-notice-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/*
+ * Kapatma düğmesi.
+ *
+ * Dokunma hedefi 32px: şeridin kendisi 10px dolgulu ve daha büyük bir düğme
+ * satırı dikeyde büyütürdü. İkon 14px, gerisi tıklanabilir boşluk.
+ *
+ * `flex-shrink: 0` şart — dar ekranda metin sarılırken düğme eziliyordu.
+ */
+.scene-notice-close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 999px;
+  color: var(--color-muted);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.scene-notice-close:hover {
+  background: var(--line-soft);
+  color: var(--color-ink);
+}

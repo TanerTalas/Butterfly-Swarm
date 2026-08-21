@@ -202,3 +202,29 @@
   border-radius: 999px;
   background: var(--color-card);
 }
+
+/*
+ * Hatalı alan.
+ *
+ * Yalnızca ÇERÇEVE dönüyor, dolgu değil: dolgu da kırmızıya kaysaydı iki
+ * hatalı alan yan yana geldiğinde kart bir uyarı panosuna dönüşüyordu — oysa
+ * söylenen şey tek bir cümlelik bir hata.
+ *
+ * ⚠ Girişte bu çerçeve İKİ ALANA birden düşüyor. Hangi alanın yanlış olduğu
+ * söylenmiyor (kullanıcı sayımına izin verirdi), dolayısıyla renk de
+ * söylememeli (bkz. SignInCard).
+ */
+.field-input--invalid,
+.field-input--invalid:hover {
+  border-color: var(--line-danger);
+}
+
+/*
+ * Odak halkası da uyarı rengine dönüyor. Dönmeseydi kullanıcı hatalı alana
+ * girdiği anda çerçeve normale dönüyor ve hata "düzelmiş" gibi görünüyordu.
+ */
+.field-input--invalid:focus,
+.field-input--invalid:focus-visible {
+  border-color: var(--line-danger-strong);
+  outline-color: var(--line-danger-strong);
+}

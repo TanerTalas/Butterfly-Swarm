@@ -17,11 +17,82 @@
   display: block;
   height: 100%;
   width: 100%;
-  /* Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın */
-  background: #e9d3c9;
+  /*
+   * Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın. Yer
+   * tutucu (aşağıda) bunun ÜSTÜNDE duruyor; bu renk yalnızca canvas hazır
+   * olup yer tutucu kalktığı andaki tek karelik boşluğu kapatıyor.
+   */
+  background: var(--meadow-horizon);
   opacity: 0;
   transition: opacity 600ms ease;
 }
+
+/*
+ * ── D7: sahne inerken ─────────────────────────────────────────────────────
+ *
+ * Gökyüzü → ufuk → zemin. Üç bant, tokenlardan; yakalanmış bir kare değil
+ * (o dosya 3.5 MB ve yükleme sırasında indirmek amacı bozardı).
+ *
+ * Oranlar canlı sahnenin varsayılan kadrajından: ufuk çizgisi ekranın
+ * yaklaşık %46'sında. Sahne hazır olup canvas belirdiğinde iki katman
+ * ufukta üst üste düşüyor ve geçiş dikişsiz oluyor.
+ */
+.meadow-placeholder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--meadow-sky) 0%,
+    var(--meadow-horizon) 42%,
+    var(--meadow-horizon) 50%,
+    var(--meadow-ground) 78%
+  );
+}
+
+/*
+ * Yükleniyor sinyali: ufuk boyunca çok yavaş geçen bir ışık.
+ *
+ * Metin yerine hareket, çünkü karşılama başlığı bu katmanın üstünde duruyor
+ * ve arka planın onunla konuşmaya kalkmaması gerekiyor. Ekran okuyucuya ise
+ * ayrıca söyleniyor (`role="status"`, bkz. Meadow.tsx).
+ *
+ * Süre uzun (5.5s) ve genlik düşük: bir "yükleme çubuğu" değil, bir hava
+ * hareketi gibi okunmalı. Hızlı bir parıltı sahnenin kendisinden daha çok
+ * dikkat çekerdi.
+ */
+.meadow-placeholder-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 62%
+  );
+  translate: -100% 0;
+  animation: meadow-sweep 5.5s ease-in-out infinite;
+}
+
+@keyframes meadow-sweep {
+  /* Geçiş süreyi yalnızca yarısını kaplıyor; kalan yarı dinlenme. */
+  0% {
+    translate: -100% 0;
+  }
+  55%,
+  100% {
+    translate: 100% 0;
+  }
+}
+
+/*
+ * ── D8: sahne açılamıyor ──────────────────────────────────────────────────
+ *
+ * Şeridin kendisi `shell.css`te, çünkü artık sahne katmanının değil KABUĞUN
+ * parçası. Mutlak konumlu hâli buradaydı ve 390px'te sağ üstteki sayacın
+ * üstüne biniyordu; akışın içine alınınca çakışma geometrik olarak imkânsız
+ * hâle geldi.
+ */
 
 .meadow-canvas--ready {
   opacity: 1;

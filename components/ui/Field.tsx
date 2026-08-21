@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { InputHTMLAttributes, ReactNode, Ref } from 'react';
 import { Eye } from '@/components/ui/Icons';
 
 /*
@@ -23,6 +23,16 @@ export type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
   note?: ReactNode;
   /** Kelebek/profil ismi gibi editöryel değerler için. */
   display?: boolean;
+  /**
+   * Hatalı alan: uyarı çerçevesi ve `aria-invalid`.
+   *
+   * Renk TEK BAŞINA bir işaret değil — hangi alanın neden hatalı olduğunu
+   * söyleyen metin her zaman ayrıca yazılıyor (bkz. `SignInCard`), çünkü
+   * renk körü bir kullanıcı için kırmızı çerçevenin hiçbir anlamı yok.
+   */
+  invalid?: boolean;
+  /** Alt notu uyarı rengine çevirir — kural ihlal edilmişken. */
+  noteDanger?: boolean;
 };
 
 export function Field({
@@ -30,6 +40,8 @@ export function Field({
   hint,
   note,
   display,
+  invalid,
+  noteDanger,
   className = '',
   ...rest
 }: FieldProps) {
@@ -41,13 +53,29 @@ export function Field({
       </span>
 
       <input
-        className={`field-input ${display ? 'field-input--display' : ''} ${className}`.trim()}
+        className={inputClass(display, invalid, className)}
+        aria-invalid={invalid || undefined}
         {...rest}
       />
 
-      {note ? <span className="stamp">{note}</span> : null}
+      {note ? (
+        <span className={`stamp ${noteDanger ? 'stamp--danger' : ''}`.trim()}>
+          {note}
+        </span>
+      ) : null}
     </label>
   );
+}
+
+function inputClass(display?: boolean, invalid?: boolean, extra = '') {
+  return [
+    'field-input',
+    display ? 'field-input--display' : '',
+    invalid ? 'field-input--invalid' : '',
+    extra,
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 /**
@@ -102,9 +130,19 @@ export function PasswordField({
   label,
   hint,
   note,
+  invalid,
+  noteDanger,
+  ref,
   className = '',
   ...rest
-}: Omit<FieldProps, 'display' | 'type'>) {
+}: Omit<FieldProps, 'display' | 'type'> & {
+  /**
+   * Girişteki hata odağı bu alana taşıyor (bkz. `SignInCard`), o yüzden
+   * dışarıdan tutulabilmesi gerekiyor. React 19'da `ref` sıradan bir prop;
+   * `forwardRef` sarmalayıcısına gerek yok.
+   */
+  ref?: Ref<HTMLInputElement>;
+}) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -116,8 +154,14 @@ export function PasswordField({
 
       <span className="password-wrap">
         <input
+          ref={ref}
           type={visible ? 'text' : 'password'}
-          className={`field-input field-input--password ${className}`.trim()}
+          className={inputClass(
+            false,
+            invalid,
+            `field-input--password ${className}`.trim(),
+          )}
+          aria-invalid={invalid || undefined}
           {...rest}
         />
         <button
@@ -131,7 +175,11 @@ export function PasswordField({
         </button>
       </span>
 
-      {note ? <span className="stamp">{note}</span> : null}
+      {note ? (
+        <span className={`stamp ${noteDanger ? 'stamp--danger' : ''}`.trim()}>
+          {note}
+        </span>
+      ) : null}
     </label>
   );
 }

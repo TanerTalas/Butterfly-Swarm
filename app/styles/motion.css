@@ -22,11 +22,42 @@
   animation: fade 320ms ease;
 }
 
+/*
+ * Kart geçişinde odağın konduğu yer (bkz. Garden.tsx).
+ *
+ * Halka çizilmiyor ve bu bir eksiklik değil: `:focus-visible` zaten programla
+ * verilen odakta eşleşmiyor, ama bazı tarayıcılar `tabindex="-1"` alan
+ * elemanlara yine de kendi çerçevesini koyuyor — kartın etrafında,
+ * hiçbir şeyin seçili olmadığı bir dikdörtgen. Buraya Tab ile GELİNEMİYOR,
+ * dolayısıyla gösterilecek bir odak da yok; kartın değişmesinin kendisi
+ * geri bildirimin ta kendisi.
+ */
+.view-fade:focus {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Yer tutucunun ışığı hareket kısıtlı kipte durur.
+ *
+ * Gradyanın kendisi KALIYOR: o bir hareket değil, sahnenin yerini tutan
+ * resim. Kaldırılsaydı hareket duyarlılığı olan kullanıcı düz gri bir
+ * ekrana bakardı — kısıtlama bir ceza değil.
+ *
+ * Yükleniyor bilgisi yine veriliyor: `role="status"` metni her hâlükârda
+ * okunuyor (bkz. Meadow.tsx).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .meadow-placeholder-sweep {
+    animation: none;
+    opacity: 0;
   }
 }

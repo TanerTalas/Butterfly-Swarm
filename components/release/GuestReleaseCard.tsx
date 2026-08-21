@@ -1,9 +1,14 @@
 'use client';
 
 import { Butterfly } from '@/components/Butterfly';
+import {
+  ReleaseNotice,
+  releaseLock,
+} from '@/components/release/ReleaseNotice';
 import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import type { ReleaseFailure } from '@/lib/types';
 
 /*
  * Ekran 02 — misafir salma.
@@ -22,14 +27,29 @@ export function GuestReleaseCard({
   onBack,
   pending,
   blocked,
+  failure,
 }: {
   onRelease: () => void;
   onSignIn: () => void;
   onBack: () => void;
   pending?: boolean;
-  /** Bugünün misafir hakkı kullanıldı. */
+  /**
+   * Kart AÇILIRKEN bugünün hakkı zaten dolu — buton hiç basılmıyor.
+   *
+   * `failure`dan ayrı tutuluyor ve ayrı durmalı: bu duran bir kural, o ise
+   * bir REDDİN anı. İkisi aynı prop'a bindirilseydi kart açılışta da bir
+   * uyarı rengiyle bağırırdı; oysa kullanıcı henüz bir şey denemedi.
+   */
   blocked?: boolean;
+  /** Basıldıktan SONRA reddedildi (D3-2 / D5). */
+  failure?: ReleaseFailure | null;
 }) {
+  /*
+   * Kural ihlali butonu kilitliyor, arıza kilitlemiyor: ağ hatasında
+   * yeniden basılabilmeli (bkz. `releaseLock`).
+   */
+  const lock = releaseLock(failure);
+  const disabled = pending || blocked || lock !== null;
   return (
     <Card>
       <BackLink label="back to the meadow" onClick={onBack} />
@@ -59,19 +79,29 @@ export function GuestReleaseCard({
        * dil uydurmaya gerek yok.
        */}
       <div className="action-stack">
-        <Button
-          size="md"
-          fullWidth
-          onClick={onRelease}
-          disabled={pending || blocked}
-        >
-          {blocked ? 'One a day' : pending ? 'Letting it go…' : 'Let it go'}
+        <Button size="md" fullWidth onClick={onRelease} disabled={disabled}>
+          {lock
+            ? lock.label
+            : blocked
+              ? 'One a day'
+              : pending
+                ? 'Letting it go…'
+                : 'Let it go'}
         </Button>
 
-        {blocked && (
-          <p className="note note--center">
-            you have let one go today · sign in to release more
-          </p>
+        {/*
+         * İki not birbirini DIŞLIYOR. Red geldiyse onu gösteriyoruz: duran
+         * kuralı tekrarlamak, kullanıcının az önce yaptığı denemeyi
+         * görmezden gelmek olurdu.
+         */}
+        {failure ? (
+          <ReleaseNotice failure={failure} />
+        ) : (
+          blocked && (
+            <p className="note note--center">
+              you have let one go today · sign in to release more
+            </p>
+          )
         )}
       </div>
 
