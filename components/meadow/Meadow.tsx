@@ -88,16 +88,10 @@ export function Meadow({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div className={`absolute inset-0 ${className ?? ''}`}>
+    <div className={`meadow-layer ${className ?? ''}`.trim()}>
       <canvas
         ref={canvasRef}
-        className="block h-full w-full"
-        style={{
-          // Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın
-          background: '#e9d3c9',
-          opacity: status === 'ready' ? 1 : 0,
-          transition: 'opacity 600ms ease',
-        }}
+        className={`meadow-canvas ${status === 'ready' ? 'meadow-canvas--ready' : ''}`.trim()}
       />
 
       {/*
@@ -117,7 +111,7 @@ export function Meadow({ className }: { className?: string }) {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="meadow-fallback"
         />
       )}
     </div>

@@ -23,8 +23,8 @@ export function ContactForm() {
 
   if (sent) {
     return (
-      <div className="rounded-[14px] bg-panel p-6">
-        <p className="text-[15px] leading-[1.65] text-body">
+      <div className="contact-sent">
+        <p className="legal-section-body">
           Thank you. We will write back to {email}.
         </p>
       </div>
@@ -33,7 +33,7 @@ export function ContactForm() {
 
   return (
     <form
-      className="flex flex-col gap-4 border-t border-[rgba(44,34,32,0.1)] pt-8"
+      className="contact-form"
       onSubmit={(e) => {
         e.preventDefault();
         setSent(true);
@@ -53,12 +53,12 @@ export function ContactForm() {
         autoComplete="email"
       />
 
-      <label className="flex flex-col gap-2">
+      <label className="field">
         <Label>message</Label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="h-24 w-full resize-none rounded-[12px] border border-[rgba(44,34,32,0.16)] bg-input px-4 py-3 text-[15px] text-ink outline-none transition-colors placeholder:text-[#A99B95] focus:border-[rgba(44,34,32,0.34)]"
+          className="field-textarea"
         />
       </label>
 
@@ -69,10 +69,10 @@ export function ContactForm() {
         tabIndex={-1}
         autoComplete="off"
         aria-hidden
-        className="hidden"
+        className="honeypot"
       />
 
-      <Button size="md" type="submit" disabled={!canSend} className="self-start">
+      <Button size="md" type="submit" disabled={!canSend} className="button--start">
         Send
       </Button>
     </form>

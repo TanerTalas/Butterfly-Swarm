@@ -43,21 +43,19 @@ export function WingsCard({
       <Card width={520}>
         <BackLink label="back to the meadow" onClick={onBack} />
 
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
-            Choose its wings
-          </h2>
-          <span className="font-mono text-[12px] tracking-[0.14em] text-faint">
+        <div className="card-head">
+          <h2 className="card-title card-title--lead">Choose its wings</h2>
+          <span className="stamp">
             {slotsUsed}/{SLOT_LIMIT}
           </span>
         </div>
 
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          <div className="flex shrink-0 items-center justify-center self-center rounded-[14px] bg-panel p-3 sm:self-start">
+        <div className="wings-layout">
+          <div className="wings-preview">
             <Butterfly fore={fore} hind={hind} width={124} height={100} />
           </div>
 
-          <div className="flex flex-1 flex-col gap-5">
+          <div className="wings-controls">
             <WingRow
               label="forewing"
               value={fore}
@@ -90,7 +88,7 @@ export function WingsCard({
          * önizleme açmak isteyen kullanıcı kelebeği salıvermiş olurdu.
          */}
         <form
-          className="flex flex-col gap-6"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             if (pending || trimmed.length === 0) return;
@@ -107,9 +105,9 @@ export function WingsCard({
             hint={name.length + '/' + NAME_MAX}
           />
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="action-row">
             <Button
-              className="flex-1"
+              className="button--grow"
               type="submit"
               disabled={pending || trimmed.length === 0}
             >
@@ -124,7 +122,6 @@ export function WingsCard({
             </Button>
           </div>
         </form>
-
       </Card>
 
       {preview && (
@@ -160,16 +157,16 @@ function WingRow({
   );
 
   return (
-    <div className="relative flex flex-col gap-3">
-      <span className="flex items-baseline justify-between gap-3">
+    <div className="wing-row">
+      <span className="field-head">
         <Label>{label}</Label>
-        <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
+        <span className="stamp">
           {named ? named.name + ' · ' : 'custom · '}
           {value.toUpperCase()}
         </span>
       </span>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="swatch-row">
         {WING_COLOURS.map((c) => (
           <ColourSwatch
             key={c.hex}
@@ -195,7 +192,8 @@ function WingRow({
 
 /*
  * Önizleme katmanı — gerçek kelebek, salınmadan önceki hâli.
- * Çayır arkada bulanıklaşıyor ama görünür kalıyor; salmadan kapatılabilir.
+ * Çayır arkada duruyor ama krem bir perdeyle örtülüyor; salmadan
+ * kapatılabilir.
  */
 function PreviewOverlay({
   fore,
@@ -209,29 +207,14 @@ function PreviewOverlay({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 p-6"
-      /*
-       * Bulanıklık yok: arkada çayır dönmeye devam ediyor ve her karede
-       * bulanıklaştırmak pahalı. Daha opak bir krem aynı işi görüyor.
-       */
-      style={{ background: 'rgba(247,239,233,0.94)' }}
-      role="dialog"
-      aria-label="butterfly preview"
-    >
+    <div className="preview-overlay" role="dialog" aria-label="butterfly preview">
       <p className="eyebrow">before it goes</p>
 
-      <ButterflyPreview3D
-        fore={fore}
-        hind={hind}
-        className="h-[320px] w-full max-w-[420px]"
-      />
+      <ButterflyPreview3D fore={fore} hind={hind} />
 
-      <div className="flex flex-col items-center gap-2 text-center">
-        <p className="font-display text-[32px] text-ink">
-          {name || 'Your butterfly'}
-        </p>
-        <p className="font-mono text-[11px] tracking-[0.14em] text-faint">
+      <div className="preview-caption">
+        <p className="preview-name">{name || 'Your butterfly'}</p>
+        <p className="stamp">
           {fore.toUpperCase()} · {hind.toUpperCase()}
         </p>
       </div>

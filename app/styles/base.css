@@ -1,0 +1,104 @@
+/*
+ * Temel katman — belge, imleç, odak ve tarayıcı tuhaflıkları.
+ * Bileşene ait hiçbir şey burada olmamalı.
+ */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * ── Etkileşim işaretleri ──────────────────────────────────────────────────
+ *
+ * Tailwind'in preflight'ı `button` elemanlarına `cursor: default` veriyor,
+ * yani hiçbir buton tıklanabilir görünmüyor. Tarayıcı varsayılanına
+ * güvenilemez, açıkça ayarlanıyor.
+ *
+ * Odak halkası da burada: tasarımda çizilmemiş ama klavyeyle gezen biri için
+ * zorunlu. Rengi vurgu rengiyle aynı, `focus-visible` olduğu için fareyle
+ * tıklayanı rahatsız etmiyor.
+ */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+label[for],
+summary,
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+button,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/*
+ * Edge kendi şifre gösterme ikonunu ekliyor. Bizimki zaten var; ikisi yan
+ * yana durunca kutu kalabalıklaşıyor ve hizalama bozuluyor.
+ */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* Metin girişlerinde imleç metin kirişi kalmalı */
+input,
+textarea {
+  cursor: text;
+}
+
+/*
+ * Kaydırma çubuğunu gizle. Kabuk kenardan kenara olduğu için çubuk çayırın
+ * üstünde bir çizgi olarak duruyordu; içerik yine kaydırılabilir.
+ */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * İnce kaydırma çubuğu — kart İÇİNDEKİ listeler için.
+ *
+ * Burada çubuk gizlenmiyor: kelebek listesi kayabildiğini belli etmeli.
+ * Ama işletim sisteminin kalın gri çubuğu krem bir kartın içinde yabancı
+ * duruyor ve satırların ilerleme çubuklarına biniyordu. İncelip paletin
+ * rengini alıyor.
+ */
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wash) transparent;
+}
+.scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background: var(--wash);
+  border-radius: 999px;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: var(--wash-strong);
+}

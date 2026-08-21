@@ -40,63 +40,48 @@ export default async function LegalPage({
   if (!page) notFound();
 
   return (
-    <div className="min-h-dvh bg-cream">
-      <header className="border-b border-[rgba(44,34,32,0.12)]">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between gap-4 px-6 py-5 lg:px-8">
-          <Link href="/" className="font-display text-[22px] text-ink">
+    <div className="legal-page">
+      <header className="legal-header">
+        <div className="legal-header-inner">
+          <Link href="/" className="legal-wordmark">
             Butterfly Garden
           </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-mono text-[12px] tracking-[0.14em] text-accent transition-opacity hover:opacity-70"
-          >
+          <Link href="/" className="back-link">
             <ArrowLeft />
             back to the meadow
           </Link>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1120px] flex-col gap-10 px-6 py-10 lg:flex-row lg:gap-16 lg:px-8 lg:py-14">
-        <nav className="flex shrink-0 flex-col gap-3 lg:w-[200px]">
-          {LEGAL_PAGES.map((p) => {
-            const current = p.slug === page.slug;
-            return (
-              <Link
-                key={p.slug}
-                href={`/legal/${p.slug}`}
-                aria-current={current ? 'page' : undefined}
-                /*
-                 * Menüde de aynı hover dili: renk koyulaşıyor ve altı
-                 * çiziliyor. Geçerli sayfa zaten koyu ve kalın, hover almıyor.
-                 */
-                className={`text-[14px] underline-offset-4 transition-colors duration-200 ${
-                  current
-                    ? 'font-semibold text-ink'
-                    : 'text-muted hover:text-accent hover:underline'
-                }`}
-              >
-                {p.navLabel}
-              </Link>
-            );
-          })}
+      <div className="legal-body">
+        <nav className="legal-nav">
+          {/*
+           * Geçerli sayfa `aria-current` taşıyor ve stili buradan değil
+           * CSS'ten geliyor (`legal.css`): işaret hem erişilebilirlik hem
+           * görünüm için tek yerde duruyor.
+           */}
+          {LEGAL_PAGES.map((p) => (
+            <Link
+              key={p.slug}
+              href={`/legal/${p.slug}`}
+              aria-current={p.slug === page.slug ? 'page' : undefined}
+              className="legal-nav-link"
+            >
+              {p.navLabel}
+            </Link>
+          ))}
         </nav>
 
-        <main className="flex max-w-[620px] flex-col gap-8">
-          <div className="flex flex-col gap-3">
-            <h1 className="font-display text-[32px] leading-tight text-ink lg:text-[40px]">
-              {page.title}
-            </h1>
-            <p className="font-mono text-[11px] tracking-[0.14em] text-faint">
-              {page.updated}
-            </p>
+        <main className="legal-main">
+          <div className="legal-title-block">
+            <h1 className="legal-title">{page.title}</h1>
+            <p className="stamp">{page.updated}</p>
           </div>
 
           {page.sections.map((s) => (
-            <section key={s.heading} className="flex flex-col gap-2">
-              <h2 className="text-[15px] font-semibold text-ink">
-                {s.heading}
-              </h2>
-              <p className="text-[15px] leading-[1.65] text-body">{s.body}</p>
+            <section key={s.heading} className="legal-section">
+              <h2 className="legal-section-heading">{s.heading}</h2>
+              <p className="legal-section-body">{s.body}</p>
             </section>
           ))}
 

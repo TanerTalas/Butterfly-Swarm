@@ -26,29 +26,35 @@ export function ReleasedView({
   onMyButterflies: () => void;
   onWatch: () => void;
 }) {
+  /*
+   * Yalnızca TARİH — saat yok (sahibinin kararı).
+   *
+   * Önce "20 august 2026 at 13:57" yazıyordu. Dakika hassasiyeti bu ekranda
+   * yanlış bir söz veriyor: kelebeğin ömrü gün cinsinden sayılıyor
+   * (`daysLeft`), saat hiçbir yerde kullanılmıyor ve hiçbir şeyi
+   * değiştirmiyor.
+   */
   const stamp = releasedAt
-    .toLocaleString('en-GB', {
+    .toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     })
     .toLowerCase();
 
   return (
-    <div className="flex max-w-[560px] flex-col gap-7">
+    <div className="meadow-view">
       <p className="eyebrow">{stamp}</p>
 
-      <h2 className="font-display text-[40px] font-light leading-[1.02] tracking-[-0.01em] text-ink lg:text-[62px]">
+      <h2 className="meadow-view-title meadow-view-title--released">
         {name ? `${name} is flying.` : 'Your butterfly is flying.'}
       </h2>
 
-      <p className="max-w-[34ch] font-display text-[19px] leading-[1.45] text-body lg:text-[21px]">
+      <p className="meadow-view-lede">
         Seven days from now. Look for it in the meadow.
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+      <div className="action-row">
         <Button size="md" onClick={onWatch}>
           Follow {name ?? 'it'} in the meadow
         </Button>

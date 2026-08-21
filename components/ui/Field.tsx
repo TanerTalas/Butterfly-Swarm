@@ -7,18 +7,12 @@ import { Eye } from '@/components/ui/Icons';
 /*
  * Form alanları.
  *
- * Tasarımda her alan aynı: monospace küçük etiket, 46–48px kutu, 12px köşe,
- * çok açık krem dolgu. İsim alanlarında değer Newsreader 20px ile yazılıyor
- * (kelebek ismi editöryel bir şey, form verisi gibi görünmemeli) ve sağ üstte
- * `n/18` sayacı duruyor.
+ * Tasarımda her alan aynı: monospace küçük etiket, 48px kutu, 12px köşe,
+ * çok açık krem dolgu. Görünüm `app/styles/forms.css`'te.
  */
 
 export function Label({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-mono text-[12px] tracking-[0.14em] text-label uppercase">
-      {children}
-    </span>
-  );
+  return <span className="field-label">{children}</span>;
 }
 
 export type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -40,28 +34,18 @@ export function Field({
   ...rest
 }: FieldProps) {
   return (
-    <label className="flex flex-col gap-2">
-      <span className="flex items-baseline justify-between gap-3">
+    <label className="field">
+      <span className="field-head">
         <Label>{label}</Label>
-        {hint ? (
-          <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-            {hint}
-          </span>
-        ) : null}
+        {hint ? <span className="stamp">{hint}</span> : null}
       </span>
 
       <input
-        className={`h-12 w-full rounded-[12px] border border-[rgba(44,34,32,0.16)] bg-input px-4 text-ink outline-none transition-colors placeholder:text-[#A99B95] focus:border-[rgba(44,34,32,0.34)] ${
-          display ? 'font-display text-[20px]' : 'text-[15px]'
-        } ${className}`}
+        className={`field-input ${display ? 'field-input--display' : ''} ${className}`.trim()}
         {...rest}
       />
 
-      {note ? (
-        <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-          {note}
-        </span>
-      ) : null}
+      {note ? <span className="stamp">{note}</span> : null}
     </label>
   );
 }
@@ -80,35 +64,24 @@ export function Segmented<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <div
-      role="tablist"
-      className="flex h-[46px] gap-1 rounded-full bg-track p-1"
-    >
-      {options.map((o) => {
-        const active = o.value === value;
-        return (
-          <button
-            key={o.value}
-            /*
-             * `type="button"` ŞART. Sekmeler artık bir <form> içinde
-             * duruyor ve tipi verilmemiş bir <button> formda varsayılan
-             * olarak SUBMIT oluyor — "Sign up" sekmesine tıklamak formu
-             * gönderirdi.
-             */
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(o.value)}
-            className={`flex-1 rounded-full text-[14px] font-medium transition-all duration-200 ${
-              active
-                ? 'bg-card text-ink shadow-[0_2px_6px_rgba(74,59,56,0.12)]'
-                : 'text-muted hover:text-body'
-            }`}
-          >
-            {o.label}
-          </button>
-        );
-      })}
+    <div role="tablist" className="segmented">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          /*
+           * `type="button"` ŞART. Sekmeler bir <form> içinde duruyor ve
+           * tipi verilmemiş bir <button> formda varsayılan olarak SUBMIT
+           * oluyor — "Sign up" sekmesine tıklamak formu gönderirdi.
+           */
+          type="button"
+          role="tab"
+          aria-selected={o.value === value}
+          onClick={() => onChange(o.value)}
+          className="segmented-option"
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -135,20 +108,16 @@ export function PasswordField({
   const [visible, setVisible] = useState(false);
 
   return (
-    <label className="flex flex-col gap-2">
-      <span className="flex items-baseline justify-between gap-3">
+    <label className="field">
+      <span className="field-head">
         <Label>{label}</Label>
-        {hint ? (
-          <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-            {hint}
-          </span>
-        ) : null}
+        {hint ? <span className="stamp">{hint}</span> : null}
       </span>
 
-      <span className="relative block">
+      <span className="password-wrap">
         <input
           type={visible ? 'text' : 'password'}
-          className={`h-12 w-full rounded-[12px] border border-[rgba(44,34,32,0.16)] bg-input pl-4 pr-12 text-[15px] text-ink outline-none transition-colors placeholder:text-[#A99B95] focus:border-[rgba(44,34,32,0.34)] ${className}`}
+          className={`field-input field-input--password ${className}`.trim()}
           {...rest}
         />
         <button
@@ -156,17 +125,13 @@ export function PasswordField({
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'hide password' : 'show password'}
           aria-pressed={visible}
-          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel hover:text-ink"
+          className="password-toggle"
         >
           <Eye off={visible} />
         </button>
       </span>
 
-      {note ? (
-        <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-          {note}
-        </span>
-      ) : null}
+      {note ? <span className="stamp">{note}</span> : null}
     </label>
   );
 }

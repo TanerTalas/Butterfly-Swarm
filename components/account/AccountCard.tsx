@@ -37,24 +37,23 @@ export function AccountCard({
   const yearName = String(memberSince.getFullYear());
 
   return (
-    <Card width={480} className="lg:gap-[26px]">
+    <Card width={480} className="account-card">
       <BackLink label="back to the meadow" onClick={onBack} />
 
-      <div className="flex items-center gap-4">
-        <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-panel">
+      <div className="account-identity">
+        <span
+          className="avatar avatar--panel"
+          style={{ width: 72, height: 72 }}
+        >
           <Butterfly fore={profile.avatarHex} width={42} height={34} simple />
         </span>
-        <div className="min-w-0">
-          <p className="truncate font-display text-[26px] text-ink lg:text-[30px]">
-            {profile.name}
-          </p>
-          <p className="truncate font-mono text-[11px] tracking-[0.14em] text-faint">
-            {profile.email}
-          </p>
+        <div className="identity">
+          <p className="account-name">{profile.name}</p>
+          <p className="stamp stamp--truncate">{profile.email}</p>
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="stat-row">
         <Stat value={String(flyingNow)} label="flying now" />
         <Stat value={String(releasedTotal)} label="released in total" />
         <Stat value={monthName} label={'member since ' + yearName} />
@@ -69,11 +68,11 @@ export function AccountCard({
         Settings
       </Button>
 
-      <div className="flex justify-center">
+      <div className="center-row">
         <button
           type="button"
           onClick={onSignOut}
-          className="font-mono text-[11px] tracking-[0.14em] text-accent hover:underline"
+          className="text-link text-link--underline"
         >
           sign out
         </button>
@@ -84,11 +83,9 @@ export function AccountCard({
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex-1 rounded-[14px] bg-panel px-4 py-4">
-      <p className="font-display text-[26px] leading-none text-ink">{value}</p>
-      <p className="mt-2 font-mono text-[11px] leading-[1.4] tracking-[0.14em] text-faint">
-        {label}
-      </p>
+    <div className="stat">
+      <p className="stat-value">{value}</p>
+      <p className="stat-label">{label}</p>
     </div>
   );
 }

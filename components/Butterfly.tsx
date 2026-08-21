@@ -115,7 +115,7 @@ export function ButterflyAvatar({
 }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-card ${className ?? ''}`}
+      className={`avatar ${className ?? ''}`.trim()}
       style={{ width: circle, height: circle }}
     >
       <Butterfly

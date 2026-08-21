@@ -4,11 +4,17 @@ import type { ReactNode } from 'react';
 /*
  * Çayır ekranlarının ortak kabuğu.
  *
- * Canlı sahne, metnin okunması için soldan sağa açılan bir perde, 72px kenar
- * boşluğu, sağ üstte hesap rozeti ve sayaç, sağ altta yasal bağlantılar.
+ * Canlı sahne, metnin okunması için açılan bir perde, kenar boşluğu, sağ
+ * üstte hesap rozeti + sayaç + çayır denetimi, en altta yasal bağlantılar.
  *
- * Perde bir "karartma" değil, YÖNLÜ bir geçiş: solda krem neredeyse opak,
- * sağda tamamen şeffaf. Kartlar okunurken çayır da görünür kalıyor.
+ * Görünüşün tamamı `app/styles/shell.css` içinde. Burada yalnızca hangi
+ * parçanın ne zaman çizildiği var.
+ *
+ * ⚠ KAYDIRMA KABUĞUN TAMAMI. Eskiden yalnızca orta bölme kayıyordu ve
+ * ekrana sığmayan kartlar ekranın ortasında bir yerde kesiliyordu; sebebi
+ * ve ölçümü shell.css'te yazılı. Buradaki karşılığı: `meadow-shell-scroll`
+ * ekranı kaplıyor, `meadow-shell-layout` ise `min-height: 100%` ile
+ * içeriğinden büyüyebiliyor.
  */
 
 const LEGAL = [
@@ -24,30 +30,37 @@ export function MeadowShell({
   counter,
   topRight,
   aside,
+  legal = false,
   hidden,
 }: {
   children: ReactNode;
   scrim?: 'default' | 'heavy';
   counter?: ReactNode;
   topRight?: ReactNode;
-  /** Sahnenin sag kenarinda duran denetim ("Watch the meadow"). */
+  /** Çayır denetimi ("Watch the meadow"). */
   aside?: ReactNode;
-  /** Izleme kipi: kabuk tamamen cekiliyor, sahne yalniz kaliyor. */
+  /**
+   * Yasal bağlantı şeridi.
+   *
+   * Yalnızca çayır görünümlerinde (karşılama ve girişli çayır) açılıyor.
+   * Kart ekranlarında kapalı: şerit kartla aynı sütunda duruyor ve ekrana
+   * sığmayan bir kartı yukarı itip kesilmesine yol açıyordu. Yasal sayfalara
+   * oradan da ulaşılabiliyor — giriş kartının altındaki "terms" bağlantısı
+   * ve /legal sayfalarının kendi menüsü duruyor.
+   */
+  legal?: boolean;
+  /** İzleme kipi: kabuk tamamen çekiliyor, sahne yalnız kalıyor. */
   hidden?: boolean;
 }) {
-  const gradient =
-    scrim === 'heavy'
-      ? 'linear-gradient(90deg, rgba(247,239,233,0.96) 0%, rgba(247,239,233,0.80) 34%, rgba(247,239,233,0) 62%)'
-      : 'linear-gradient(90deg, rgba(247,239,233,0.94) 0%, rgba(247,239,233,0.74) 34%, rgba(247,239,233,0) 60%)';
-
   /*
-   * Izleme kipinde kabuk unmount EDILMIYOR, gorunmez yapiliyor: kartlarin
-   * durumu (yazilmis isim, secilmis renkler) korunuyor ve geri donuldugunde
-   * kullanici kaldigi yerden devam ediyor.
+   * İzleme kipinde kabuk unmount EDİLMİYOR, görünmez yapılıyor: kartların
+   * durumu (yazılmış isim, seçilmiş renkler) korunuyor ve geri dönüldüğünde
+   * kullanıcı kaldığı yerden devam ediyor.
    */
   return (
     <div
-      className={`transition-opacity duration-500 ${hidden ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+      className={`meadow-shell ${hidden ? 'meadow-shell--hidden' : ''}`}
+      data-scrim={scrim}
       /*
        * `inert` şart: yalnızca opaklığı sıfırlamak arayüzü GÖRÜNMEZ yapıyor
        * ama yok etmiyor. Sekme tuşuyla gezen biri izleme kipindeyken
@@ -59,133 +72,41 @@ export function MeadowShell({
       inert={hidden}
       aria-hidden={hidden}
     >
-      {aside}
+      <div className="meadow-scrim meadow-scrim--side" aria-hidden />
+      <div className="meadow-scrim meadow-scrim--bottom" aria-hidden />
 
-      <div
-        className="pointer-events-none absolute inset-0 max-lg:hidden"
-        style={{ background: gradient }}
-        aria-hidden
-      />
-      {/*
-       * Mobilde perde YÖNÜ değişiyor: içerik altta toplandığı için geçiş
-       * soldan sağa değil, yukarıdan aşağıya.
-       */}
-      <div
-        className="pointer-events-none absolute inset-0 lg:hidden"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(247,239,233,0) 0%, rgba(247,239,233,0.55) 42%, rgba(247,239,233,0.95) 72%)',
-        }}
-        aria-hidden
-      />
-
-      <div className="absolute inset-0 flex flex-col p-6 lg:p-[72px]">
-        {/*
-         * Üst şerit. Hesap rozeti ÜSTTE, sayaç onun ALTINDA — dikey bir
-         * yığın. (Yatay dizilim denendi ve rozet sayacın sağında kalıyordu;
-         * sahibinin son kararı bu.)
-         */}
-        <div className="flex items-start justify-end">
-          <div className="flex flex-col items-end gap-3">
-            {topRight}
-            {counter}
-          </div>
-        </div>
-
-        {/*
-         * Kaydırılabilir içerik alanı.
-         *
-         * `overflow-y-auto` şart: kanat seçimi ve hesap kurulumu kartları
-         * kısa bir pencerede ekrandan taşıyor ve birincil buton görünmez
-         * oluyordu.
-         *
-         * ⚠ Ama bu kap AYNI ZAMANDA bir kırpma kutusu. CSS'te yalnızca bir
-         * eksende `visible` olamıyor: `overflow-y: auto` verince tarayıcı
-         * `overflow-x`i de `auto` yapıyor. Sonuç: kartın kendi gölgesi
-         * (aşağı 58px uzanıyor) ve birincil butonun hover'daki kanat
-         * gölgeleri (±22px) kutunun kenarında KESİLİYORDU.
-         *
-         * Çözüm dolgu + negatif kenar boşluğu: kap gölgelerin sığacağı
-         * kadar içeriden dolgulanıyor, negatif margin ile yerleşimde
-         * hiçbir şey kaymıyor. Kırpma sınırı gölgelerin dışına itilmiş
-         * oluyor.
-         */}
-        {/*
-         * ⚠⚠ ORTALAMA `align-items` İLE DEĞİL, `margin: auto` İLE.
-         *
-         * İkisi kap boşken aynı görünüyor ama içerik taştığında değil.
-         * `align-items: center` taşmayı ikiye bölüp yarısını kabın ÜSTÜNE
-         * taşırıyor ve oraya kaydırarak ULAŞILAMIYOR — `scrollTop` 0'ın
-         * altına inemediği için üstte kalan kısım kalıcı olarak kırpılıyor.
-         *
-         * Ölçüldü: 611px'lik ayarlar kartı 509px'lik kapta 51px'ini üstten
-         * kaybediyordu; kartın üst köşe yarıçapları ve geri bağlantısı hiç
-         * görünmüyordu. Kap `overflow: hidden` sanılıyordu, değildi.
-         *
-         * `margin: auto` aynı ortalamayı yapıyor ama taşma varken otomatik
-         * kenar boşlukları 0'a düşüyor: içerik kabın başına yaslanıyor ve
-         * tamamı kaydırılabilir kalıyor.
-         *
-         * Mobilde `mt-auto` tek başına duruyor — içerik alta yaslanıyor,
-         * eski `items-end` ile aynı sonuç ama aynı tuzağa düşmeden.
-         */}
-        <div className="scrollbar-none -mx-5 -my-6 flex flex-1 overflow-y-auto px-5 py-6 lg:-mx-12 lg:-my-10 lg:px-12 lg:py-10">
-          <div className="mt-auto w-full lg:my-auto">{children}</div>
-        </div>
-
-        <div className="flex justify-center pt-4 lg:justify-end">
+      <div className="meadow-shell-scroll scrollbar-none">
+        <div className="meadow-shell-layout">
           {/*
-           * Yasal bağlantılar KENDİ zeminini taşıyor.
+           * Üst şerit. Hesap rozeti, sayaç ve çayır denetimi tek bir dikey
+           * yığın.
            *
-           * Önceden çıplak metindi ve çayırın üstünde okunmuyordu: sahne
-           * canlı, kamera döndükçe arkalarına açık çimen de koyu gövde de
-           * geliyor. Metin gölgesi yetmedi. Çözüm bağlantıları krem bir
-           * hapa almak — sahnenin üstünde küçük ama kesin bir okunabilirlik
-           * adası, perdeyi büyütmeye gerek kalmıyor.
+           * Denetim MASAÜSTÜNDE bu yığından çıkıp sağ kenara sabitleniyor
+           * (CSS'te `position: absolute`). Mobilde ise yığında kalıyor,
+           * yani sayaçla asıl arayüzün arasında — kenarda sabitken
+           * karşılama başlığının üstüne biniyordu.
            */}
-          <nav
-            /*
-             * Boşluk 2px, çünkü bağlantıların KENDİ dolgusu var (px-2).
-             * Dolgu, hover'daki arka plan lekesinin metne yapışmaması için
-             * gerekli; ikisi toplanınca metinler arası mesafe tasarımdaki
-             * 18px'e denk geliyor. Dolgu hover'da eklenseydi yerleşim
-             * oynardı.
-             */
-            className="flex gap-[2px] rounded-full px-3 py-1.5"
-            /*
-             * `backdrop-filter` KALDIRILDI, bilerek.
-             *
-             * Altındaki çayır her karede yeniden çiziliyor; bulanıklık her
-             * karede o alanı yeniden okuyup işlemek demek. Tümleşik grafik
-             * kartında (Intel Iris Xe) bu tek başına kare hızını yerle bir
-             * ediyordu.
-             *
-             * Zemin biraz daha opak yapıldı; görsel fark yok, çünkü şerit
-             * zaten küçük ve metnin arkasını kapatması yeterli.
-             */
-            style={{
-              background: 'rgba(253,246,242,0.94)',
-              boxShadow: '0 4px 14px rgba(74,59,56,0.12)',
-            }}
-          >
-            {LEGAL.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                /*
-                 * Renk tasarımın kendi bağlantı kuralından geliyor: vurgu
-                 * rengi, hover'da koyulaşıyor ve altı çiziliyor. Önceden
-                 * soluk griydiler ve tıklanabilir görünmüyorlardı.
-                 *
-                 * Üstüne yumuşak bir zemin lekesi: sahne canlı olduğu için
-                 * yalnızca renk değişimi bazı karelerde fark edilmiyor.
-                 */
-                className="rounded-full px-2 py-1 font-mono text-[11px] tracking-[0.14em] text-accent underline-offset-4 transition-colors duration-200 hover:bg-[rgba(160,79,99,0.12)] hover:text-[#7D3A4C] hover:underline"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+          <div className="meadow-shell-top">
+            <div className="meadow-shell-top-stack">
+              {topRight}
+              {counter}
+              {aside}
+            </div>
+          </div>
+
+          <div className="meadow-shell-body">{children}</div>
+
+          {legal && (
+            <div className="legal-bar-row">
+              <nav className="legal-bar">
+                {LEGAL.map((l) => (
+                  <Link key={l.href} href={l.href} className="legal-bar-link">
+                    {l.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -198,29 +119,14 @@ export function MeadowShell({
  * Yalnızca ana çayır görünümlerinde çiziliyor (karşılama ve girişli çayır),
  * kart ekranlarında değil — sahibinin isteği. Bir kartın yanında duran sayaç
  * o kartın parçası gibi okunuyordu.
- *
- * Kendi zeminini taşıyor, tıpkı yasal bağlantılar gibi ve aynı sebeple.
  */
 export function ReleaseCounter({ total }: { total: number }) {
   return (
-    <div
-      className="rounded-[14px] px-4 py-3 text-right"
-      /* Bulanıklık yok — bkz. yasal şeritteki not. */
-      style={{
-        background: 'rgba(253,246,242,0.94)',
-        boxShadow: '0 6px 18px rgba(74,59,56,0.16)',
-      }}
-    >
-      <div className="font-mono text-[11px] leading-none tracking-[0.16em] text-muted uppercase">
-        released into the meadow
-      </div>
-      <div className="mt-2 font-display text-[34px] leading-none text-ink">
-        {total.toLocaleString('en-US')}
-      </div>
+    <div className="release-counter">
+      <div className="release-counter-label">released into the meadow</div>
+      <div className="release-counter-value">{total.toLocaleString('en-US')}</div>
       {/* Sayının ne olduğunu söyleyen alt satır — yeni tasarımda eklendi */}
-      <div className="mt-1 font-mono text-[11px] leading-none tracking-[0.14em] text-faint">
-        butterflies
-      </div>
+      <div className="release-counter-unit">butterflies</div>
     </div>
   );
 }

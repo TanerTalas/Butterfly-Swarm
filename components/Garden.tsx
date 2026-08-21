@@ -237,7 +237,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const onMeadowView = view === 'landing' || view === 'meadow';
 
   return (
-    <main className="relative h-dvh w-full overflow-hidden">
+    <main className="meadow-stage">
       <Meadow />
 
       {watching && <StopWatchingButton onClick={() => setWatching(false)} />}
@@ -251,13 +251,19 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <WatchButton onClick={() => setWatching(true)} />
           ) : null
         }
+        /*
+         * Yasal şerit YALNIZCA çayır görünümlerinde. Kart ekranlarında
+         * kartla aynı sütunda duruyor ve ekrana sığmayan bir kartı
+         * yukarı itip kesilmesine yol açıyordu (bkz. MeadowShell).
+         */
+        legal={onMeadowView}
         topRight={
           signedIn && profile ? (
             <AccountChip profile={profile} onClick={() => go('account')} />
           ) : null
         }
       >
-        <div key={view} className="animate-[fade_320ms_ease]">
+        <div key={view} className="view-fade">
           {view === 'landing' && (
             <Landing
               onRelease={() => go('guest-release')}
@@ -403,26 +409,33 @@ function Landing({
   onSignIn: () => void;
 }) {
   return (
-    <div className="flex max-w-[470px] flex-col gap-6 lg:gap-7">
+    <div className="meadow-view meadow-view--narrow">
       <p className="eyebrow">the sakura meadow</p>
 
-      <h1 className="font-display text-[52px] font-light leading-[0.98] tracking-[-0.02em] text-ink lg:text-[76px]">
+      <h1 className="meadow-view-title meadow-view-title--hero">
         Butterfly Garden
       </h1>
 
-      <p className="max-w-[32ch] font-display text-[19px] leading-[1.45] text-body lg:text-[22px]">
+      <p className="meadow-view-lede meadow-view-lede--narrow">
         Let one butterfly go. It flies the meadow for seven days, then the
         wind takes it.
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+      <div className="action-row">
         <Button onClick={onRelease}>Release a butterfly</Button>
         <Button variant="secondary" onClick={onSignIn}>
           Sign in
         </Button>
       </div>
 
-      <p className="eyebrow">wing colours and tracking need an account</p>
+      {/*
+       * Mobilde ORTALI (bkz. `.landing-hint`). Dar ekranda butonlar tam
+       * genişlikte ve blok ekranı kaplıyor; sola yaslı tek bir satır
+       * ortada asılı kalıyordu.
+       */}
+      <p className="eyebrow landing-hint">
+        wing colours and tracking need an account
+      </p>
     </div>
   );
 }

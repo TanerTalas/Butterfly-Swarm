@@ -3,9 +3,12 @@
 /*
  * Renk seçimi — kanat renkleri ve profil avatarları.
  *
- * İkisi de aynı çift halkayı kullanıyor (globals.css `.ring-choice`):
+ * İkisi de aynı çift halkayı kullanıyor (`forms.css` → `.ring-choice`):
  * içte kart kremi, dışta koyu. Seçili olan koyu halkayı kalıcı taşıyor,
  * hover'da daha soluk hali beliriyor.
+ *
+ * Ölçü ve renk `style` ile veriliyor, sınıfla değil: ikisi de veri —
+ * paletten ve çağıran ekrandan geliyor.
  */
 
 export function ColourSwatch({
@@ -28,7 +31,7 @@ export function ColourSwatch({
       aria-label={label}
       aria-pressed={selected}
       data-selected={selected}
-      className="ring-choice rounded-full"
+      className="ring-choice swatch"
       style={{ width: size, height: size, background: hex }}
     />
   );
@@ -60,7 +63,7 @@ export function ColourWheelButton({
        * tekrar açıyor ve seçici hiç kapanmıyor.
        */
       data-colour-wheel=""
-      className="ring-choice relative rounded-full"
+      className="ring-choice colour-wheel"
       style={{
         width: size,
         height: size,
@@ -69,12 +72,8 @@ export function ColourWheelButton({
       }}
     >
       <span
-        className="absolute left-1/2 top-1/2 rounded-full bg-card"
-        style={{
-          width: size * 0.36,
-          height: size * 0.36,
-          transform: 'translate(-50%, -50%)',
-        }}
+        className="colour-wheel-core"
+        style={{ width: size * 0.36, height: size * 0.36 }}
       />
     </button>
   );

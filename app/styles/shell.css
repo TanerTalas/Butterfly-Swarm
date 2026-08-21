@@ -1,0 +1,386 @@
+/*
+ * Çayır kabuğu — sahnenin üstünde duran her şeyin yerleşimi.
+ *
+ * Canlı sahne, metnin okunması için açılan bir perde, kenar boşluğu, sağ
+ * üstte hesap rozeti + sayaç + çayır denetimi, sağ altta yasal bağlantılar.
+ */
+
+/*
+ * Sahne penceresi. Sayfa KAYMIYOR: kaydırma kabuğun kendi işi (aşağıya
+ * bak), burası yalnızca sahneyi ve kabuğu üst üste bindiren tam ekran
+ * çerçeve.
+ */
+.meadow-stage {
+  position: relative;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.meadow-shell {
+  transition: opacity 500ms ease;
+  opacity: 1;
+}
+
+/*
+ * İzleme kipi: kabuk unmount EDİLMİYOR, görünmez yapılıyor. Kartların
+ * durumu (yazılmış isim, seçilmiş renkler) korunuyor.
+ *
+ * Bileşen ayrıca `inert` veriyor — yalnızca opaklık arayüzü GÖRÜNMEZ
+ * yapıyor ama yok etmiyor; sekme tuşu görünmeyen butonların içinde
+ * dolaşıyordu. `display: none` ise geçiş animasyonunu öldürürdü.
+ */
+.meadow-shell--hidden {
+  pointer-events: none;
+  opacity: 0;
+}
+
+/*
+ * Perde bir "karartma" değil, YÖNLÜ bir geçiş: solda krem neredeyse opak,
+ * sağda tamamen şeffaf. Kartlar okunurken çayır da görünür kalıyor.
+ */
+.meadow-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Mobilde perde YÖNÜ değişiyor: içerik altta toplandığı için yukarıdan aşağıya. */
+.meadow-scrim--side {
+  display: none;
+}
+
+.meadow-scrim--bottom {
+  background: linear-gradient(
+    180deg,
+    rgba(247, 239, 233, 0) 0%,
+    rgba(247, 239, 233, 0.55) 42%,
+    rgba(247, 239, 233, 0.95) 72%
+  );
+}
+
+@media (min-width: 64rem) {
+  .meadow-scrim--bottom {
+    display: none;
+  }
+
+  .meadow-scrim--side {
+    display: block;
+    background: linear-gradient(
+      90deg,
+      rgba(247, 239, 233, 0.94) 0%,
+      rgba(247, 239, 233, 0.74) 34%,
+      rgba(247, 239, 233, 0) 60%
+    );
+  }
+
+  /* Ayarlar ve veda ekranlarında perde koyulaşıyor. */
+  [data-scrim='heavy'] .meadow-scrim--side {
+    background: linear-gradient(
+      90deg,
+      rgba(247, 239, 233, 0.96) 0%,
+      rgba(247, 239, 233, 0.8) 34%,
+      rgba(247, 239, 233, 0) 62%
+    );
+  }
+}
+
+/*
+ * ── Kaydırma ──────────────────────────────────────────────────────────────
+ *
+ * KABUĞUN TAMAMI kayıyor, içindeki bir bölme değil.
+ *
+ * Önceki hâlde yalnızca orta bölme (`flex-1 overflow-y-auto`) kayıyordu ve
+ * kırpma sınırı ekranın ortasında bir yerde kalıyordu: üstte yasal şerit,
+ * altta kenar boşluğu payı düşülünce kap ekran alt kenarından ~84px yukarıda
+ * bitiyordu. Ekrana sığmayan bir kart tam orada, HAVADA kesiliyordu — üst
+ * köşeleri yuvarlak, altı düz bir bıçak izi. (Ölçüldü: 674px'lik pencerede
+ * 599px'lik giriş kartı 589px'te kesiliyordu.)
+ *
+ * Şimdi kaydırma kabı ekranın kendisi. Kart taşarsa kırpma yalnızca EKRAN
+ * KENARINDA oluyor — yani "sayfa aşağı devam ediyor" diye okunuyor — ve
+ * aşağı kaydırınca kartın alt köşeleri ve alt kenar boşluğu tamamen
+ * görünüyor.
+ *
+ * ⚠ İki tuzak birden var, ikisi de aynı sebepten:
+ *
+ *   1. `align-items: center` / `justify-content: center` taşmayı ikiye bölüp
+ *      yarısını kabın ÜSTÜNE taşırıyor ve oraya kaydırarak ULAŞILAMIYOR;
+ *      `scrollTop` 0'ın altına inemiyor. Ortalama bu yüzden `margin: auto`
+ *      ile yapılıyor: taşma varken otomatik kenar boşlukları 0'a düşüyor.
+ *   2. Yerleşim `min-height: 100%` — `height: 100%` DEĞİL. Sabit yükseklik
+ *      verilseydi içerik yine kabın dışına taşar ve dolgu yutulurdu.
+ */
+.meadow-shell-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.meadow-shell-layout {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  padding: var(--shell-pad);
+}
+
+@media (min-width: 64rem) {
+  .meadow-shell-layout {
+    padding: var(--shell-pad-lg);
+  }
+}
+
+/*
+ * Üst şerit. Hesap rozeti ÜSTTE, sayaç onun ALTINDA — dikey bir yığın.
+ * (Yatay dizilim denendi ve rozet sayacın sağında kalıyordu; sahibinin son
+ * kararı bu.)
+ */
+.meadow-shell-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.meadow-shell-top-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/*
+ * İçerik alanı. Kalan yeri alıyor ama içeriğinden KÜÇÜLMÜYOR
+ * (`min-height: auto`, flex sütununun varsayılanı) — içerik uzunsa yerleşim
+ * büyüyor ve kabuk kayıyor.
+ */
+.meadow-shell-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+/* Mobilde içerik alta yaslanıyor: kartlar bir alt sayfa gibi duruyor. */
+.meadow-shell-body > * {
+  margin-top: auto;
+}
+
+@media (min-width: 64rem) {
+  .meadow-shell-body > * {
+    margin-block: auto;
+  }
+}
+
+/*
+ * ── Çayır denetimi ("Watch the meadow") ───────────────────────────────────
+ *
+ * Masaüstünde ekranın SAĞ KENARINDA, dikey ortada. Mobilde ise akışın
+ * içinde, sayaçla asıl arayüzün ARASINDA duruyor: kenarda sabitken
+ * karşılama başlığının üstüne biniyordu ve iki metin iç içe geçiyordu.
+ *
+ * Yalnızca ana çayır görünümlerinde var, kart ekranlarında yok — bir formun
+ * ortasındayken "izle" demek anlamsız.
+ *
+ * Zemini krem ve metni koyu: sahnenin üstünde duran, kendini birincil eylem
+ * gibi sunmayan bir denetim. Vurgu rengi yalnızca hover kanatlarında
+ * beliriyor, dolgusunda değil.
+ *
+ * Gölgesi DURUYOR (kartlardan farklı olarak), çünkü hiçbir perdenin üstünde
+ * değil — doğrudan çayırın üstünde ve kendi zeminini ayırması gerekiyor.
+ */
+.meadow-control,
+.meadow-control-exit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  white-space: nowrap;
+  box-shadow: var(--shadow-watch);
+  transition: box-shadow 320ms ease;
+}
+
+/*
+ * Kanatlar birincil butonun GÜL rengini kullanıyor, mürekkep siyahını değil.
+ *
+ * Önce `rgba(44,34,32,0.14)` idi ve görünmüyordu: bu buton durgun hâlde de
+ * gölge taşıyor, koyu ve %14 opak kanatlar da o hazır halenin içine düşüp
+ * gri bir bulanıklığa dönüşüyordu. Renk ayrımı olmadan kanat gölgeden
+ * ayrışamıyor. Hareketin dili böylece sitede tek: kanatlar nerede belirirse
+ * belirsin aynı renk, aynı ±22px, aynı 320ms.
+ */
+.meadow-control:hover,
+.meadow-control-exit:hover {
+  box-shadow:
+    -22px 0 0 -8px var(--wing-shadow),
+    22px 0 0 -8px var(--wing-shadow),
+    var(--shadow-watch);
+}
+
+.meadow-control {
+  height: 52px;
+  padding-inline: 26px;
+  font-size: 15px;
+  /* Mobilde akışın içinde: sayacın altında, sağa yaslı. */
+  align-self: flex-end;
+}
+
+@media (min-width: 64rem) {
+  .meadow-control {
+    position: absolute;
+    top: 50%;
+    right: 44px;
+    translate: 0 -50%;
+    z-index: 20;
+  }
+}
+
+/* İzleme kipinden çıkış — alt ortada, kabuğun dışında. */
+.meadow-control-exit {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 20;
+  height: 46px;
+  padding-inline: 24px;
+  font-size: 14px;
+}
+
+/*
+ * ── Küresel salım sayacı ──────────────────────────────────────────────────
+ *
+ * Yalnızca ana çayır görünümlerinde çiziliyor (karşılama ve girişli çayır),
+ * kart ekranlarında değil — sahibinin isteği. Bir kartın yanında duran sayaç
+ * o kartın parçası gibi okunuyordu.
+ *
+ * Kendi zeminini taşıyor, tıpkı yasal bağlantılar gibi ve aynı sebeple.
+ * Bulanıklık YOK: altındaki çayır her karede yeniden çiziliyor, bulanıklık
+ * her karede o alanı yeniden okuyup işlemek demek. Tümleşik grafik kartında
+ * (Intel Iris Xe) bu tek başına kare hızını yerle bir ediyordu.
+ */
+.release-counter {
+  border-radius: var(--radius-panel);
+  padding: 12px 16px;
+  text-align: right;
+  background: var(--surface-float);
+  box-shadow: var(--shadow-chip);
+}
+
+.release-counter-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.release-counter-value {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.release-counter-unit {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+/*
+ * ── Hesap rozeti ──────────────────────────────────────────────────────────
+ *
+ * İçinde YALNIZCA avatar var, isim yok (handoff bunu özellikle belirtiyor).
+ *
+ * TAM DAİRE: önceden dolguyla 46x40 bir yumurtaya dönüşüyordu, ölçü artık
+ * sabit ve kare. OPAK: zemin yarı saydamken arkadaki çayır avatarın içinden
+ * sızıyor, profil rengi soluk görünüyordu.
+ */
+.account-chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  width: 48px;
+  border-radius: 999px;
+  background: var(--color-card);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-chip);
+  transition: scale 200ms ease;
+}
+.account-chip:hover {
+  scale: 1.05;
+}
+
+/*
+ * ── Yasal şerit ───────────────────────────────────────────────────────────
+ *
+ * YALNIZCA çayır görünümlerinde (karşılama ve girişli çayır) çiziliyor.
+ * Kart ekranlarında yoktu-vardı meselesi değil, yer meselesi: ekrana sığmayan
+ * bir kartla aynı sütunda durunca ya kartın üstüne biniyor ya da kartı
+ * yukarı itip kesilmesine yol açıyordu.
+ *
+ * Bağlantılar KENDİ zeminini taşıyor. Önceden çıplak metindi ve çayırın
+ * üstünde okunmuyordu: sahne canlı, kamera döndükçe arkalarına açık çimen de
+ * koyu gövde de geliyor. Metin gölgesi yetmedi. Krem bir hap sahnenin
+ * üstünde küçük ama kesin bir okunabilirlik adası kuruyor.
+ */
+.legal-bar-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}
+
+@media (min-width: 64rem) {
+  .legal-bar-row {
+    justify-content: flex-end;
+  }
+}
+
+.legal-bar {
+  /*
+   * Boşluk 2px, çünkü bağlantıların KENDİ dolgusu var. Dolgu, hover'daki
+   * arka plan lekesinin metne yapışmaması için gerekli; ikisi toplanınca
+   * metinler arası mesafe tasarımdaki 18px'e denk geliyor. Dolgu hover'da
+   * eklenseydi yerleşim oynardı.
+   */
+  display: flex;
+  gap: 2px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  /* Bulanıklık yok — bkz. sayaçtaki not. */
+  background: var(--surface-float);
+  box-shadow: var(--shadow-float);
+}
+
+/*
+ * Renk tasarımın kendi bağlantı kuralından geliyor: vurgu rengi, hover'da
+ * koyulaşıyor ve altı çiziliyor. Önceden soluk griydiler ve tıklanabilir
+ * görünmüyorlardı. Üstüne yumuşak bir zemin lekesi: sahne canlı olduğu için
+ * yalnızca renk değişimi bazı karelerde fark edilmiyor.
+ */
+.legal-bar-link {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--color-accent);
+  text-underline-offset: 4px;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.legal-bar-link:hover {
+  background: var(--accent-wash);
+  color: var(--color-accent-deep);
+  text-decoration: underline;
+}

@@ -1,0 +1,114 @@
+/*
+ * Butterfly Garden — tasarım tokenları.
+ *
+ * Değerlerin tamamı design_handoff_butterfly_garden/README.md'deki
+ * "Design tokens" bölümünden geliyor ve TEK KAYNAK burası. Stil
+ * dosyalarında çıplak hex yazılmıyor; bir renk burada yoksa tasarımda da
+ * yok demektir.
+ *
+ * ⚠ `static` ŞART. Tailwind v4 varsayılan olarak yalnızca bir yardımcı
+ * sınıf tarafından KULLANILAN token'ı `:root`a yazıyor. Bu projede renkler
+ * artık `bg-panel` gibi yardımcı sınıflarla değil, kendi CSS
+ * dosyalarımızdan `var(--color-panel)` ile okunuyor — Tailwind bu
+ * kullanımı göremiyor ve `static` olmadan değişkenleri eliyor.
+ */
+@theme static {
+  /* ── Yüzeyler ── */
+  --color-cream: #f7efe9; /* sayfa zemini */
+  --color-card: #fdf6f2;
+  --color-input: #fffbf9;
+  --color-panel: #f4e7e0;
+  --color-track: #f0e2db;
+  --color-disabled: #e2d2cb;
+
+  /* ── Metin ── */
+  --color-ink: #2c2220; /* birincil */
+  --color-body: #4a3b38;
+  --color-body-soft: #5c4b47;
+  --color-label: #6b5a54;
+  --color-muted: #7d6a63;
+  --color-faint: #8a746d;
+  --color-disabled-ink: #9c8a84;
+  --color-placeholder: #a99b95;
+
+  /* ── Vurgu ── */
+  --color-accent: #a04f63;
+  --color-accent-hover: #8d4256;
+  --color-accent-deep: #7d3a4c; /* bağlantı hover'ı */
+  --color-danger: #a8362b;
+
+  /* ── Çizgiler ve lekeler ──
+   * Mürekkebin saydam hâlleri. Tasarımda kenarlar hep aynı renkten,
+   * yalnızca opaklık değişiyor; bunları isimlendirmek `rgba(44,34,32,...)`
+   * satırlarının her dosyada tekrarlanmasını bitiriyor. */
+  --line-soft: rgba(44, 34, 32, 0.08);
+  --line: rgba(44, 34, 32, 0.1);
+  --line-field: rgba(44, 34, 32, 0.16);
+  --line-strong: rgba(44, 34, 32, 0.2);
+  --line-focus: rgba(44, 34, 32, 0.34);
+  --wash: rgba(44, 34, 32, 0.22);
+  --wash-strong: rgba(44, 34, 32, 0.34);
+
+  --line-danger: rgba(168, 54, 43, 0.4);
+  --line-danger-strong: rgba(168, 54, 43, 0.7);
+  --wash-danger: rgba(168, 54, 43, 0.08);
+
+  /* Vurgu renginin kanat/hover lekeleri */
+  --wing-shadow: rgba(160, 79, 99, 0.42);
+  --accent-wash: rgba(160, 79, 99, 0.12);
+
+  /* Sahnenin üstünde duran okunabilirlik adaları */
+  --surface-float: rgba(253, 246, 242, 0.94);
+
+  /* ── Kanat renkleri ──
+   * Bunlar sahnedeki `WORLD.palette` ile BİREBİR aynı olmalı
+   * (src/world/config.js). Tasarım da aynı beşliyi kullanıyor. */
+  --color-wing-turquoise: #17b3a3;
+  --color-wing-blue: #2f5fd0;
+  --color-wing-amber: #e8a01c;
+  --color-wing-purple: #7a3fc4;
+  --color-wing-green: #2f9e4f;
+  --color-wing-body: #43332f;
+
+  /* ── Avatar renkleri (altı seçenek) ── */
+  --color-avatar-blue: #4f7fbf;
+  --color-avatar-pink: #d98aa6;
+  --color-avatar-turquoise: #17b3a3;
+  --color-avatar-amber: #e8a01c;
+  --color-avatar-purple: #7a6bc4;
+  --color-avatar-green: #6f8a5a;
+
+  /* ── Yazı aileleri ── */
+  --font-display: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Gölgeler ──
+   *
+   * Handoff dört gölge tanımlıyordu; ikisi kullanımda kaldı.
+   *
+   * Kart ve birincil buton gölgeleri KALDIRILDI (sahibinin kararı): canlı ve
+   * hareketli bir çayırın üstünde geniş bulanık gölgeler yüzeyi yüzdürmüyor,
+   * kenarını kirletiyordu. Yerlerini 1px kenar çizgileri aldı.
+   *
+   * Tanımları burada bırakmıyorum — kullanılmayan token, tasarım sisteminde
+   * hâlâ geçerliymiş gibi okunuyor ve bir dahaki sefere yanlışlıkla geri
+   * geliyor. */
+  --shadow-popover: 0 18px 42px rgba(74, 59, 56, 0.28);
+  --shadow-chip: 0 6px 18px rgba(74, 59, 56, 0.16);
+  --shadow-float: 0 4px 14px rgba(74, 59, 56, 0.12);
+  --shadow-watch: 0 10px 24px rgba(74, 59, 56, 0.2);
+
+  /* ── Yarıçap ── */
+  --radius-card: 20px;
+  --radius-sheet: 22px; /* mobil alt sayfa */
+  --radius-panel: 14px;
+  --radius-popover: 16px;
+  --radius-input: 12px;
+
+  /* ── Kabuk ölçüleri ──
+   * Kabuğun kenar boşluğu birkaç dosyada birden geçiyor (yerleşim, çayır
+   * denetimi, yasal şerit); tek yerden okunuyor. */
+  --shell-pad: 24px;
+  --shell-pad-lg: 72px;
+}

@@ -21,11 +21,9 @@ type Handle = {
 export function ButterflyPreview3D({
   fore,
   hind,
-  className,
 }: {
   fore: string;
   hind: string;
-  className?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<Handle | null>(null);
@@ -69,14 +67,10 @@ export function ButterflyPreview3D({
   }, [fore, hind]);
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className="preview-stage">
       <canvas
         ref={canvasRef}
-        className="block h-full w-full"
-        style={{
-          opacity: ready ? 1 : 0,
-          transition: 'opacity 400ms ease',
-        }}
+        className={`preview-canvas ${ready ? 'preview-canvas--ready' : ''}`.trim()}
       />
     </div>
   );

@@ -34,37 +34,28 @@ export function SetupCard({
     <Card>
       <BackLink label="back" onClick={onBack} />
 
-      <div className="flex flex-col gap-3">
+      <div className="card-intro">
         <p className="eyebrow">step 2 of 2</p>
-        <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
-          Set up your account
-        </h2>
-        <p className="text-[14px] leading-[1.6] text-body-soft">
+        <h2 className="card-title card-title--lead">Set up your account</h2>
+        <p className="body-text">
           A name and a colour. Both can be changed later.
         </p>
       </div>
 
       {/* Kimlik önizlemesi */}
-      <div className="flex items-center gap-4 rounded-[14px] bg-panel p-5">
-        <span
-          className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-full bg-card"
-          aria-hidden
-        >
+      <div className="panel panel-row">
+        <span className="avatar" style={{ width: 68, height: 68 }} aria-hidden>
           <Butterfly fore={avatar} width={38} height={31} simple />
         </span>
-        <div className="min-w-0 flex flex-col gap-1">
-          <p className="truncate font-display text-[22px] text-ink">
-            {trimmed || 'Your name'}
-          </p>
-          <p className="truncate font-mono text-[11px] tracking-[0.14em] text-faint">
-            {email}
-          </p>
+        <div className="identity">
+          <p className="identity-name">{trimmed || 'Your name'}</p>
+          <p className="stamp stamp--truncate">{email}</p>
         </div>
       </div>
 
       {/* İsim alanında Enter'a basmak kurulumu tamamlıyor — bkz. SignInCard */}
       <form
-        className="flex flex-col gap-6"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           if (trimmed.length === 0) return;
@@ -82,15 +73,15 @@ export function SetupCard({
           note="shown next to the butterflies you release"
         />
 
-        <div className="flex flex-col gap-3">
-          <span className="flex items-baseline justify-between gap-3">
+        <div className="choice-field">
+          <span className="field-head">
             <Label>profile photo</Label>
-            <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
+            <span className="stamp">
               {current?.name} · {avatar}
             </span>
           </span>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="swatch-grid">
             {AVATAR_COLOURS.map((c) => (
               <button
                 key={c.hex}
@@ -99,7 +90,7 @@ export function SetupCard({
                 aria-label={c.name}
                 aria-pressed={c.hex === avatar}
                 data-selected={c.hex === avatar}
-                className="ring-choice flex h-[46px] w-[46px] items-center justify-center rounded-full bg-panel"
+                className="ring-choice avatar-choice"
               >
                 <Butterfly fore={c.hex} width={28} height={23} simple />
               </button>

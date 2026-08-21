@@ -56,9 +56,7 @@ export function SettingsCard({
     <Card width={500}>
       <BackLink label="my account" onClick={onBack} />
 
-      <h2 className="font-display text-[26px] leading-none text-ink lg:text-[30px]">
-        Settings
-      </h2>
+      <h2 className="card-title">Settings</h2>
 
       {/*
        * Form yalnızca İSİM + RENK + Save'i sarıyor.
@@ -70,7 +68,7 @@ export function SettingsCard({
        * bir risk değil; o adım tıklamayla kalıyor.
        */}
       <form
-        className="flex flex-col gap-6"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           if (locked || !changed) return;
@@ -87,10 +85,10 @@ export function SettingsCard({
           hint={name.length + '/' + NAME_MAX}
         />
 
-        <div className="flex flex-col gap-2.5">
+        <div className="choice-field choice-field--tight">
           <Label>profile photo</Label>
 
-          <div className="flex flex-wrap gap-2.5 rounded-[14px] bg-panel px-5 py-[18px]">
+          <div className="avatar-picker">
             {AVATAR_COLOURS.map((c) => (
               <button
                 key={c.hex}
@@ -100,7 +98,7 @@ export function SettingsCard({
                 aria-label={c.name}
                 aria-pressed={c.hex === avatar}
                 data-selected={c.hex === avatar}
-                className="ring-choice flex h-10 w-10 items-center justify-center rounded-full bg-card disabled:cursor-not-allowed disabled:opacity-50"
+                className="ring-choice avatar-choice avatar-choice--sm"
               >
                 <Butterfly fore={c.hex} width={24} height={19} simple />
               </button>
@@ -108,7 +106,7 @@ export function SettingsCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="action-stack">
           <Button
             size="md"
             type="submit"
@@ -118,7 +116,7 @@ export function SettingsCard({
             Save
           </Button>
 
-          <p className="text-center font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
+          <p className="note note--center">
             {locked
               ? 'name and colour are locked for now, try again tomorrow'
               : 'once saved, name and colour cannot be changed again for 1 day'}
@@ -127,14 +125,12 @@ export function SettingsCard({
       </form>
 
       {/* Tehlikeli bölge */}
-      <div className="flex flex-col gap-3 border-t border-[rgba(44,34,32,0.1)] pt-5">
+      <div className="card-danger-zone">
         {!confirming ? (
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-ink">
-                Delete account
-              </p>
-              <p className="mt-1.5 max-w-[34ch] font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
+          <div className="danger-row">
+            <div className="danger-copy">
+              <p className="danger-title">Delete account</p>
+              <p className="danger-note">
                 your butterflies leave the meadow at once, and cannot be
                 brought back
               </p>
@@ -142,7 +138,7 @@ export function SettingsCard({
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="h-11 shrink-0 rounded-full border border-[rgba(168,54,43,0.4)] px-[22px] text-[14px] whitespace-nowrap text-danger transition-colors hover:border-[rgba(168,54,43,0.7)] hover:bg-[rgba(168,54,43,0.08)]"
+              className="button--danger button--danger-sm"
             >
               Delete
             </button>
@@ -152,12 +148,10 @@ export function SettingsCard({
            * Onay adımı: hesap ismini yazdırıyor. Bir "emin misiniz" penceresi
            * refleksle geçiliyor; isim yazmak geçilemeyen tek eşik.
            */
-          <div className="flex flex-col gap-3">
-            <p className="text-[15px] font-semibold text-ink">
-              Type {profile.name} to confirm
-            </p>
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
+          <div className="confirm-stack">
+            <p className="danger-title">Type {profile.name} to confirm</p>
+            <div className="confirm-row">
+              <div className="confirm-field">
                 <Field
                   label="account name"
                   value={typed}
@@ -169,16 +163,12 @@ export function SettingsCard({
                 type="button"
                 disabled={typed !== profile.name}
                 onClick={onDelete}
-                className="h-12 shrink-0 rounded-full border border-[rgba(168,54,43,0.4)] px-5 text-[14px] whitespace-nowrap text-danger transition-colors hover:border-[rgba(168,54,43,0.7)] hover:bg-[rgba(168,54,43,0.08)] disabled:cursor-not-allowed disabled:opacity-40"
+                className="button--danger button--danger-lg"
               >
                 Delete for good
               </button>
             </div>
-            <button
-              type="button"
-              onClick={cancelDelete}
-              className="self-start font-mono text-[11px] tracking-[0.14em] text-muted hover:text-ink"
-            >
+            <button type="button" onClick={cancelDelete} className="link-cancel">
               cancel
             </button>
           </div>

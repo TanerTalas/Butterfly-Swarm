@@ -18,11 +18,7 @@ export function BackLink({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-2 font-mono text-[12px] tracking-[0.14em] text-accent transition-opacity hover:opacity-70"
-    >
+    <button type="button" onClick={onClick} className="back-link">
       <ArrowLeft />
       {label}
     </button>

@@ -1,0 +1,32 @@
+/* Hareket — geçişler ve hareketi azaltma tercihi. */
+
+/*
+ * Kartların çapraz geçişi.
+ *
+ * Yalnızca opaklık — `transform` YOK.
+ *
+ * Önce 8px yukarı kayma vardı ama kartı ayrı bir kompozit katmana alıyor ve
+ * yarı saydam evrede yuvarlak köşelerde kirli bir kenar bırakıyordu. Kartın
+ * opak olması gereken bir yüzeyde bu hemen fark ediliyor.
+ */
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.view-fade {
+  animation: fade 320ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

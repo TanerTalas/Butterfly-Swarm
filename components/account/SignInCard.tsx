@@ -36,9 +36,7 @@ export function SignInCard({
     <Card width={440}>
       <BackLink label="back to the meadow" onClick={onBack} />
 
-      <h2 className="font-display text-[28px] leading-tight text-ink lg:text-[32px]">
-        Enter the meadow
-      </h2>
+      <h2 className="card-title card-title--lead">Enter the meadow</h2>
 
       <Segmented
         value={tab}
@@ -58,11 +56,12 @@ export function SignInCard({
        * tanımasını sağlıyor; `autoComplete` ipuçları ancak form içinde tam
        * anlamıyla işe yarıyor.
        *
-       * `gap-6` burada tekrarlanıyor çünkü form artık kartın tek bir flex
-       * çocuğu; olmasaydı alanlarla buton arasındaki boşluk kapanırdı.
+       * `.form-stack` kartın kendi satır aralığını tekrarlıyor: form artık
+       * kartın tek bir flex çocuğu, olmasaydı alanlarla buton arasındaki
+       * boşluk kapanırdı.
        */}
       <form
-        className="flex flex-col gap-6"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           if (!canSubmit) return;
@@ -70,7 +69,7 @@ export function SignInCard({
           else onNeedsSetup(email);
         }}
       >
-        <div className="flex flex-col gap-4">
+        <div className="field-group">
           <Field
             label="email"
             type="email"
@@ -102,17 +101,20 @@ export function SignInCard({
       <button
         type="button"
         onClick={() => onNeedsSetup('you@example.com')}
-        className="flex h-[50px] items-center justify-center gap-2.5 rounded-full border border-[rgba(44,34,32,0.18)] bg-input text-[15px] font-medium text-ink transition-colors hover:border-[rgba(44,34,32,0.34)]"
+        className="button--oauth"
       >
         <GoogleMark />
         Continue with Google
       </button>
 
-      <p className="font-mono text-[11px] leading-[1.6] tracking-[0.14em] text-faint">
-        by signing in you accept the{' '}
-        <a href="/legal/terms" className="text-accent hover:underline">
-          terms
-        </a>
+      {/*
+       * Yasal metne giden bağlantı BURADA duruyor. Kabuğun alt şeridi
+       * yalnızca çayır görünümlerinde çizildiği için (bkz. MeadowShell),
+       * kullanıcının şartları görmesi gereken tek ekran kendi bağlantısını
+       * taşımak zorunda.
+       */}
+      <p className="consent-note">
+        by signing in you accept the <a href="/legal/terms">terms</a>
       </p>
     </Card>
   );

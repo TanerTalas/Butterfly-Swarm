@@ -5,9 +5,17 @@ import { Eye } from '@/components/ui/Icons';
 /*
  * "Watch the meadow" — arayüzü kenara çekip sahneyi izlemeye geçiş.
  *
- * Yeni tasarımda ekranın SAĞ KENARINDA, dikey ortada duruyor. Yalnızca ana
- * çayır görünümlerinde (karşılama ve girişli çayır) var, kart ekranlarında
- * yok — bir formun ortasındayken "izle" demek anlamsız.
+ * Yeri kırılma noktasına göre değişiyor ve karar CSS'te (`shell.css`):
+ *
+ *   masaüstü — ekranın sağ kenarında, dikey ortada
+ *   mobil    — sayaçla asıl arayüzün ARASINDA, akışın içinde
+ *
+ * Mobilde kenara sabitlendiğinde karşılama başlığının üstüne biniyor ve iki
+ * metin iç içe geçiyordu; dar ekranda "sahnenin üstünde yüzen denetim"
+ * kalıbının yeri yok.
+ *
+ * Yalnızca ana çayır görünümlerinde (karşılama ve girişli çayır) çiziliyor,
+ * kart ekranlarında değil — bir formun ortasındayken "izle" demek anlamsız.
  *
  * İzleme kipinden çıkış tasarımda çizilmemiş. Sahneye tıklamak kamerayı
  * döndürdüğü için "her yere tıkla" işe yaramaz; alt ortada açık bir düğme
@@ -15,11 +23,7 @@ import { Eye } from '@/components/ui/Icons';
  */
 export function WatchButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="btn-watch absolute top-1/2 right-6 z-20 flex h-[52px] -translate-y-1/2 items-center gap-2.5 rounded-full px-[26px] text-[15px] text-ink lg:right-[44px]"
-    >
+    <button type="button" onClick={onClick} className="meadow-control">
       <Eye />
       Watch the meadow
     </button>
@@ -29,11 +33,7 @@ export function WatchButton({ onClick }: { onClick: () => void }) {
 /** İzleme kipinden çıkış — alt ortada. */
 export function StopWatchingButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="btn-watch absolute bottom-8 left-1/2 z-20 flex h-[46px] -translate-x-1/2 items-center gap-2.5 rounded-full px-6 text-[14px] text-ink"
-    >
+    <button type="button" onClick={onClick} className="meadow-control-exit">
       <Eye off />
       Leave the meadow
     </button>

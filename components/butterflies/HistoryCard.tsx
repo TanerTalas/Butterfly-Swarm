@@ -37,53 +37,43 @@ export function HistoryCard({
 
   const pageCount = Math.max(1, Math.ceil(ordered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
-  const rows = ordered.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+  const rows = ordered.slice(
+    current * PAGE_SIZE,
+    current * PAGE_SIZE + PAGE_SIZE,
+  );
 
   return (
     <Card width={500}>
       <BackLink label="my butterflies" onClick={onBack} />
 
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-[26px] leading-tight text-ink lg:text-[30px]">
-          History
-        </h2>
-        <span className="font-mono text-[12px] tracking-[0.14em] text-label">
-          {ordered.length} total
-        </span>
+      <div className="card-head">
+        <h2 className="card-title">History</h2>
+        <span className="tally">{ordered.length} total</span>
       </div>
 
       {ordered.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-[12px] border border-dashed border-[rgba(44,34,32,0.2)]">
-          <span className="font-mono text-[11px] tracking-[0.14em] text-faint">
-            nothing has finished its seven days yet
-          </span>
+        <div className="empty-slot empty-slot--block">
+          <span className="note">nothing has finished its seven days yet</span>
         </div>
       ) : (
         <>
-          <ul className="flex flex-col">
+          <ul className="history-list">
             {rows.map((b) => (
-              <li
-                key={b.id}
-                className="flex items-baseline justify-between gap-4 border-b border-[rgba(44,34,32,0.08)] py-[13px]"
-              >
-                <span className="truncate font-display text-[19px] text-ink">
-                  {b.name ?? 'Unnamed'}
-                </span>
-                <span className="shrink-0 font-mono text-[11px] tracking-[0.14em] text-faint">
-                  {formatReleased(b.releasedAt)}
-                </span>
+              <li key={b.id} className="history-row">
+                <span className="history-name">{b.name ?? 'Unnamed'}</span>
+                <span className="stamp">{formatReleased(b.releasedAt)}</span>
               </li>
             ))}
           </ul>
 
           {pageCount > 1 && (
-            <div className="flex items-center justify-center gap-5">
+            <div className="pager">
               <PageButton
                 label="previous page"
                 disabled={current === 0}
                 onClick={() => setPage(current - 1)}
               />
-              <span className="font-mono text-[12px] tracking-[0.14em] text-label">
+              <span className="tally">
                 {current + 1} of {pageCount}
               </span>
               <PageButton
@@ -117,9 +107,9 @@ function PageButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[rgba(44,34,32,0.2)] text-ink transition-colors hover:bg-panel disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+      className="icon-button"
     >
-      <span className={flip ? 'rotate-180' : undefined}>
+      <span className={flip ? 'icon-button-flip' : undefined}>
         <ArrowLeft size={14} />
       </span>
     </button>

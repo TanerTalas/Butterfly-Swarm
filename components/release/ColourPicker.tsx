@@ -98,30 +98,20 @@ export function ColourPicker({
     return { sx, sy, hex: fieldColour(hue, sx, sy) };
   }
 
-  const desktopSide =
-    side === 'right'
-      ? 'lg:left-[calc(100%+20px)] lg:top-[-4px]'
-      : 'lg:right-[calc(100%+20px)] lg:top-[-4px]';
-
   return (
     <div
       ref={popRef}
       role="dialog"
       aria-label="custom colour"
-      className={`absolute inset-x-0 bottom-[calc(100%+14px)] z-30 mx-auto w-[240px] rounded-[16px] p-4 lg:inset-x-auto lg:bottom-auto lg:mx-0 ${desktopSide}`}
-      style={{
-        backgroundColor: '#FDF6F2',
-        border: '1px solid rgba(44,34,32,0.08)',
-        boxShadow: '0 18px 42px rgba(74,59,56,0.28)',
-      }}
+      className={`colour-picker colour-picker--${side}`}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="colour-picker-head">
         <span className="eyebrow">custom colour</span>
         <button
           type="button"
           onClick={onClose}
           aria-label="close"
-          className="text-muted transition-colors hover:text-ink"
+          className="colour-picker-close"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
             <path
@@ -146,7 +136,7 @@ export function ColourPicker({
             setHover(null); // tıklanan renk kilitlensin, imleç kımıldasa da
           }
         }}
-        className="relative h-[78px] w-full cursor-crosshair rounded-[8px]"
+        className="colour-field"
         style={{
           background: `linear-gradient(180deg, transparent, #17231F), linear-gradient(90deg, #F6EFE9, ${fieldColour(hue, 1, 0)})`,
         }}
@@ -165,11 +155,10 @@ export function ColourPicker({
             width="15"
             height="15"
             viewBox="0 0 15 15"
-            className="pointer-events-none absolute"
+            className="colour-mark"
             style={{
               left: `${mark.sx * 100}%`,
               top: `${mark.sy * 100}%`,
-              transform: 'translate(-50%, -50%)',
             }}
             aria-hidden
           >
@@ -205,14 +194,10 @@ export function ColourPicker({
           if (mark) onSelect(fieldColour(h, mark.sx, mark.sy));
         }}
         aria-label="hue"
-        className="mt-3 h-3 w-full cursor-pointer appearance-none rounded-full"
-        style={{
-          background:
-            'linear-gradient(90deg,#E05A4F,#E8A01C,#CBD45F,#2F9E4F,#17B3A3,#2F5FD0,#7A3FC4,#E05A4F)',
-        }}
+        className="hue-slider"
       />
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="hex-row">
         <input
           value={text}
           onChange={(e) => {
@@ -231,10 +216,10 @@ export function ColourPicker({
           }}
           spellCheck={false}
           aria-label="hex value"
-          className="h-[38px] min-w-0 flex-1 rounded-[10px] border border-[rgba(44,34,32,0.16)] bg-input px-3 font-mono text-[13px] text-ink outline-none focus:border-[rgba(44,34,32,0.34)]"
+          className="hex-input"
         />
         <span
-          className="h-[38px] w-[38px] shrink-0 rounded-[10px] border border-[rgba(44,34,32,0.12)]"
+          className="hex-preview"
           style={{ background: shown }}
           aria-hidden
         />
@@ -244,11 +229,11 @@ export function ColourPicker({
        * Renk zaten tıklamayla uygulandığı için bu buton "onayla" değil
        * "bitti" demek: seçiciyi kapatıyor.
        */}
-      <Button size="sm" fullWidth className="mt-3 h-[40px]" onClick={onClose}>
+      <Button size="sm" fullWidth className="colour-picker-done" onClick={onClose}>
         Done
       </Button>
 
-      <p className="mt-2 font-mono text-[10px] leading-[1.5] tracking-[0.12em] text-faint">
+      <p className="colour-picker-note">
         hex is optional · pinks disappear against the sakura
       </p>
     </div>

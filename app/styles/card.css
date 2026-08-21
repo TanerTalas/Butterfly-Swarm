@@ -1,0 +1,189 @@
+/*
+ * Kart — çayır üstündeki bütün panellerin kabuğu.
+ *
+ * Masaüstünde solda duran opak bir krem kart. Mobilde ekranın altına oturan
+ * bir alt sayfaya dönüşüyor: 22px üst köşe, düz alt köşe. Handoff'un mobil
+ * kalıbı bu; masaüstü kartını küçültmek değil.
+ *
+ * Arka plan TAM OPAK. Önceden yarı saydamdı ve kartın kenarları bozuk
+ * görünüyordu: altındaki perde yarı saydam, köşeler yuvarlak — ikisi
+ * birleşince kenarda kirli bir kuşak oluşuyordu. Kart sahnenin üstünde duran
+ * KAĞIT gibi olmalı, camdan değil.
+ *
+ * GÖLGE YOK. Canlı ve hareketli bir çayırın üstünde büyük ve bulanık bir
+ * gölge kartı yüzdürmüyor, kirletiyordu. Kenarı 1px çizgi tanımlıyor.
+ *
+ * Genişlik bir PROP (`width`), sınıf değil: her ekranın kendi ölçüsü var
+ * (440–520px) ve bunlar tasarım verisi, stil kararı değil.
+ */
+.card {
+  display: flex;
+  width: 100%;
+  max-width: var(--card-width);
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: var(--color-card);
+  border: 1px solid var(--line);
+}
+
+/*
+ * Mobilde kart bir ALT SAYFA: ekranın altına oturuyor, üst köşeleri yuvarlak,
+ * alt köşeleri düz.
+ *
+ * Alt köşeler zaten düz çiziliyordu ama kart ekranın 24px yukarısında
+ * duruyordu; düz bir alt kenarın havada asılı kalması kartı yuvarlak köşeli
+ * üstüyle birlikte "kesilmiş" gösteriyordu. Ya köşeler yuvarlanacaktı ya da
+ * kart gerçekten aşağıya oturacaktı — tasarımın kalıbı ikincisi.
+ *
+ * ── Yatayda: telefonda kenardan kenara, tablette ortalanmış ────────────────
+ *
+ * Kırılma noktası 64rem ve arası geniş: 390px'te de 900px'te de bu kural
+ * geçerli. Kart her iki genişlikte de ekranı doldursaydı tablette iki yana
+ * yapışmış 900px'lik bir sayfa çıkardı — okunması zor ve tasarımdaki
+ * ölçülerden (440–520px) kopuk.
+ *
+ * `margin-inline` bu yüzden iki değerin BÜYÜĞÜ:
+ *
+ *   -24px                    → kabuğun kenar boşluğunu geri alan tam taşma
+ *   (100% - kart genişliği)/2 → kartı kendi ölçüsünde ortalayan boşluk
+ *
+ * Dar ekranda ikincisi daha negatif olduğu için -24px kazanıyor: kart
+ * kenardan kenara. Ekran kartın ölçüsünü geçtiği anda ikincisi pozitife
+ * dönüyor ve kart ortalanıp genişlemeyi bırakıyor. Aradaki geçiş sürekli,
+ * ayrı bir kırılma noktası gerekmiyor.
+ *
+ * `width: auto` şart: kutu kalan yeri kendi dolduruyor, kenar boşlukları ne
+ * bırakırsa o kadar geniş oluyor.
+ */
+@media (max-width: 63.999rem) {
+  .card {
+    max-width: none;
+    width: auto;
+    margin-inline: max(
+      calc(var(--shell-pad) * -1),
+      calc((100% - var(--card-width)) / 2)
+    );
+    margin-bottom: calc(var(--shell-pad) * -1);
+  }
+}
+
+@media (min-width: 64rem) {
+  .card {
+    border-radius: var(--radius-card);
+    padding: 34px 36px;
+  }
+}
+
+/* Başlık + sağdaki sayaç. */
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+
+@media (min-width: 64rem) {
+  .card-title {
+    font-size: 30px;
+  }
+}
+
+/* Salma akışının kartları bir punto büyük. */
+.card-title--lead {
+  font-size: 28px;
+}
+
+@media (min-width: 64rem) {
+  .card-title--lead {
+    font-size: 32px;
+  }
+}
+
+/* Başlık + altındaki açıklama bloğu. */
+.card-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/*
+ * Kart içindeki gömülü panel — kilitli renkler, kimlik önizlemesi,
+ * avatar seçimi. Kartın kreminden bir ton koyu.
+ */
+.panel {
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  padding: 20px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Krem daire içinde tek renk kelebek — avatar. */
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-card);
+}
+
+.avatar--panel {
+  background: var(--color-panel);
+}
+
+/* Uzun ismin kartı genişletmesini engelleyen sütun. */
+.identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.identity-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Kartın altındaki tehlikeli bölge — ince bir çizgiyle ayrılıyor. */
+.card-danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+/* Boş durum kutusu — kesik çizgili, davetkâr. */
+.empty-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-input);
+  border: 1px dashed var(--line-strong);
+}
+
+.empty-slot--row {
+  height: 44px;
+}
+
+.empty-slot--block {
+  height: 96px;
+}

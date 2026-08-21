@@ -1,0 +1,736 @@
+/*
+ * Ekranlara özel yerleşimler.
+ *
+ * Buradaki her blok tek bir ekrana ait. Ortak olan bir şey görürsen
+ * (buton, kart, alan) yeri burası değil — buttons/card/forms dosyalarına
+ * taşınmalı.
+ */
+
+/* ── Sahne katmanı ───────────────────────────────────────────────────────── */
+
+.meadow-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.meadow-canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+  /* Sahne yüklenene kadar zemin çayırın ufuk rengiyle aynı kalsın */
+  background: #e9d3c9;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.meadow-canvas--ready {
+  opacity: 1;
+}
+
+.meadow-fallback {
+  object-fit: cover;
+}
+
+/* ── Kartsız çayır ekranları ─────────────────────────────────────────────
+ *
+ * Karşılama, girişli çayır, salındı onayı ve veda. Dördünde de kart yok,
+ * bilinçli: bunlar bir form adımı değil, bir durum bildirimi. Metin
+ * doğrudan çayırın üstünde duruyor.
+ */
+
+.meadow-view {
+  display: flex;
+  max-width: 560px;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.meadow-view--narrow {
+  max-width: 470px;
+}
+
+@media (min-width: 64rem) {
+  .meadow-view {
+    gap: 28px;
+  }
+}
+
+.meadow-view-title {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+@media (min-width: 64rem) {
+  .meadow-view-title {
+    font-size: 58px;
+  }
+}
+
+/* Karşılama başlığı sitedeki en büyük yazı — projenin adı. */
+.meadow-view-title--hero {
+  font-size: 52px;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+}
+
+/* Salındı onayı: tek cümle, bir punto daha büyük. */
+.meadow-view-title--released {
+  font-size: 40px;
+}
+
+/* Veda: iki satıra kırılan uzun cümle, bu yüzden bir tık küçük. */
+.meadow-view-title--farewell {
+  max-width: 22ch;
+  font-size: 38px;
+  line-height: 1.04;
+}
+
+@media (min-width: 64rem) {
+  .meadow-view-title--hero {
+    font-size: 76px;
+  }
+  .meadow-view-title--released {
+    font-size: 62px;
+  }
+  .meadow-view-title--farewell {
+    font-size: 56px;
+  }
+}
+
+.meadow-view-lede {
+  max-width: 34ch;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--color-body);
+}
+
+.meadow-view-lede--narrow {
+  max-width: 32ch;
+}
+
+@media (min-width: 64rem) {
+  .meadow-view-lede {
+    font-size: 21px;
+  }
+  .meadow-view-lede--narrow {
+    font-size: 22px;
+  }
+}
+
+/*
+ * Karşılamadaki son satır: "wing colours and tracking need an account".
+ *
+ * Mobilde ORTALI. Masaüstünde metin bloğu solda dar bir sütun, satır
+ * doğal olarak başlığın altına hizalanıyor; mobilde ise blok ekranın
+ * tamamını kaplıyor ve butonlar tam genişlikte olduğu için sola yaslı bir
+ * tek satır ortada asılı kalıyordu.
+ */
+.landing-hint {
+  text-align: center;
+}
+
+@media (min-width: 64rem) {
+  .landing-hint {
+    text-align: left;
+  }
+}
+
+/* ── Misafir salma ───────────────────────────────────────────────────────── */
+
+/* Kilitli renk panelindeki iki etiket. */
+.locked-wings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Giriş / kayıt ───────────────────────────────────────────────────────── */
+
+.consent-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.consent-note a {
+  color: var(--color-accent);
+}
+.consent-note a:hover {
+  text-decoration: underline;
+}
+
+/* ── Hesap kurulumu ──────────────────────────────────────────────────────── */
+
+.swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Kelebekli renk seçimi — avatar boyu. */
+.avatar-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  width: 46px;
+  border-radius: 999px;
+  background: var(--color-panel);
+}
+
+.avatar-choice--sm {
+  height: 40px;
+  width: 40px;
+  background: var(--color-card);
+}
+.avatar-choice--sm:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.choice-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.choice-field--tight {
+  gap: 10px;
+}
+
+/*
+ * Avatar seçimi ayarlarda gömülü bir panelin içinde duruyor; kurulumda
+ * ise çıplak. İkisi aynı seçim, farklı bağlam.
+ */
+.avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  padding: 18px 20px;
+}
+
+/* ── Hesabım ─────────────────────────────────────────────────────────────── */
+
+@media (min-width: 64rem) {
+  .account-card {
+    gap: 26px;
+  }
+}
+
+.account-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 64rem) {
+  .account-name {
+    font-size: 30px;
+  }
+}
+
+/*
+ * Üç sayı kutusu ve üçü farklı şey söylüyor: şu an kaç kelebeğin uçtuğu,
+ * bugüne kadar kaç tane bıraktığın, ne zamandır burada olduğun. İlki bir
+ * kapasite göstergesi, diğer ikisi hatıra.
+ */
+.stat-row {
+  display: flex;
+  gap: 12px;
+}
+
+.stat {
+  flex: 1;
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  padding: 16px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.stat-label {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.center-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Ayarlar ─────────────────────────────────────────────────────────────── */
+
+.danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.danger-copy {
+  min-width: 0;
+}
+
+.danger-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.danger-note {
+  margin-top: 6px;
+  max-width: 34ch;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.confirm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.confirm-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.confirm-field {
+  flex: 1;
+}
+
+.link-cancel {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--color-muted);
+  transition: color 200ms ease;
+}
+.link-cancel:hover {
+  color: var(--color-ink);
+}
+
+/* ── Kelebeklerim ────────────────────────────────────────────────────────── */
+
+/*
+ * Liste kartın İÇİNDE kayıyor, kartın kendisi değil: beş satır kısa bir
+ * pencerede kartı kabından taşırıyor ve yuvarlak köşeleri kırpıyordu.
+ * Çubuk gizlenmiyor, burada kaydırılabilirlik fark edilmeli.
+ *
+ * Tavan yeni tasarımla birlikte düştü: üstteki geri bağlantısı ve alttaki
+ * History satırı karta ~50px ekledi ve eski tavanla kart yine taşıyordu.
+ */
+.butterfly-list {
+  display: flex;
+  max-height: min(38vh, 300px);
+  flex-direction: column;
+  overflow-y: auto;
+  margin-right: -8px;
+  padding-right: 8px;
+}
+
+.butterfly-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 16px;
+}
+
+.butterfly-row + .butterfly-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.butterfly-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.butterfly-name {
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.butterfly-released {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.butterfly-life {
+  width: 84px;
+  flex-shrink: 0;
+}
+
+/*
+ * Harf aralığı YOK, bilerek. Diğer monospace etiketlerde 0.14em var ama
+ * burada 84px'lik sütuna "6 days left" sığmıyor ve iki satıra kırılıyor.
+ * Tasarımda da bu satır aralıksız.
+ */
+.butterfly-days {
+  margin-bottom: 8px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--color-body);
+}
+
+.lifebar {
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.lifebar-fill {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+/* Satır sonundaki "Watch" — kamerayı o kelebeğe kilitliyor. */
+.row-watch {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  padding-inline: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--color-body);
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+.row-watch:hover {
+  border-color: var(--wash-strong);
+  background: var(--color-panel);
+}
+
+/*
+ * Boş yuvalar TEK satırda özetleniyor. Beş ayrı kesik çizgili kutu kartı
+ * şişiriyor ve bir eksiklik listesi gibi okunuyordu; tek satır aynı bilgiyi
+ * bir davet olarak veriyor.
+ */
+.slot-row {
+  padding-top: 16px;
+}
+
+.slot-row:first-child {
+  padding-top: 0;
+}
+
+/* ── Geçmiş ──────────────────────────────────────────────────────────────── */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-block: 13px;
+}
+
+.history-name {
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ── Kanat seçimi ────────────────────────────────────────────────────────── */
+
+.wings-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 40rem) {
+  .wings-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.wings-preview {
+  display: flex;
+  flex-shrink: 0;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  padding: 12px;
+}
+
+@media (min-width: 40rem) {
+  .wings-preview {
+    align-self: flex-start;
+  }
+}
+
+.wings-controls {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Renk seçici bu satıra göre konumlanıyor. */
+.wing-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/*
+ * Önizleme katmanı — gerçek kelebek, salınmadan önceki hâli.
+ *
+ * Bulanıklık yok: arkada çayır dönmeye devam ediyor ve her karede
+ * bulanıklaştırmak pahalı. Daha opak bir krem aynı işi görüyor.
+ */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+  background: rgba(247, 239, 233, 0.94);
+}
+
+.preview-stage {
+  height: 320px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+}
+
+.preview-canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.preview-canvas--ready {
+  opacity: 1;
+}
+
+.preview-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.preview-name {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--color-ink);
+}
+
+/* ── Özel renk seçici ────────────────────────────────────────────────────── */
+
+/*
+ * Mobilde satırın ÜSTÜNDE ve ortalanmış açılıyor; masaüstünde kartın
+ * yanında. Kart dar olduğu için içeride açılsa kutuyu taşırıyordu.
+ */
+.colour-picker {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 14px);
+  z-index: 30;
+  margin-inline: auto;
+  width: 240px;
+  border-radius: var(--radius-popover);
+  padding: 16px;
+  background: var(--color-card);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-popover);
+}
+
+@media (min-width: 64rem) {
+  .colour-picker {
+    inset-inline: auto;
+    bottom: auto;
+    top: -4px;
+    margin-inline: 0;
+  }
+  .colour-picker--right {
+    left: calc(100% + 20px);
+  }
+  .colour-picker--left {
+    right: calc(100% + 20px);
+  }
+}
+
+.colour-picker-head {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.colour-picker-close {
+  color: var(--color-muted);
+  transition: color 200ms ease;
+}
+.colour-picker-close:hover {
+  color: var(--color-ink);
+}
+
+.colour-field {
+  position: relative;
+  height: 78px;
+  width: 100%;
+  cursor: crosshair;
+  border-radius: 8px;
+}
+
+/*
+ * Nişan alanın üstünde duruyor; tıklamayı yutarsa kendi üzerine ikinci kez
+ * seçim yapılamıyor.
+ */
+.colour-mark {
+  pointer-events: none;
+  position: absolute;
+  translate: -50% -50%;
+}
+
+.hue-slider {
+  margin-top: 12px;
+  height: 12px;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #e05a4f,
+    #e8a01c,
+    #cbd45f,
+    #2f9e4f,
+    #17b3a3,
+    #2f5fd0,
+    #7a3fc4,
+    #e05a4f
+  );
+}
+
+.hex-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hex-input {
+  height: 38px;
+  min-width: 0;
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid var(--line-field);
+  background: var(--color-input);
+  padding-inline: 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-ink);
+  outline: none;
+}
+.hex-input:focus {
+  border-color: var(--line-focus);
+}
+
+.hex-preview {
+  height: 38px;
+  width: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(44, 34, 32, 0.12);
+}
+
+.colour-picker-done {
+  margin-top: 12px;
+  height: 40px;
+}
+
+.colour-picker-note {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  color: var(--color-faint);
+}

@@ -1,0 +1,158 @@
+/*
+ * Yasal sayfalar — sitedeki tek gerçek rotalar.
+ *
+ * Çayır burada yok: sayfa düz krem, içerik sabit genişlikte bir çerçevede.
+ * Sebebi hem teknik hem niyet — biri gizlilik metnini okumaya geldiyse
+ * arkada uçuşan kelebek istemez, ve bu sayfaların yazdırılabilir olması
+ * gerekiyor.
+ */
+
+.legal-page {
+  min-height: 100dvh;
+  background: var(--color-cream);
+}
+
+.legal-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.legal-header-inner {
+  margin-inline: auto;
+  display: flex;
+  max-width: 1120px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+/*
+ * `.back-link` kart yerleşimleri için `align-self: flex-start` taşıyor —
+ * orada sütunun içinde durup genişliğe yayılmaması gerekiyor. Burada ise
+ * satırın içinde, wordmark'ın yanında: o kural şeridin `align-items:
+ * center`ini eziyor ve bağlantı yukarıda asılı kalıyordu.
+ */
+.legal-header-inner .back-link {
+  align-self: center;
+}
+
+.legal-wordmark {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-ink);
+}
+
+.legal-body {
+  margin-inline: auto;
+  display: flex;
+  max-width: 1120px;
+  flex-direction: column;
+  gap: 40px;
+  padding: 40px 24px;
+}
+
+@media (min-width: 64rem) {
+  .legal-header-inner,
+  .legal-body {
+    padding-inline: 32px;
+  }
+  .legal-body {
+    flex-direction: row;
+    gap: 64px;
+    padding-block: 56px;
+  }
+}
+
+.legal-nav {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 64rem) {
+  .legal-nav {
+    width: 200px;
+  }
+}
+
+/*
+ * Menüde de aynı hover dili: renk koyulaşıyor ve altı çiziliyor. Geçerli
+ * sayfa zaten koyu ve kalın, hover almıyor.
+ */
+.legal-nav-link {
+  font-size: 14px;
+  color: var(--color-muted);
+  text-underline-offset: 4px;
+  transition: color 200ms ease;
+}
+.legal-nav-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.legal-nav-link[aria-current='page'],
+.legal-nav-link[aria-current='page']:hover {
+  font-weight: 600;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.legal-main {
+  display: flex;
+  max-width: 620px;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.legal-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legal-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+
+@media (min-width: 64rem) {
+  .legal-title {
+    font-size: 40px;
+  }
+}
+
+.legal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legal-section-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.legal-section-body {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-body);
+}
+
+/* İletişim formu — metnin altında, çizgiyle ayrılmış. */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 32px;
+}
+
+.contact-sent {
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  padding: 24px;
+}
