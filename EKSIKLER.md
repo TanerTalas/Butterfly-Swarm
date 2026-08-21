@@ -156,12 +156,176 @@ yalnızca durumu temizliyor:
 
 Mobil bitti; şunlar açık kaldı.
 
-### 6.1 Ele alınmamış durumlar
+### 6.1 Durum tasarımları — tek tek
 
-- **Hiç kelebek yok** — beş yuvanın da boş olduğu hâl (çalışıyor ama
-  tasarlanmadı; sadece "room for 5 more butterflies" yazıyor)
-- **Salma başarısız** — hız sınırına takılma, tavan dolu
-- **Bağlantı yok / yükleniyor** — sahne yüklenirken ne görünüyor
+Aşağıdakilerin hepsi **var olan bir ekranın bir durumu**, yeni ekran değil.
+Yani her biri kendi kartının içinde çözülecek; ayrı bir sayfa açılmayacak.
+
+Hepsi için geçerli kısıtlar:
+
+- **Kalıp zaten var, yenisini uydurma.** Engelli hâlin dili "Kelebeklerim"de
+  ve misafir salmada kurulu: **birincil buton devre dışı + etiketi değişiyor
+  + altında nedenini söyleyen tek satır not** (`.note.note--center`). Yeni
+  bir uyarı kutusu icat etmeden önce bu kalıbın yetip yetmediğine bak.
+- **Renk sözlüğü hazır.** Hata için `--color-danger`, `--line-danger`,
+  `--wash-danger` (ayarlardaki silme paneli bunları kullanıyor). Çıplak hex
+  yazma.
+- **Metin dili:** notlar küçük harfle başlıyor, nokta yok, ünlem yok
+  (`you have let one go today · sign in to release more`). Başlıklar cümle
+  düzeninde. Suçlayıcı değil, olan biteni söyleyen bir ton.
+- **Mobil referans 390px.** Kart orada ekranın altına oturan bir alt sayfa;
+  eklenen satır kartı ekran dışına taşırmamalı (bkz. CLAUDE.md).
+- Her durumun **ne zaman görüneceği** yazılı; tasarımı yaparken tetikleyiciyi
+  değiştirme, çünkü §1–§3'teki sunucu işi bu tetikleyicilere göre yazılacak.
+
+| # | Durum | Hangi ekranın içinde |
+|---|---|---|
+| D1 | Hiç kelebek yok (0/5) | Kelebeklerim |
+| D2 | Geçmiş boş | History |
+| D3 | Salma reddedildi — misafir günlük hakkı | Misafir salma |
+| D4 | Salma reddedildi — yuvalar dolu | Kanat seçimi |
+| D5 | Salma başarısız — ağ/sunucu | Misafir salma + kanat seçimi |
+| D6 | Giriş/kayıt hatası | Giriş kartı |
+| D7 | Sahne yükleniyor | Çayır (kartsız) |
+| D8 | Sahne açılamıyor (WebGL yok) | Çayır (kartsız) |
+
+---
+
+**D1 — Hiç kelebek yok (0/5)**
+
+*Ne zaman:* Üye giriş yaptı, hiç kelebek salmadı ya da hepsinin ömrü doldu.
+Şu an ekranda `0/5` sayacı, tek bir "room for 5 more butterflies" satırı ve
+`Release another` butonu var — yani boş liste, dolu listenin eksik hâli gibi
+okunuyor.
+
+*Ne söylemeli:* Bu bir eksiklik değil, başlangıç. Buton "another" dememeli
+(ortada bir öncesi yok). İlk kelebeği salmaya davet eden tek bir çağrı
+yeterli; `History` bağlantısı D2 ile birlikte gizlenebilir mi, karar ver.
+
+*Dokunulacak yer:* `components/butterflies/MyButterfliesCard.tsx` —
+`used === 0` dalı. Kart genişliği 500.
+
+---
+
+**D2 — Geçmiş boş**
+
+*Ne zaman:* Hiçbir kelebek yedi gününü doldurmamış. Şu an
+`nothing has finished its seven days yet` yazan tek satırlık bir kutu var —
+çalışıyor ama tasarlanmadı.
+
+*Ne söylemeli:* Geçmişin ileride **dolacağı** belli olmalı; şu an boş bir
+kutu "burada bir şey yok" diyor, "buraya birikecek" demiyor.
+
+*Dokunulacak yer:* `components/butterflies/HistoryCard.tsx` —
+`ordered.length === 0` dalı.
+
+---
+
+**D3 — Salma reddedildi: misafir günlük hakkı**
+
+*Ne zaman:* İki ayrı an, ve ikisi ayrı tasarım istiyor:
+
+1. **Kart açılırken zaten dolu** — `blocked` durumu. Bu **hazır**: buton
+   `One a day` olup kilitleniyor, altında not var. Yeniden tasarlanmasına
+   gerek yok.
+2. **Basıldıktan sonra reddedildi** — kullanıcı `Let it go`'ya bastı, sunucu
+   IP başına sınıra takıldığını söyledi (başka sekme, aynı ağdaki başka
+   kişi). Bu tasarlanmadı: butonun `Letting it go…` durumundan geri dönmesi
+   ve reddin **görünür** olması gerekiyor, yoksa hiçbir şey olmamış gibi
+   duruyor.
+
+*Ne söylemeli:* Sınırın günlük olduğu ve giriş yapmanın kaldırdığı. Kart
+zaten "Sign in to choose the wing colours" bağlantısını taşıyor; ikinci bir
+giriş çağrısı koymadan önce ona bak.
+
+*Dokunulacak yer:* `components/release/GuestReleaseCard.tsx`.
+
+---
+
+**D4 — Salma reddedildi: yuvalar dolu**
+
+*Ne zaman:* Üye kanat seçimi kartındayken beşinci yuva doldu (başka sekme)
+ya da salma isteği sunucuda tavana takıldı. Kart açılırken dolu olma hâli
+zaten çözülü — `goRelease()` kullanıcıyı kanat seçimine hiç sokmuyor,
+listeye düşürüyor. Eksik olan **basıldıktan sonra** reddedilme.
+
+*Ne söylemeli:* Kelebek salınmadı, seçilen renkler ve isim **duruyor**.
+Kullanıcıyı listeye götüren bir çıkış olmalı (bir yuva boşalınca dönecek).
+Karttaki `slotsUsed/5` damgası bu anda güncellenmeli.
+
+*Dokunulacak yer:* `components/release/WingsCard.tsx`.
+
+---
+
+**D5 — Salma başarısız: ağ / sunucu**
+
+*Ne zaman:* İstek hiç ulaşmadı ya da 5xx döndü. D3 ve D4'ten farkı: kural
+ihlali yok, **tekrar denenebilir**.
+
+*Ne söylemeli:* "Olmadı, tekrar dene" — sebebi teknik dille anlatma. Tekrar
+denemenin **aynı kelebeği** salacağı belli olmalı; taslak (renkler, isim)
+kesinlikle kaybolmamalı (§6.4'teki taslak korumasıyla aynı iş).
+
+*Kısıt:* Bu durum iki karta birden giriyor (misafir + üye). Tek bir ortak
+parça olarak tasarla — iki ayrı çözüm iki ayrı dil demek.
+
+---
+
+**D6 — Giriş / kayıt hatası**
+
+*Ne zaman:* `Sign in` başarısız. Şu an hiçbir hata yolu yok; kart e-postayı
+alıp doğrudan içeri alıyor.
+
+*Ne söylemeli:* ⚠ **Tek mesaj: "email or password is wrong".** Hangi alanın
+yanlış olduğu söylenmez — söylenirse e-postanın kayıtlı olup olmadığı ele
+verilir ve kullanıcı sayımına izin verilmiş olur. Bu bir tasarım tercihi
+değil, güvenlik kuralı.
+
+*Tasarlanacak parçalar:*
+
+- Hatanın kartta durduğu yer (alanların altı / butonun üstü) ve iki alanın
+  birden hatalı çerçeve alıp almadığı.
+- Ekran okuyucunun duyması: canlı bölge (`aria-live`), odağın nereye gittiği.
+- **Kayıt sekmesinin ayrı hâlleri:** şifre en az 10 karakter (şu an yalnızca
+  buton kilitli, hata metni yok), e-posta doğrulama bekleniyor.
+- Çok deneme sonrası hız sınırı: "too many attempts" bekleme hâli.
+
+*Dokunulacak yer:* `components/account/SignInCard.tsx`.
+
+---
+
+**D7 — Sahne yükleniyor**
+
+*Ne zaman:* İlk açılış. Sahne + three.js ~600 kB ayrı bir parça olarak
+iniyor; kartlar hemen görünüyor ama arkadaki çayır boş. Şu an tek yapılan
+canvas'ı çayırın ufuk rengiyle (`#e9d3c9`) boyayıp hazır olunca 600ms'de
+karşı karşıya geçirmek — yani yavaş bağlantıda kullanıcı düz bir zemine
+bakıyor ve bir şey yükleniyor mu bilmiyor.
+
+*Ne söylemeli:* Yükleniyor olduğu, ama kartın önüne geçmeden. Karşılama
+metni sahnenin üstünde duruyor; okunabilirliği bozulmamalı.
+
+*Karar gerektiren:* Yer tutucu **statik bir görsel mi** (`meadow-fallback.png`
+zaten var, ama 3.5 MB — yükleme sırasında indirmek amacı bozar) yoksa
+tokenlardan çizilmiş bir gökyüzü/ufuk gradyanı mı.
+
+*Dokunulacak yer:* `components/meadow/Meadow.tsx` `status === 'loading'`,
+`app/styles/screens.css` `.meadow-canvas`.
+
+---
+
+**D8 — Sahne açılamıyor**
+
+*Ne zaman:* WebGL yok ya da `createMeadow()` hata verdi (`status ===
+'unsupported'`). Yakalanmış bir çayır karesi gösteriliyor, **hiçbir açıklama
+yok** — kullanıcı canlı sahneyi gördüğünü sanıyor.
+
+*Ne söylemeli:* Çayırın bu tarayıcıda canlı çizilemediği. Ürünün geri kalanı
+(salma, hesap, liste) çalışmaya devam ediyor; bu bir arıza ekranı değil,
+düşülen bir kalite seviyesi.
+
+*Dokunulacak yer:* `components/meadow/Meadow.tsx` `status === 'unsupported'`
+dalı.
 
 ### 6.2 Kelebek çizimi geliştirilebilir
 
