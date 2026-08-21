@@ -122,8 +122,26 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
    * Izleme kipi: arayuz tamamen cekiliyor ve yalnizca sahne kaliyor.
    * Kartlarin ustunde degil, kabugun tamaminin ustunde bir anahtar —
    * cikis icin alt ortada acik bir dugme birakiliyor.
+   *
+   * İki ayrı giriş var ve ikisi farklı şey yapıyor:
+   *
+   *   "Watch the meadow"        → serbest bakış, kamera kimseyi izlemiyor
+   *   satırdaki "Watch" / follow → kamera O kelebeğe taşınıyor
+   *
+   * `watched` bu ayrımı taşıyor: null serbest bakış demek.
    */
   const [watching, setWatching] = useState(false);
+  const [watched, setWatched] = useState<string | null>(null);
+
+  function startWatching(id: string | null) {
+    setWatched(id);
+    setWatching(true);
+  }
+
+  function stopWatching() {
+    setWatching(false);
+    setWatched(null);
+  }
 
   /*
    * Ömrünü tamamlamış kelebekler — History ekranının kaynağı.
@@ -172,6 +190,14 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   useEffect(() => {
     meadow.sync([...butterflies, ...guestButterflies]);
   }, [meadow, butterflies, guestButterflies]);
+
+  /*
+   * Kameranın izlediği kelebek. Ayrı bir effect, çünkü listeden bağımsız
+   * değişiyor: kart kapanıp izleme kipine geçmek listeyi hiç ilgilendirmiyor.
+   */
+  useEffect(() => {
+    meadow.watch(watching ? watched : null);
+  }, [meadow, watching, watched]);
 
   /** Yeni ekrana gec ve gecmise ekle. */
   function go(next: View) {
@@ -286,7 +312,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     <main className="meadow-stage">
       <Meadow bridge={meadow} />
 
-      {watching && <StopWatchingButton onClick={() => setWatching(false)} />}
+      {watching && <StopWatchingButton onClick={stopWatching} />}
 
       <MeadowShell
         hidden={watching}
@@ -294,7 +320,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
         counter={onMeadowView ? <ReleaseCounter total={total} /> : null}
         aside={
           onMeadowView ? (
-            <WatchButton onClick={() => setWatching(true)} />
+            <WatchButton onClick={() => startWatching(null)} />
           ) : null
         }
         /*
@@ -378,7 +404,16 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               name={lastReleased.name}
               releasedAt={lastReleased.releasedAt}
               onMyButterflies={() => reset(signedIn ? 'butterflies' : 'signin')}
-              onWatch={() => reset(signedIn ? 'meadow' : 'landing')}
+              /*
+               * Misafir de takip edebiliyor — ama YALNIZCA ŞİMDİ. Kartın
+               * "cannot be followed afterwards" sözü sonrasıyla ilgili:
+               * misafirin listesi olmadığı için o kelebeğe bir daha
+               * dönemiyor. Bu tek an elinden alınmıyor.
+               */
+              onWatch={() => {
+                reset(signedIn ? 'meadow' : 'landing');
+                startWatching(lastReleased.id);
+              }}
             />
           )}
 
@@ -388,11 +423,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
               onRelease={goRelease}
               onBack={back}
               onHistory={() => go('history')}
-              onWatch={() => {
-                // Kelebege kilitlenen kamera Asama D'nin isi; simdilik
-                // izleme kipine gecerek sahneyi acik biraikiyor
-                setWatching(true);
-              }}
+              onWatch={(b) => startWatching(b.id)}
             />
           )}
 

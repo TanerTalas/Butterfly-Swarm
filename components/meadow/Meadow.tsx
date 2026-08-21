@@ -20,6 +20,8 @@ type MeadowHandle = {
   remove: (id: string) => boolean;
   clearVisitors: () => void;
   indexOf: (id: string) => number;
+  watch: (id: string) => boolean;
+  stopWatching: () => void;
   dispose: () => void;
 };
 
@@ -37,6 +39,14 @@ type MeadowHandle = {
  */
 export type MeadowBridge = {
   sync: (list: MeadowVisitor[]) => void;
+  /**
+   * Kamerayı bu kelebeğe taşır; `null` izlemeyi bırakır.
+   *
+   * `sync` gibi bu da bir İSTEK: sahne henüz inmediyse bekliyor ve
+   * kelebekler salındıktan hemen sonra uygulanıyor. Sıra önemli — izlenecek
+   * kelebeğin çayırda olması gerekiyor.
+   */
+  watch: (id: string | null) => void;
   /** Kelebeğin sahnedeki instance indeksi; sahne hazır değilse -1. */
   indexOf: (id: string) => number;
   /** Yalnızca `Meadow` çağırır. */
@@ -46,8 +56,15 @@ export type MeadowBridge = {
 function createBridge(): MeadowBridge {
   let handle: MeadowHandle | null = null;
   let wanted: MeadowVisitor[] = [];
+  let watched: string | null = null;
   /** Sahneye GERÇEKTEN yazılmış olanlar. */
   const applied = new Set<string>();
+
+  function applyWatch() {
+    if (!handle) return;
+    if (watched === null) handle.stopWatching();
+    else handle.watch(watched);
+  }
 
   function flush() {
     if (!handle) return;
@@ -74,6 +91,10 @@ function createBridge(): MeadowBridge {
       wanted = list;
       flush();
     },
+    watch(id) {
+      watched = id;
+      applyWatch();
+    },
     indexOf(id) {
       return handle?.indexOf(id) ?? -1;
     },
@@ -81,6 +102,8 @@ function createBridge(): MeadowBridge {
       handle = next;
       applied.clear();
       flush();
+      // Kelebekler salındıktan SONRA: izlenecek olanın çayırda olması lazım.
+      applyWatch();
     },
   };
 }

@@ -1,8 +1,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createWorld, WORLD, groundHeight } from './index.js';
-import { createWorldSwarm, enableSwarmFog, SWARM_BOUNDS } from './swarm.js';
+import {
+  createWorldSwarm,
+  enableSwarmFog,
+  butterflyPosition,
+  SWARM_BOUNDS,
+} from './swarm.js';
 import { createVisitors } from './visitors.js';
+import { createFollowCam } from './follow.js';
 
 /*
  * Sahnenin GÖMÜLEBİLİR giriş noktası.
@@ -153,15 +159,40 @@ export async function createMeadow(canvas, options = {}) {
    * gitti (dispose'da zaten temizlenmiyorlardı).
    */
 
+  // ── Takip kamerası ───────────────────────────────────────────────────────
+  const _followPos = new THREE.Vector3();
+  const follow = createFollowCam({
+    camera,
+    controls,
+    minDistance: cam.minDistance,
+    /*
+     * Konum her karede İNDEKSTEN DEĞİL KİMLİKTEN soruluyor: bir kelebek
+     * çayırdan ayrıldığında sondaki onun yuvasına taşınıyor ve saklanmış bir
+     * indeks sessizce başka bir kelebeği göstermeye başlardı.
+     */
+    positionOf(id) {
+      const i = visitors.at(id);
+      return i < 0 ? null : butterflyPosition(swarm, i, _followPos);
+    },
+  });
+
   // ── Kamera kilidi ────────────────────────────────────────────────────────
   const flat = new THREE.Vector2();
-  function clampCamera() {
-    flat.set(controls.target.x, controls.target.z);
-    if (flat.length() > cam.targetRadius) {
-      flat.setLength(cam.targetRadius);
-      controls.target.x = flat.x;
-      controls.target.y = groundHeight(flat.x, flat.y) + cam.targetY;
-      controls.target.z = flat.y;
+  /**
+   * @param {boolean} following Takip sürerken hedef sınırı UYGULANMIYOR —
+   *   kelebek avlunun kenarına kadar gidiyor, `targetRadius` ise 5 birimlik
+   *   bir disk; ikisi birden çalışınca kamera sınırda titriyor. Zemin
+   *   sınırı her hâlükârda geçerli.
+   */
+  function clampCamera(following) {
+    if (!following) {
+      flat.set(controls.target.x, controls.target.z);
+      if (flat.length() > cam.targetRadius) {
+        flat.setLength(cam.targetRadius);
+        controls.target.x = flat.x;
+        controls.target.y = groundHeight(flat.x, flat.y) + cam.targetY;
+        controls.target.z = flat.y;
+      }
     }
     const floor = groundHeight(camera.position.x, camera.position.z) + 0.8;
     if (camera.position.y < floor) camera.position.y = floor;
@@ -203,8 +234,15 @@ export async function createMeadow(canvas, options = {}) {
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.1);
 
+    /*
+     * Takip, `controls.update()`ten ÖNCE: kamerayı ve hedefi aynı vektörle
+     * kaydırıyor, `OrbitControls` de ofseti o yeni konumdan türetiyor.
+     * Sonra çalıştırılsaydı yörünge kaydırmayı bir sonraki karede geri alırdı.
+     */
+    const following = follow.update(dt);
+
     controls.update();
-    clampCamera();
+    clampCamera(following);
     world.update(timer.getElapsed());
 
     camera.updateMatrixWorld();
@@ -241,8 +279,12 @@ export async function createMeadow(canvas, options = {}) {
     window.__meadow = {
       scene,
       camera,
+      controls,
       renderer,
       swarm,
+      // Ziyaretçi havuzu ve takip kamerası — konsoldan salıp izleyebilmek için
+      visitors,
+      follow,
       /** Bir kareyi elle çizip süresini döndürür (ms). */
       timeFrame(samples = 20) {
         const times = [];
@@ -300,8 +342,13 @@ export async function createMeadow(canvas, options = {}) {
     remove: visitors.remove,
     /** Bütün ziyaretçileri kaldırır — çıkış, hesap silme. */
     clearVisitors: visitors.clear,
-    /** Kelebeğin şu anki instance indeksi; takip kipi (Aşama D) için. */
+    /** Kelebeğin şu anki instance indeksi. */
     indexOf: visitors.at,
+
+    /** Kamerayı bu kelebeğe taşır. Kelebek çayırda değilse `false`. */
+    watch: follow.watch,
+    /** İzlemeyi bırakır; kamera kullanıcının bıraktığı görüşe dönüyor. */
+    stopWatching: follow.stop,
 
     // ── Laboratuvarların ve teşhisin kullandığı iç parçalar ──────────────
     scene,

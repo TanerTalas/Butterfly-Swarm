@@ -7,8 +7,11 @@ Son güncelleme: 21 Ağustos 2026.
 rolüne göre bölündü ve mobil 390px'te gerçekten denenip tamamlandı.
 
 Bundan sonrası tasarım değil **davranış**: kelebeğin gerçekten çayıra
-çıkması (✅ §1), salındıktan sonra izlenebilmesi ve hesabın arkasına bir
-sunucu konması. Aşağıdaki sıra öncelik sırası.
+çıkması (✅ §1), salındıktan sonra izlenebilmesi (✅ §2) ve hesabın arkasına
+bir sunucu konması. Aşağıdaki sıra öncelik sırası.
+
+**Sıradaki iş §3** — sunucu. Ondan önce yapılabilecek tek şey §6'daki durum
+tasarımları.
 
 ---
 
@@ -72,31 +75,46 @@ taşınmalı.
 
 ---
 
-## 2. Salınan kelebeği izleme
+## 2. Salınan kelebeği izleme ✅
 
-Ekranlar hazır, ikisi de sahneye bağlanmayı bekliyor:
+**Yapıldı.** Kamera artık kelebeğe gidiyor:
 
-- **Kelebeklerim satırındaki `Watch`** şu an yalnızca izleme kipine geçiyor
-  (kartı gizleyip çayırı açıyor), kameraya kelebeği göstermiyor.
-- **Onay ekranındaki "Follow X in the meadow"** aynı şekilde, sadece çayıra
-  dönüyor.
+- **Kelebeklerim satırındaki `Watch`** o kelebeği izlemeye alıyor.
+- **Onay ekranındaki "Follow X in the meadow"** yeni salınanı izliyor —
+  misafir dahil. Kartın "cannot be followed afterwards" sözü SONRASIYLA
+  ilgili: misafirin listesi olmadığı için o kelebeğe bir daha dönemiyor, ama
+  bu tek an elinden alınmıyor.
+- **Sağdaki "Watch the meadow"** eskisi gibi serbest bakış: kamera kimseyi
+  izlemiyor, yalnızca arayüz çekiliyor.
 
-Eşleme **hazır**: `meadow.indexOf(id)` kelebeğin o anki instance indeksini
-veriyor ve `butterflyPosition(swarm, i)` (`src/world/swarm.js`) dünya
-konumunu okuyor. Eksik olan kamera tarafı: o konumu her kare takip etmek,
-`OrbitControls` sınırlarını takip kipinde gevşetmek ve izleme bitince
-kamerayı yumuşakça geri getirmek.
+Kamera kelebeğe **kilitlenmiyor, onu taşıyor** (`src/world/follow.js`):
+yörüngenin merkezi kelebeğin üstünde tutuluyor, kullanıcı izlerken de
+döndürüp yakınlaşabiliyor. Hedef ve mesafe üstel yumuşatmayla geliyor —
+sert kilit kelebeğin her kanat vuruşunu ekrana sarsıntı olarak yansıtıyordu.
 
-⚠ İndeks **saklanmamalı**, her kare sorulmalı — kelebek listeden düştüğünde
-taşıma indeksleri kaydırıyor.
+İzleme bitince kamera **kullanıcının bıraktığı görüşe** dönüyor, sabit bir
+başlangıç görüşüne değil. Konum her karede kimlikten soruluyor; izlenen
+kelebek çayırdan kalkarsa takip kendiliğinden bırakıyor.
 
-Buna bağlı iki iş daha:
+Doğrulandı: misafir salıp "Follow it in the meadow" → kamera 15.5 birimden
+kelebeğin 2.4 birim yanına geliyor; "Leave the meadow" → (0, 2.4, 15.5)'e
+ve `minDistance` 2.5'e geri dönüyor; `seed-olive` izlenirken çayırdan
+kaldırılınca takip bırakıp eve dönüyor; serbest bakış kamerayı hiç
+oynatmıyor.
 
+### Bundan artakalanlar
+
+- **Kamera ağaçların arasına girebiliyor.** Kelebek avlunun kenarına
+  giderse kamera 14 birimlik ağaç halkasının içine düşebiliyor. Kameranın
+  başlangıç yeri de korunun içinde (15.5) olduğu için bu bir arıza değil,
+  ama gövdenin içinden bakılan bir kare mümkün.
 - **Kelebeklerin solması.** Yedi günlük ömrün görsel karşılığı (küçülme +
   dithered kesme) sahnede yazılmadı. ⚠ `injectFlapShader` materyal ömrü
   boyunca yalnızca bir kez çağrılıyor; solma kodu **aynı enjeksiyonun
   içine** yazılmalı (bkz. CLAUDE.md).
-- **Ömrü biten kelebeğin yuvasını havuza geri vermesi.**
+- **Ömrü biten kelebeğin yuvasını havuza geri vermesi.** Mekanizma hazır —
+  kelebek listeden düşünce köprü onu sahneden kaldırıyor. Eksik olan
+  TETİKLEYİCİ: ömrün dolduğunu söyleyecek bir sunucu yok.
 
 ---
 
