@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
+import {
+  FADE_VERTEX_COMMON,
+  FADE_VERTEX_MAIN,
+  FADE_FRAGMENT_COMMON,
+  FADE_FRAGMENT_MAIN,
+} from './fadeShader.js';
 
 /*
  * Kanat çırpmasının GPU tarafı.
@@ -11,9 +17,15 @@ import { FLAP_DEFAULTS } from '../butterfly/flap.js';
  * hızını (`aFlapSpeed`) taşıyor.
  *
  * Buradaki `bfWave` / `bfVelocity`, `butterfly/flap.js` içindeki
- * `flapWave` / `flapVelocity` fonksiyonlarının GLSL karşılığı. Aşama 2'de o
- * matematik bilerek saf ve durumsuz yazılmıştı; burada birebir çevrildi.
+ * `flapWave` / `flapVelocity` fonksiyonlarının GLSL karşılığı. O matematik
+ * tam da bu çeviri mümkün olsun diye saf ve durumsuz yazıldı.
  * İKİSİ BİRLİKTE DEĞİŞMELİ.
+ *
+ * ⚠ SOLMA DA BURADAN GİRİYOR. Kanat materyalinin tek bir
+ * `onBeforeCompile`'ı olabilir (aşağıdaki nota bakın), o yüzden solmanın
+ * GLSL parçaları `fadeShader.js`ten alınıp bu enjeksiyonun İÇİNE
+ * ekleniyor. Ayrı bir `injectFadeShader(wingMaterial)` çağrısı bunu ezer
+ * ve kanatlar çırpmayı bırakırdı.
  *
  * ⚠ Aşağıdaki GLSL bloklarının içine BACKTICK yazma — kod bir JavaScript
  * şablon literali içinde duruyor ve backtick literali erkenden kapatıp
@@ -240,7 +252,10 @@ export function injectFlapShader(material, hinges) {
     Object.assign(shader.uniforms, uniforms);
 
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${VERTEX_COMMON}`)
+      .replace(
+        '#include <common>',
+        `#include <common>\n${VERTEX_COMMON}\n${FADE_VERTEX_COMMON}`,
+      )
       .replace(
         '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
@@ -253,11 +268,23 @@ export function injectFlapShader(material, hinges) {
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-         transformed = bfTransform(transformed);`,
+         transformed = bfTransform(transformed);
+         ${FADE_VERTEX_MAIN}`,
       );
 
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\n${FRAGMENT_COMMON}`)
+      .replace(
+        '#include <common>',
+        `#include <common>\n${FRAGMENT_COMMON}\n${FADE_FRAGMENT_COMMON}`,
+      )
+      /*
+       * Solma kesmesi main'in BAŞINDA — atılacak fragment için doku
+       * örneklemesi ve ışıklandırma hiç çalışmıyor.
+       */
+      .replace(
+        '#include <clipping_planes_fragment>',
+        `#include <clipping_planes_fragment>\n${FADE_FRAGMENT_MAIN}`,
+      )
       // map_fragment texture'ı örnekleyip diffuseColor'a çarpıyor; tonu
       // hemen sonrasında kaydırıyoruz
       .replace(
