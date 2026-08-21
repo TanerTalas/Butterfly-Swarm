@@ -177,6 +177,38 @@ export async function createMeadow(canvas, options = {}) {
   });
 
   // ── Kamera kilidi ────────────────────────────────────────────────────────
+
+  /*
+   * Ağaç gövdeleri — kameranın içine giremeyeceği daireler.
+   *
+   * `createTrees` bu daireleri zaten üretiyor (çim ve çiçekler gövdelerin
+   * içine ekilmesin diye); kamera aynı listeyi okuyor, yani ağaç yerleşimi
+   * değişince kaçınma kendiliğinden uyuyor.
+   *
+   * Neden gerekiyor: kamera koruda BAŞLIYOR (yarıçap 15.5) ve `cameraClearance`
+   * yalnızca o TEK noktanın çevresini boşaltıyor. Kullanıcı sahneyi
+   * döndürdüğünde ya da takip kamerası kelebeğin peşinden avlunun kenarına
+   * gittiğinde aynı yarıçapta ağaç dolu — kare gövdenin içinden çekiliyordu.
+   */
+  const trunks = world.trees.userData.exclusions ?? [];
+
+  /*
+   * Yalnızca GÖVDE yüksekliğinde uygulanıyor.
+   *
+   * Ağaç 7 birim ve dalların kadraja girmesi İSTENEN bir şey (bkz.
+   * `trees.framing`). Kaçınma bütün ağaç boyuna uygulansaydı kamera koruya
+   * hiç giremez, açılış görüntüsünün çerçevesi kaybolurdu. Bu yükseklik
+   * gövdenin bittiği, tacın başladığı yer.
+   */
+  const TRUNK_TOP = 3.2;
+
+  /*
+   * Yarıçap payı. Kaçınma dairesi kabuğun kendisi; kamera tam yüzeye
+   * oturursa near düzlemi (0.1) gövdenin içinde kalıyor ve kabuk yine
+   * ekranı kaplıyor.
+   */
+  const TRUNK_MARGIN = 0.4;
+
   const flat = new THREE.Vector2();
   /**
    * @param {boolean} following Takip sürerken hedef sınırı UYGULANMIYOR —
@@ -196,6 +228,55 @@ export async function createMeadow(canvas, options = {}) {
     }
     const floor = groundHeight(camera.position.x, camera.position.z) + 0.8;
     if (camera.position.y < floor) camera.position.y = floor;
+
+    pushOutOfTrunks();
+  }
+
+  /**
+   * Kamerayı girdiği gövdenin dışına iter.
+   *
+   * Hedef DEĞİL yalnızca kamera taşınıyor — `OrbitControls` ofseti her karede
+   * kamera konumundan yeniden türettiği için bu, yörüngeyi biraz kaydırmak
+   * demek; zemin kilidi de aynı şeyi yapıyor. Hedefi de taşımak kullanıcının
+   * baktığı yeri kaydırırdı ve baktığı yerin ağaçla ilgisi yok.
+   *
+   * İki geçiş: bir gövdeden itilen kamera komşusunun içine düşebiliyor.
+   * Üçüncü bir geçişin ölçülebilir bir karşılığı olmadı — halkada üç gövdenin
+   * birden örtüştüğü bir yer yok.
+   */
+  function pushOutOfTrunks() {
+    const p = camera.position;
+    if (p.y > groundHeight(p.x, p.z) + TRUNK_TOP) return;
+
+    for (let pass = 0; pass < 2; pass++) {
+      let moved = false;
+
+      for (const t of trunks) {
+        const limit = t.r + TRUNK_MARGIN;
+        let dx = p.x - t.x;
+        let dz = p.z - t.z;
+        const d2 = dx * dx + dz * dz;
+        if (d2 >= limit * limit) continue;
+
+        /*
+         * Tam merkezde bir yön yok. Böyle bir karede kamerayı hedeften
+         * UZAĞA itiyoruz: hedefe doğru itmek onu bakılan şeyin içinden
+         * geçirirdi.
+         */
+        let d = Math.sqrt(d2);
+        if (d < 1e-4) {
+          dx = t.x - controls.target.x;
+          dz = t.z - controls.target.z;
+          d = Math.hypot(dx, dz) || 1;
+        }
+
+        p.x = t.x + (dx / d) * limit;
+        p.z = t.z + (dz / d) * limit;
+        moved = true;
+      }
+
+      if (!moved) break;
+    }
   }
 
   // ── Döngü ────────────────────────────────────────────────────────────────
@@ -244,6 +325,15 @@ export async function createMeadow(canvas, options = {}) {
     controls.update();
     clampCamera(following);
     world.update(timer.getElapsed());
+
+    /*
+     * Ziyaretçilerin kalan ömrü — solmayı besleyen tek yer.
+     *
+     * `swarm.update()`ten ÖNCE: boy çarpanı instance matrisi kurulurken
+     * okunuyor, sonra yazılsaydı ekrandaki her kare bir kare geriden
+     * gelirdi.
+     */
+    visitors.update();
 
     camera.updateMatrixWorld();
 
