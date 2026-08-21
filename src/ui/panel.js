@@ -8,9 +8,10 @@ import { PRESETS, applyPreset } from './presets.js';
 import { saveSettings, clearSettings, debounce } from './storage.js';
 
 /*
- * Tasarım + animasyon paneli. Amacı kanat siluetini, duruşunu ve çırpmasını
- * canlı ayarlamak. Aşama 6'da davranış parametreleriyle (takip/kaçış hızı,
- * dağınıklık, sayı) genişleyecek.
+ * Tasarım + animasyon paneli: kanat siluetini, duruşunu, çırpmasını ve
+ * sürünün davranışını (takip/kaçış hızı, dağınıklık, sayı) canlı ayarlar.
+ *
+ * Yalnızca laboratuvar sayfalarında; uygulama bu paneli hiç kurmuyor.
  */
 export function createPanel({ swarm, flight, scene: sceneCtl, onCalm }) {
   const gui = new GUI({ title: 'Butterfly Swarm' });

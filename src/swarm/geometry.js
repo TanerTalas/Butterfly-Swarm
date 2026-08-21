@@ -6,16 +6,17 @@ import { createWingAtlas } from '../butterfly/pattern.js';
 /*
  * Sürü geometrisi.
  *
- * Aşama 1-4'te kelebek 6 ayrı mesh'ti (gövde, gözler, 4 kanat) ve kanatlar
- * Object3D pivotlarıyla döndürülüyordu. Yüzlerce kelebekte bu ne draw call
- * ne de matris güncellemesi olarak sürdürülebilir.
+ * Tek kelebek yolunda kelebek 6 ayrı mesh (gövde, gözler, 4 kanat) ve
+ * kanatlar Object3D pivotlarıyla dönüyor. Yüzlerce kelebekte bu ne draw call
+ * ne de matris güncellemesi olarak sürdürülebilir; sürü bu yüzden ayrı bir
+ * geometri kuruyor.
  *
  * Burada her şey İKİ geometriye iniyor:
  *   1) gövde + gözler  → vertex renkleriyle tek materyal
  *   2) 4 kanat         → atlas texture'ıyla tek materyal, çırpma shader'da
  *
- * Yani tüm sürü 2 draw call. ROADMAP "tek draw call" diyordu; gövdeyi de
- * kanat atlas'ına katıp 1'e indirmek mümkündü ama o zaman gövde de kanadın
+ * Yani tüm sürü 2 draw call. Hedef 1'di ve mümkündü — gövdeyi de kanat
+ * atlas'ına katmak yeterdi — ama o zaman gövde de kanadın
  * sheen/iridescence'ını alacaktı. 2 draw call'un maliyeti yok denecek kadar
  * az, malzeme ayrımının görsel kazancı ise gerçek.
  *

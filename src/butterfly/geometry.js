@@ -6,7 +6,7 @@ import {
 import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js';
 
 /*
- * ── KONVANSİYON (ROADMAP 0) ────────────────────────────────────────────────
+ * ── KONVANSİYON — DEĞİŞTİRME (bkz. CLAUDE.md) ──────────────────────────────
  *
  * Dünya uzayı:   +Z = burun (kelebeğin baktığı yön)
  *                +Y = yukarı
@@ -195,7 +195,7 @@ function buildAbdomen() {
 
   // Segment sayıları bilinçli olarak düşük.
   //
-  // Aşama 5 ölçümü: gövde, kelebek başına 1954 üçgenin 1288'ini yiyordu —
+  // Ölçüm: gövde, kelebek başına 1954 üçgenin 1288'ini yiyordu —
   // %66'sı. Oysa sürüde kelebek ekranın ~%11'i kadar ve gövde birkaç piksel;
   // görünen şey kanatlar. Aşağıdaki sayılar o ölçümden sonra yarıya indi.
   const geo = new THREE.LatheGeometry(profile, 8);
@@ -260,9 +260,8 @@ function buildBodyGeometry() {
 /**
  * Kelebeğin tüm geometri parçalarını üretir.
  *
- * ROADMAP: bu fonksiyonun içi prosedürel mi yoksa Meshy AI GLB'sinden mi
- * geliyor — çağıran taraf bilmez. Fallback'e geçilirse yalnızca burası
- * değişir, Aşama 2+ aynı kalır.
+ * Geometrinin nereden geldiğini çağıran taraf BİLMEZ. Kaynak değişirse
+ * yalnızca burası değişir; çırpma, sürü ve laboratuvar aynı kalır.
  */
 export function createButterflyGeometry(overrides = {}) {
   const params = { ...WING_DEFAULTS, ...overrides };

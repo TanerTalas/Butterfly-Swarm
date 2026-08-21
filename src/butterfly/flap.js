@@ -1,9 +1,12 @@
 /*
  * Kanat çırpma matematiği — SAF FONKSİYONLAR.
  *
- * Burada Three.js yok, sınıf yok, durum yok. Sebebi ROADMAP Aşama 5:
- * aynı matematik GLSL'e taşınacak ve vertex shader'da çalışacak. Buradaki
- * her şeyin GLSL'e birebir çevrilebilir kalması gerekiyor.
+ * Burada Three.js yok, sınıf yok, durum yok — ve olmamalı: aynı matematik
+ * GLSL'e çevrilmiş hâlde `swarm/wingShader.js` içinde de duruyor
+ * (`flapWave` ↔ `bfWave`, `flapVelocity` ↔ `bfVelocity`). Buradaki her şeyin
+ * GLSL'e birebir çevrilebilir kalması gerekiyor.
+ *
+ * ⚠ İKİ KOPYA BİRLİKTE DEĞİŞMELİ.
  */
 
 export const FLAP_DEFAULTS = {
@@ -37,7 +40,8 @@ export const FLAP_DEFAULTS = {
 };
 
 /*
- * Not: Aşama 2'de gövde, çırpmanın tersine hafifçe salınıyordu (bodyBobDeg).
+ * Not: Önceki bir sürümde gövde, çırpmanın tersine hafifçe salınıyordu
+ * (bodyBobDeg).
  * Sürüde gövde ve kanatlar aynı instance matrisini paylaştığı için gövdeyi
  * ayrıca döndürmek mümkün değil; ancak kelebekler ekran yüksekliğinin ~%11'i
  * kadar olduğundan bu detay zaten görünmüyor. Uçuş yolundaki dikey salınım
@@ -103,10 +107,12 @@ export function flapAngle(cycle, params) {
 /**
  * Kanadın açıklık ekseni etrafındaki burulması (radyan).
  *
- * Aşama 2'de bu tüm kanada uygulanan tek bir pitch: kanat düz bir levha gibi
- * değil, ön kenarı hamle yönüne göre eğik hareket ediyor. Menteşeden uca
- * doğru artan GERÇEK burulma Aşama 5'te vertex shader'da gelecek — burada
- * bütün kanadı çevirmek makul ve ucuz yaklaşım.
+ * Tüm kanada uygulanan TEK bir pitch: kanat düz bir levha gibi değil, ön
+ * kenarı hamle yönüne göre eğik hareket ediyor.
+ *
+ * Menteşeden uca doğru artan gerçek burulma sürüde, vertex shader'da yapılıyor
+ * (`wingShader.js` → `bfTwist`). Bu fonksiyon tek kelebek yolunda kalıyor ve
+ * orada bütün kanadı çevirmek makul ve ucuz yaklaşım.
  */
 export function twistAngle(cycle, params) {
   const { twistDeg, downstrokeFraction } = { ...FLAP_DEFAULTS, ...params };
