@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Meadow } from '@/components/meadow/Meadow';
+import { useEffect, useState } from 'react';
+import { Meadow, useMeadowBridge } from '@/components/meadow/Meadow';
 import { MeadowShell, ReleaseCounter } from '@/components/meadow/MeadowShell';
 import {
   AccountChip,
@@ -147,8 +147,31 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   const [guestReleasesToday, setGuestReleasesToday] = useState(0);
   const guestBlocked = guestReleasesToday >= GUEST_DAILY_LIMIT;
 
+  /*
+   * Misafir kelebekleri.
+   *
+   * `butterflies` listesinden AYRI duruyorlar ve bu bilinçli: misafirin
+   * kelebeği kimseye ait değil, "kelebeklerim"de görünmüyor, takip
+   * edilemiyor ve beş yuvadan birini yemiyor. Ama çayırda uçuyor —
+   * sahne için ikisi arasında hiçbir fark yok.
+   */
+  const [guestButterflies, setGuestButterflies] = useState<Butterfly[]>([]);
+
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
+
+  /*
+   * Çayır köprüsü. Salınan kelebeğin sahneye çıktığı tek yol.
+   *
+   * Aşağıdaki effect BİLDİRİMSEL: "şu an çayırda bunlar olmalı" diyor.
+   * Ekleme/çıkarma farkını köprü hesaplıyor, çünkü sahne asenkron yükleniyor
+   * ve kullanıcı o inmeden de kelebek salabiliyor (bkz. Meadow.tsx).
+   */
+  const meadow = useMeadowBridge();
+
+  useEffect(() => {
+    meadow.sync([...butterflies, ...guestButterflies]);
+  }, [meadow, butterflies, guestButterflies]);
 
   /** Yeni ekrana gec ve gecmise ekle. */
   function go(next: View) {
@@ -179,13 +202,29 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
 
   async function releaseAsGuest() {
     await fakeDelay();
-    setLastReleased({
+
+    /*
+     * Rengi ÇAYIR seçiyor — kartın sözü bu ("The meadow picks the wings").
+     * Tek renk: ön ve arka kanat aynı. İki renkli kanat kayıtlı
+     * kullanıcılara özel, yerleşik ve misafir kelebekler paletten tek renk
+     * geziyor (projefikri.md §2).
+     *
+     * ⚠ Çekiliş sunucuya taşınacak. Burada olduğu sürece kullanıcı yeniden
+     * deneyerek istediği rengi tutturabilir.
+     */
+    const colour =
+      WING_COLOURS[Math.floor(Math.random() * WING_COLOURS.length)].hex;
+
+    const butterfly: Butterfly = {
       id: newId(),
       name: null,
-      foreHex: WING_COLOURS[0].hex,
-      hindHex: WING_COLOURS[0].hex,
+      foreHex: colour,
+      hindHex: colour,
       releasedAt: new Date(),
-    });
+    };
+
+    setGuestButterflies((list) => [...list, butterfly]);
+    setLastReleased(butterfly);
     setTotal((n) => n + 1);
     setGuestReleasesToday((n) => n + 1);
     reset('released');
@@ -212,6 +251,12 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     reset(afterSignIn);
   }
 
+  /*
+   * ⚠ Çıkışta kelebekler çayırdan kalkıyor ve bu DOĞRU DEĞİL: salınan kelebek
+   * çayırın, salanın değil — oturum kapansa da uçmaya devam etmeli. Sunucu
+   * olmadığı için listeyi kimse tutmuyor, kelebekler yalnızca `butterflies`
+   * içinde yaşıyor. Aşama C'de liste sunucudan geldiğinde bu satır kalkacak.
+   */
   function signOut() {
     setProfile(null);
     setButterflies([]);
@@ -219,7 +264,8 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
   }
 
   function deleteAccount() {
-    // Kelebekler anında çayırdan kalkıyor — uyarıda söz verilen davranış
+    // Kelebekler anında çayırdan kalkıyor — uyarıda söz verilen davranış.
+    // Burada listeyi boşaltmak yetiyor: köprü farkı görüp sahneden kaldırıyor.
     setProfile(null);
     setButterflies([]);
     reset('landing');
@@ -238,7 +284,7 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
 
   return (
     <main className="meadow-stage">
-      <Meadow />
+      <Meadow bridge={meadow} />
 
       {watching && <StopWatchingButton onClick={() => setWatching(false)} />}
 

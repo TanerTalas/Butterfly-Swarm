@@ -7,8 +7,8 @@ Son güncelleme: 21 Ağustos 2026.
 rolüne göre bölündü ve mobil 390px'te gerçekten denenip tamamlandı.
 
 Bundan sonrası tasarım değil **davranış**: kelebeğin gerçekten çayıra
-çıkması, salındıktan sonra izlenebilmesi ve hesabın arkasına bir sunucu
-konması. Aşağıdaki sıra öncelik sırası.
+çıkması (✅ §1), salındıktan sonra izlenebilmesi ve hesabın arkasına bir
+sunucu konması. Aşağıdaki sıra öncelik sırası.
 
 ---
 
@@ -20,49 +20,55 @@ yenilenince sıfırlanıyor.
 | | |
 |---|---|
 | Ekranlar | Karşılama, misafir salma, onay, giriş/kayıt, hesap kurulumu, çayır, kanat seçimi, kelebeklerim, geçmiş, hesabım, ayarlar, veda, 4 yasal sayfa |
-| Sahne | Canlı three.js sakura çayırı, 60 yerleşik kelebek — hepsi rastgele, hiçbiri kullanıcıya ait değil |
+| Sahne | Canlı three.js sakura çayırı: 60 yerleşik + kullanıcının saldığı ziyaretçiler (§1) |
 | Mobil | 390×640 ve 390×844'te denendi, tamamlandı |
 | Stiller | `app/styles/` altında role göre bölündü; bileşenlerde yardımcı sınıf yığını kalmadı (bkz. CLAUDE.md) |
 | Build | `npm run build` geçiyor, `tsc --noEmit` temiz |
 
 ---
 
-## 1. Salınan kelebek çayıra HİÇ çıkmıyor
+## 1. Salınan kelebeğin çayıra çıkması ✅
 
-Ürünün tek vaadi bu ve çalışmıyor. Kullanıcı rengini seçiyor, ismini
-yazıyor, "released" ekranını görüyor — ama çayırda uçan şey hâlâ açılışta
-rastgele üretilmiş 60 kelebekten biri. Salınan kelebek yalnızca React
-durumunda bir satır.
+**Yapıldı.** Salınan kelebek artık gerçekten sahnede: çayırın kenarından
+içeri süzülüyor, seçilen renkleri taşıyor ve listeden düştüğünde çayırdan
+kalkıyor.
 
-Kopukluk tek bir yerde: **sahne handle'ı React'e hiç çıkmıyor.**
+Zincir: `Garden` → `MeadowBridge` (`components/meadow/Meadow.tsx`) →
+`createMeadow()` yüzü → `src/world/visitors.js` → `Swarm`. Mimari kurallar
+CLAUDE.md'de; özeti:
 
-- `components/meadow/Meadow.tsx` `createMeadow()`'un döndürdüğü nesneden
-  yalnızca `dispose`'u saklıyor. `swarm`, `flight`, `world` atılıyor.
-- `components/Garden.tsx:194` `releaseAsMember()` kelebeği `setButterflies`
-  ile listeye ekliyor ve orada bitiyor.
+- Köprü **bildirimsel** (`meadow.sync(list)`), çünkü sahne asenkron iniyor ve
+  kullanıcı o inmeden de kelebek salabiliyor.
+- Ziyaretçiler `[residentCount, count)` aralığında **bitişik** duruyor; biri
+  ayrılınca sondaki `Swarm.copyInstance` ile onun yerine taşınıyor.
+- Bileşenler `swarm`'a dokunmuyor; dışarıya yalnızca `release` / `remove` /
+  `clearVisitors` / `indexOf` çıkıyor.
 
-Motor tarafı buna hazır, eksik olan köprü:
+Doğrulandı (tarayıcıda, `window.__meadow` üzerinden): misafir salınca
+`count` 60→61, üye girişiyle +3 tohum, üye salmasıyla +1; iki renkli kanat
+ön/arka ayrı ton alıyor; çıkışta üye kelebekleri kalkıyor, misafir kelebeği
+konumunu ve rengini koruyarak uçmaya devam ediyor.
 
-| Var olan | Nerede |
-|---|---|
-| `Swarm.setWingTint(i, fore, hind)` — bir instance'ın kanadına tam renk (ton + doygunluk + parlaklık) | `src/swarm/Swarm.js` |
-| `wingTintFromColor(hex)` — hex'ten o üçlüye | `src/world/swarm.js:151` |
-| `capacity: 200` ama `count` 60 — ziyaretçi kelebekleri için havuz zaten ayrılmış, `setCount()` yeniden ayırma yapmıyor | `src/world/swarm.js:110` |
+Ayrıca: misafir kelebeğinin rengini artık **çayır çekiyor** (paletten
+rastgele, tek renk). Önce her misafir kelebeği turkuaz çıkıyordu ve kartın
+"The meadow picks the wings" sözü karşılıksızdı. ⚠ Çekiliş istemcide olduğu
+sürece kullanıcı yeniden deneyerek istediği rengi tutturabilir; sunucuya
+taşınmalı.
 
-Yapılacaklar:
+### Bundan artakalanlar
 
-- Sahne handle'ını bir ref'te tutup React'e bir **çayır API'si** olarak
-  vermek (`release(butterfly)`, `remove(id)`, `focus(id)`). Bileşenlerin
-  `swarm`'ı doğrudan ellememesi önemli; motorun React'ten habersiz kalması
-  bilinçli bir karar.
-- **`butterfly.id → instanceIndex` kayıt defteri.** Salınan kelebek havuzdan
-  bir yuva alıyor, rengi ve ölçüsü oraya yazılıyor. Liste değiştiğinde
-  (yenisi geldi, biri ömrünü doldurdu) eşleme bozulmamalı — §2 tamamen buna
-  dayanıyor.
-- Salma anının sahnede bir karşılığı olması: kelebek yerden ya da ekran
-  kenarından girmeli, hiç yoktan belirmemeli.
-- Yenilemede kalıcılık: liste sunucudan gelene kadar kelebek her `F5`'te
-  kayboluyor.
+- **Yenilemede kayboluyor.** Liste bellekte; `F5` çayırı yerleşiklere
+  döndürüyor. Kalıcılık §3'teki sunucuyla geliyor.
+- **Çıkışta kelebekler çayırdan kalkıyor** (`Garden.tsx` `signOut`) ve bu
+  doğru değil: salınan kelebek çayırın, salanın değil. Oturum kapansa da
+  uçmalı — ama listeyi tutan kimse olmadığı için şimdilik kalkıyorlar.
+- **Renk değişimi köprüde ele alınmıyor.** Fark hesabı `id` üzerinden
+  bakıyor; var olan bir kelebeğin rengi değişirse sahneye yansımaz. Bugün
+  renk salındıktan sonra değişmediği için sorun değil, ayarlardaki kilit
+  gerçek bir renk düzenlemesine dönüşürse `recolor` gerekecek.
+- **Ölçek ve çırpma hızı yuvadan geliyor**, kelebeğin kendisinden değil:
+  hangi yuvaya düştüyse onun boyunu alıyor. Kelebeğe ait bir `seed` (§3'te
+  sunucudan) bunu deterministik yapacak.
 
 ---
 
@@ -75,9 +81,14 @@ Ekranlar hazır, ikisi de sahneye bağlanmayı bekliyor:
 - **Onay ekranındaki "Follow X in the meadow"** aynı şekilde, sadece çayıra
   dönüyor.
 
-Gereken: §1'deki eşleme + o instance'ın dünya konumunu her kare okuyup
-kameranın takip etmesi, `OrbitControls` sınırlarının takip kipinde
-gevşetilmesi ve izleme bitince kameranın yumuşak dönüşü.
+Eşleme **hazır**: `meadow.indexOf(id)` kelebeğin o anki instance indeksini
+veriyor ve `butterflyPosition(swarm, i)` (`src/world/swarm.js`) dünya
+konumunu okuyor. Eksik olan kamera tarafı: o konumu her kare takip etmek,
+`OrbitControls` sınırlarını takip kipinde gevşetmek ve izleme bitince
+kamerayı yumuşakça geri getirmek.
+
+⚠ İndeks **saklanmamalı**, her kare sorulmalı — kelebek listeden düştüğünde
+taşıma indeksleri kaydırıyor.
 
 Buna bağlı iki iş daha:
 

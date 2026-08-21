@@ -3,20 +3,123 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
+/** Çayıra salınacak kelebeğin sahnenin ihtiyaç duyduğu KADARI. */
+export type MeadowVisitor = {
+  id: string;
+  foreHex: string;
+  hindHex: string;
+};
+
+/*
+ * Sahne motorunun döndürdüğü yüz — `src/world/bootstrap.js` ile birebir.
+ * Arayüz bundan fazlasını görmüyor: `swarm`, `scene`, `camera` React'e hiç
+ * geçmiyor.
+ */
+type MeadowHandle = {
+  release: (b: MeadowVisitor) => number;
+  remove: (id: string) => boolean;
+  clearVisitors: () => void;
+  indexOf: (id: string) => number;
+  dispose: () => void;
+};
+
+/**
+ * Arayüz ile sahne arasındaki köprü.
+ *
+ * `sync` BİLDİRİMSEL: "çayırda şu an bu kelebekler olmalı" diyor, "şunu
+ * ekle / şunu çıkar" demiyor. Fark hesabı burada yapılıyor.
+ *
+ * Sebebi zamanlama. Sahne + three.js ~600 kB ve ayrı bir parça olarak
+ * asenkron iniyor; kullanıcı o inmeden de kelebek salabiliyor. Emir kipinde
+ * bir API bu çağrıları düşürürdü. Bildirimsel olduğu için sahne hazır
+ * olmadığında istek yalnızca BEKLİYOR: `attach` anında aradaki fark
+ * uygulanıyor.
+ */
+export type MeadowBridge = {
+  sync: (list: MeadowVisitor[]) => void;
+  /** Kelebeğin sahnedeki instance indeksi; sahne hazır değilse -1. */
+  indexOf: (id: string) => number;
+  /** Yalnızca `Meadow` çağırır. */
+  attach: (handle: MeadowHandle | null) => void;
+};
+
+function createBridge(): MeadowBridge {
+  let handle: MeadowHandle | null = null;
+  let wanted: MeadowVisitor[] = [];
+  /** Sahneye GERÇEKTEN yazılmış olanlar. */
+  const applied = new Set<string>();
+
+  function flush() {
+    if (!handle) return;
+
+    const ids = new Set(wanted.map((b) => b.id));
+
+    for (const id of [...applied]) {
+      if (!ids.has(id)) {
+        handle.remove(id);
+        applied.delete(id);
+      }
+    }
+
+    for (const b of wanted) {
+      if (applied.has(b.id)) continue;
+      // Havuz dolduysa (-1) kelebek uygulanmış SAYILMIYOR; liste küçülüp
+      // yer açıldığında bir sonraki `flush` onu tekrar deniyor.
+      if (handle.release(b) >= 0) applied.add(b.id);
+    }
+  }
+
+  return {
+    sync(list) {
+      wanted = list;
+      flush();
+    },
+    indexOf(id) {
+      return handle?.indexOf(id) ?? -1;
+    },
+    attach(next) {
+      handle = next;
+      applied.clear();
+      flush();
+    },
+  };
+}
+
+/**
+ * Köprüyü bileşen ömrü boyunca TEK bir nesne olarak veriyor.
+ *
+ * Kimlik sabit olmak zorunda: `Garden` bunu bir effect'in bağımlılığı olarak
+ * kullanıyor ve her render'da yeni bir nesne üretilseydi effect her render'da
+ * yeniden çalışıp bütün kelebekleri sıfırdan salardı.
+ */
+export function useMeadowBridge(): MeadowBridge {
+  const ref = useRef<MeadowBridge>(null);
+  if (ref.current === null) ref.current = createBridge();
+  return ref.current;
+}
+
 /*
  * Canlı çayır — üç.js sahnesinin React'e bağlandığı tek yer.
  *
  * Sahne motoru vanilla JavaScript olarak `src/` altında duruyor ve React'ten
  * habersiz. Bu bileşenin tek işi bir canvas verip `createMeadow`'u çağırmak;
- * karşılığında bir `dispose` alıyor.
+ * karşılığında bir `dispose` ve dar bir kelebek yüzü alıyor.
+ *
+ * Sahne hazır olduğunda gelen handle KÖPRÜYE takılıyor (`bridge.attach`) ve
+ * o ana kadar biriken kelebekler oracıkta salınıyor. `Garden` bu bekleyişi
+ * hiç görmüyor.
  *
  * Sahne HİÇ unmount olmuyor: gezinme sayfa içinde, kartlar çapraz geçişle
  * değişiyor. Bileşen kök düzende bir kez asılı duruyor.
  */
 
-type MeadowHandle = { dispose: () => void };
-
-export function Meadow({ className }: { className?: string }) {
+export function Meadow({
+  className,
+  bridge,
+}: {
+  className?: string;
+  bridge?: MeadowBridge;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'unsupported'>(
     'loading',
@@ -68,6 +171,7 @@ export function Meadow({ className }: { className?: string }) {
       .then(({ createMeadow }) => createMeadow(canvas, {}))
       .then((h) => {
         handleRef.current = h as MeadowHandle;
+        bridge?.attach(handleRef.current);
         setStatus('ready');
       })
       .catch((err) => {
@@ -82,10 +186,11 @@ export function Meadow({ className }: { className?: string }) {
        * zararsız — ve bayrak sıfırlanmadığı için ikinci kurulum hiç
        * başlamıyor.
        */
+      bridge?.attach(null);
       handleRef.current?.dispose();
       handleRef.current = null;
     };
-  }, []);
+  }, [bridge]);
 
   return (
     <div className={`meadow-layer ${className ?? ''}`.trim()}>

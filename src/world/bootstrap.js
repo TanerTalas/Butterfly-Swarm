@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createWorld, WORLD, groundHeight } from './index.js';
 import { createWorldSwarm, enableSwarmFog, SWARM_BOUNDS } from './swarm.js';
+import { createVisitors } from './visitors.js';
 
 /*
  * Sahnenin GÖMÜLEBİLİR giriş noktası.
@@ -128,6 +129,12 @@ export async function createMeadow(canvas, options = {}) {
   });
   enableSwarmFog(swarm);
   scene.add(swarm.group);
+
+  /*
+   * Kullanıcının kelebekleri. Yerleşiklerin bittiği yerden başlayan
+   * havuzu yönetiyor ve `id → instance` eşlemesini tutuyor.
+   */
+  const visitors = createVisitors(swarm);
 
   /*
    * İMLEÇ TAKİBİ YOK — bilerek.
@@ -278,6 +285,25 @@ export async function createMeadow(canvas, options = {}) {
   }
 
   return {
+    /*
+     * ── Arayüzün gördüğü yüz ────────────────────────────────────────────
+     *
+     * React tarafı YALNIZCA bunları çağırıyor; `swarm`a hiç dokunmuyor.
+     * Sahne motorunun React'ten habersiz kalması bilinçli bir karar ve tek
+     * koruması bu dar yüzey — bileşenler instance indeksleriyle uğraşmaya
+     * başlarsa motorun içi bir daha değiştirilemez.
+     */
+
+    /** Kelebeği çayıra salar. Havuz doluysa -1. */
+    release: visitors.release,
+    /** Kelebeği çayırdan kaldırır. */
+    remove: visitors.remove,
+    /** Bütün ziyaretçileri kaldırır — çıkış, hesap silme. */
+    clearVisitors: visitors.clear,
+    /** Kelebeğin şu anki instance indeksi; takip kipi (Aşama D) için. */
+    indexOf: visitors.at,
+
+    // ── Laboratuvarların ve teşhisin kullandığı iç parçalar ──────────────
     scene,
     camera,
     controls,

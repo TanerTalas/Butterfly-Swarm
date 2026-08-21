@@ -306,6 +306,55 @@ export class Swarm {
     }
   }
 
+  /**
+   * Bir kelebeğin BÜTÜN durumunu başka bir yuvaya taşır.
+   *
+   * `update()` yalnızca `[0, count)` aralığını işliyor, yani canlı
+   * kelebekler dizinin başında bitişik durmak zorunda. Aradan biri
+   * ayrıldığında (ömrü doldu, hesap silindi) boşluk bırakılamaz: sondaki
+   * kelebek boşalan yuvaya taşınıp sayı bir azaltılıyor.
+   *
+   * Taşınan şey görünüşü değil DURUMU: konum, hız, yönelim, kip
+   * karışımları, ölçü, çırpma fazı ve rengi. Yalnızca renk kopyalansaydı
+   * o kelebek bir sonraki karede bambaşka bir yere ışınlanırdı.
+   *
+   * Ham rastgele çekilişler (`_sizeRand` vb.) de geliyor; kalsalardı bir
+   * panel dokunuşunda `applyVariation()` kelebeğin boyunu değiştirirdi.
+   */
+  copyInstance(from, to) {
+    if (from === to) return;
+
+    for (const [arr, stride] of [
+      [this.position, 3],
+      [this.velocity, 3],
+      [this.quaternion, 4],
+      [this.hueShift, 2],
+      [this.wingSat, 2],
+      [this.wingVal, 2],
+      [this.followMix, 1],
+      [this.fleeMix, 1],
+      [this.scale, 1],
+      [this.phase, 1],
+      [this.flapSpeed, 1],
+      [this.noiseOffset, 1],
+      [this.radiusBias, 1],
+      [this._sizeRand, 1],
+      [this._speedRand, 1],
+      [this._hueRand, 1],
+    ]) {
+      for (let k = 0; k < stride; k++) {
+        arr[to * stride + k] = arr[from * stride + k];
+      }
+    }
+
+    this._hueNeedsUpdate();
+    const geometry = this.wingMesh?.geometry;
+    for (const name of ['aPhase', 'aFlapSpeed']) {
+      const attr = geometry?.getAttribute(name);
+      if (attr) attr.needsUpdate = true;
+    }
+  }
+
   setCount(n) {
     const count = Math.max(1, Math.min(Math.round(n), this.capacity));
     this.params.count = count;
