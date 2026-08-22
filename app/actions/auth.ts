@@ -61,7 +61,7 @@ export async function signIn(
       email: string;
     }>(
       `select id, password_hash, email_verified_at, name, avatar_hex, email
-         from account
+         from garden.account
         where lower(email) = $1`,
       [key],
     );
@@ -134,7 +134,7 @@ export async function signUp(
 
   try {
     const existing = await queryOne<{ id: string }>(
-      'select id from account where lower(email) = $1',
+      'select id from garden.account where lower(email) = $1',
       [key],
     );
 
@@ -160,7 +160,7 @@ export async function signUp(
      */
     const token = await transaction(async (run) => {
       const rows = await run<{ id: string }>(
-        'insert into account (email, password_hash) values ($1, $2) returning id',
+        'insert into garden.account (email, password_hash) values ($1, $2) returning id',
         [address, passwordHash],
       );
       return issueEmailToken(rows[0].id, 'verify', run);
@@ -197,7 +197,7 @@ export async function completeSetup(
     const session = await readSession();
     if (session.kind === 'guest') return { ok: false };
 
-    await query('update account set name = $1, avatar_hex = $2 where id = $3', [
+    await query('update garden.account set name = $1, avatar_hex = $2 where id = $3', [
       trimmed,
       avatarHex,
       session.accountId,

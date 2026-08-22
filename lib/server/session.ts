@@ -51,7 +51,7 @@ export async function createSession(accountId: string): Promise<void> {
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
 
   await query(
-    'insert into session (token_hash, account_id, expires_at) values ($1, $2, $3)',
+    'insert into garden.session (token_hash, account_id, expires_at) values ($1, $2, $3)',
     [hashToken(token), accountId, expiresAt],
   );
 
@@ -101,8 +101,8 @@ export async function readSession(): Promise<SessionState> {
       avatar_hex: string | null;
     }>(
       `select a.id as account_id, a.email, a.name, a.avatar_hex
-         from session s
-         join account a on a.id = s.account_id
+         from garden.session s
+         join garden.account a on a.id = s.account_id
         where s.token_hash = $1
           and s.expires_at > now()`,
       [hashToken(token)],
@@ -140,7 +140,7 @@ export async function destroySession(): Promise<void> {
      * yok ve olması da gerekmiyor.
      */
     try {
-      await query('delete from session where token_hash = $1', [
+      await query('delete from garden.session where token_hash = $1', [
         hashToken(token),
       ]);
     } catch {
@@ -158,5 +158,5 @@ export async function destroySession(): Promise<void> {
  * gerekecek.
  */
 export async function destroyAllSessions(accountId: string): Promise<void> {
-  await query('delete from session where account_id = $1', [accountId]);
+  await query('delete from garden.session where account_id = $1', [accountId]);
 }

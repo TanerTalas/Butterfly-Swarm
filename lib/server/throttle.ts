@@ -29,7 +29,7 @@ export function attemptKey(email: string): string {
 export async function lockedFor(key: string): Promise<number | null> {
   const row = await queryOne<{ seconds: number }>(
     `select ceil(extract(epoch from (locked_until - now())))::int as seconds
-       from sign_in_attempt
+       from garden.sign_in_attempt
       where email_key = $1 and locked_until > now()`,
     [key],
   );
@@ -46,7 +46,7 @@ export async function lockedFor(key: string): Promise<number | null> {
  */
 export async function recordFailure(key: string): Promise<void> {
   await query(
-    `insert into sign_in_attempt (email_key, failures, first_at)
+    `insert into garden.sign_in_attempt (email_key, failures, first_at)
      values ($1, 1, now())
      on conflict (email_key) do update set
        failures = case
@@ -70,5 +70,5 @@ export async function recordFailure(key: string): Promise<void> {
 
 /** Başarılı girişten sonra sayacı temizler. */
 export async function clearFailures(key: string): Promise<void> {
-  await query('delete from sign_in_attempt where email_key = $1', [key]);
+  await query('delete from garden.sign_in_attempt where email_key = $1', [key]);
 }

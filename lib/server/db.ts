@@ -32,12 +32,22 @@ function createPool(): Pool {
     connectionString,
 
     /*
-     * ⚠ `search_path` BAĞLANTIDA kuruluyor, sorgularda değil. Sebebi şema
-     * seçiminin tek yerde kalması: tablolar `garden` şemasında ve sorgular
-     * onları çıplak isimle çağırıyor (`select … from account`). Paylaşılan bir
-     * veritabanına düşmek gerekirse değişen tek şey bu satır.
+     * ⚠ `search_path` KULLANILMIYOR — her sorgu tabloyu `garden.` ile niteliyor.
+     *
+     * Önce bağlantıda kurulmayı denedi (`options: '-c search_path=…'`) ve
+     * Neon'un havuzlayıcısı reddetti: PgBouncer özel başlangıç parametrelerini
+     * geçirmiyor ("unsupported startup parameter in options: search_path").
+     * Belirti sinsiydi — hata `readReleaseTotal`ın `catch`ine düşüp sayacı
+     * sessizce 0 gösteriyordu.
+     *
+     * Bağlantı açılırken `set search_path` çalıştırmak da çözüm DEĞİL: işlem
+     * havuzlamada (transaction pooling) bir istemcinin `SET`i aynı sunucu
+     * bağlantısını sonra kullanan başka bir istemciye sızıyor.
+     *
+     * Nitelemenin bedeli her sorguda altı harf; karşılığı hiçbir gizli duruma
+     * bağlı olmamak. Paylaşılan bir veritabanına düşmek gerekirse değişen şey
+     * şema adı, ve o zaten tek bir kelime.
      */
-    options: '-c search_path=garden,public',
 
     /*
      * Sunucusuz ortamda her örnek kendi havuzunu açıyor; havuz büyük olursa

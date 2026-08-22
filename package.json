@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "migrate": "node --env-file=.env.local db/migrate.mjs",
     "lab": "vite",
     "lab:build": "vite build"
   },

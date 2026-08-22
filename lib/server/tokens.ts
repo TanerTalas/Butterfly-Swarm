@@ -39,13 +39,13 @@ export async function issueEmailToken(
    * Aynı amaçla duran eski token'lar düşüyor: kullanıcı "tekrar gönder" derse
    * eskisinin de çalışmaya devam etmesi, bağlantının ömrünü sessizce uzatırdı.
    */
-  await run('delete from email_token where account_id = $1 and purpose = $2', [
+  await run('delete from garden.email_token where account_id = $1 and purpose = $2', [
     accountId,
     purpose,
   ]);
 
   await run(
-    `insert into email_token (token_hash, account_id, purpose, expires_at)
+    `insert into garden.email_token (token_hash, account_id, purpose, expires_at)
      values ($1, $2, $3, $4)`,
     [hashToken(token), accountId, purpose, expiresAt],
   );
@@ -65,7 +65,7 @@ export async function consumeEmailToken(
   purpose: TokenPurpose,
 ): Promise<string | null> {
   const row = await queryOne<{ account_id: string }>(
-    `update email_token
+    `update garden.email_token
         set used_at = now()
       where token_hash = $1
         and purpose = $2

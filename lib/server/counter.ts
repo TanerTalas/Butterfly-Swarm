@@ -21,7 +21,7 @@ const KEY = 'released_total';
 export async function readReleaseTotal(): Promise<number> {
   try {
     const row = await queryOne<{ value: string }>(
-      'select value from counters where key = $1',
+      'select value from garden.counters where key = $1',
       [KEY],
     );
 

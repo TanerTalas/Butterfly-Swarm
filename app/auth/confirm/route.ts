@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (!accountId) return home;
 
     await query(
-      'update account set email_verified_at = now() where id = $1 and email_verified_at is null',
+      'update garden.account set email_verified_at = now() where id = $1 and email_verified_at is null',
       [accountId],
     );
 
