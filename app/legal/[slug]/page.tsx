@@ -85,7 +85,19 @@ export default async function LegalPage({
             </section>
           ))}
 
-          {page.form && <ContactForm />}
+          {/*
+           * ⚠ Turnstile'ın SİTE anahtarı buradan geçiyor, `NEXT_PUBLIC_` bir
+           * değişkenden değil: bu sayfa zaten bir Server Component ve projede
+           * `NEXT_PUBLIC_` bir değişken bulunmuyor (CLAUDE.md). Gizli anahtar
+           * bambaşka bir değer ve yalnızca sunucuda (`lib/server/turnstile.ts`).
+           *
+           * `||` kullanılıyor, `??` DEĞİL: `.env`de boş bırakılmış bir satır
+           * değişkeni tanımsız değil BOŞ STRING yapıyor ve boş anahtarla
+           * çizilen widget hiç yüklenmezdi (aynı tuzak: `email.ts` → `appUrl`).
+           */}
+          {page.form && (
+            <ContactForm siteKey={process.env.TURNSTILE_SITE_KEY || null} />
+          )}
         </main>
       </div>
     </div>

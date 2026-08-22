@@ -156,3 +156,14 @@
   background: var(--color-panel);
   padding: 24px;
 }
+
+/*
+ * Bot kontrolünün yeri.
+ *
+ * Yükseklik SABİTLENİYOR: widget bir iframe ve indiğinde yerini kendisi
+ * açıyor, yani yer ayrılmazsa altındaki buton kullanıcının parmağının altında
+ * aşağı kayıyor. 65px Turnstile'ın normal (compact olmayan) ölçüsü.
+ */
+.contact-check {
+  min-height: 65px;
+}

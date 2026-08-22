@@ -138,6 +138,47 @@ export async function sendPasswordResetEmail(
 }
 
 /**
+ * İletişim formundan gelen mesajın BİZE gelen kopyası.
+ *
+ * ⚠ Gönderene otomatik cevap YOK ve olmamalı. Formdaki adres doğrulanmamış:
+ * "mesajını aldık" postası, isteyen herkesin istediği adrese bizim adımıza
+ * metin yollayabilmesi demekti. Kullanıcının aldığı onay ekranda kalıyor.
+ *
+ * ⚠ `reply_to` KULLANILMIYOR, adres gövdeye yazılıyor. Cevap yazan kişi
+ * adresi görüp bilerek seçsin: doğrulanmamış bir adrese refleksle "yanıtla"
+ * demek, bir başkasının hesabı hakkındaki yazışmayı yabancıya göndermek
+ * olabilir.
+ *
+ * Gövdedeki `account` satırı ÇEREZDEN okunan hesap — formdaki e-postanın
+ * aksine kanıtlanmış olan. "Verimi silin" diyen bir mesajın hangi hesaba ait
+ * olduğu yalnızca oradan bilinebiliyor.
+ */
+export async function sendContactNotification(input: {
+  name: string;
+  email: string;
+  body: string;
+  account: string | null;
+}): Promise<void> {
+  /*
+   * Kutu ayrı bir değişken: `MAIL_FROM` gönderen kimliği (doğrulanmış alan
+   * adı) ve okunan bir kutu olmak zorunda değil. Yoksa yine de bir yere
+   * düşsün diye ona geri düşülüyor.
+   */
+  const to = process.env.CONTACT_TO || process.env.MAIL_FROM || 'inbox@localhost';
+
+  await deliver({
+    to,
+    subject: `Contact · ${input.name}`,
+    text: [
+      `from:    ${input.name} <${input.email}>`,
+      `account: ${input.account ?? 'not signed in'}`,
+      '',
+      input.body,
+    ].join('\n'),
+  });
+}
+
+/**
  * Zaten kayıtlı bir adrese kayıt denendiğinde giden posta.
  *
  * ⚠ Bu posta girişteki TEK MESAJ kuralının parçası. Kayıt ekranı e-postanın

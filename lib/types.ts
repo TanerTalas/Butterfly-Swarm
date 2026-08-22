@@ -64,6 +64,27 @@ export const PASSWORD_MIN = 10;
 /** Kelebeğin ömrü, gün. */
 export const LIFESPAN_DAYS = 7;
 
+/*
+ * İsim ve profil renginin kaydedildikten sonraki kilidi, gün.
+ *
+ * ⚠ Ayarlardaki not ("cannot be changed again for 1 day") bu sayıyı söylüyor.
+ * Sayı burada duruyor ve hem kartın notu hem sunucudaki kilit aynı yerden
+ * okuyor — ikinci bir kopya, birinin sessizce yalan söylemesi demek.
+ */
+export const PROFILE_LOCK_DAYS = 1;
+
+/*
+ * ── İletişim formu ────────────────────────────────────────────────────────
+ *
+ * Uzunluklar arayüzde de sunucuda da geçerli; şemadaki CHECK'ler
+ * (`0002_contact.sql`) bunların kesilmemiş hâli gelirse yazmayı reddeden
+ * sınır. Kelebek isminden (18) ayrı sayılar: burada yazılan şey bir isim
+ * değil, bir mektup.
+ */
+export const CONTACT_NAME_MAX = 80;
+export const CONTACT_EMAIL_MAX = 254;
+export const CONTACT_BODY_MAX = 4000;
+
 export type Butterfly = {
   id: string;
   /** Misafir kelebeklerinde null. */
@@ -107,6 +128,31 @@ export type MeadowEntry = {
   expiresAt: Date;
   /** Çayırdaki iki kontenjandan hangisine sayıldığı. */
   kind: 'guest' | 'member';
+};
+
+/*
+ * Hesabın kendisiyle ilgili üç değer.
+ *
+ * "Hesabım" ekranındaki iki sayı ve ayarlardaki kilit. Üçü tek satırdan
+ * çıkıyor, o yüzden tek sorgu — sayfa açılışı zaten birkaç sorgu yapıyor ve
+ * veritabanı Frankfurt'ta (bkz. `vercel.json`, bölge `fra1`).
+ *
+ * ⚠ Bu tip SUNUCU/İSTEMCİ sınırını geçiyor (`app/page.tsx` → `Garden`):
+ * içinde yalnızca düz veri olmak zorunda ve hesap kimliği GEÇMİYOR.
+ */
+export type AccountFacts = {
+  /** İsim/renk kilidinin bittiği an; kilit yoksa null. */
+  lockedUntil: Date | null;
+  /** Hesabın açıldığı an — "member since". */
+  memberSince: Date;
+  /**
+   * Kullanıcının BUGÜNE KADAR saldığı kelebek sayısı.
+   *
+   * ⚠ Küresel sayaçla (`garden.counters`) alakası yok: o çayırın tamamını
+   * sayıyor ve tohumu 27. Bu, kişinin kendi satırlarının sayısı — ömrü
+   * dolanlar dahil, çünkü onlar da salınmış kelebekler ve geçmişte duruyorlar.
+   */
+  releasedTotal: number;
 };
 
 /*
@@ -156,6 +202,21 @@ export type SignInError =
   | { kind: 'credentials' }
   /** Çok deneme. Sunucu ne kadar bekleneceğini söylüyorsa taşınıyor. */
   | { kind: 'rate-limit'; retryInSeconds?: number }
+  | { kind: 'network' };
+
+/*
+ * ── Gönderilemeyen mesaj ──────────────────────────────────────────────────
+ *
+ * ⚠ Üçü de İNSANA söylenebilecek şeyler. Bal küpüne düşen gönderim bu tiple
+ * DÖNMÜYOR: ona başarı deniyor ve mesaj hiçbir yere yazılmıyor. Bota "seni
+ * yakaladım" demek, ona neyi düzeltmesi gerektiğini öğretmek olurdu.
+ */
+export type ContactFailure =
+  /** Bot kontrolü geçilemedi — insan da geçemeyebilir, yeniden denenebilir. */
+  | { kind: 'check' }
+  /** Aynı yerden saat içinde çok mesaj. */
+  | { kind: 'rate-limit' }
+  /** İstek ulaşmadı ya da 5xx döndü. */
   | { kind: 'network' };
 
 /*
