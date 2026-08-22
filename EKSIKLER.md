@@ -220,6 +220,48 @@ sıkışacak yer burası.
 ⚠️ Build alacaksan önce dev sunucusunu durdur. İkisi aynı `.next` klasörüne
 yazıyor; birlikte çalıştıklarında CSS tamamen kaybolabiliyor.
 
+⚠️ `.env.local` değişince dev sunucusunu YENİDEN BAŞLAT. Next ortam
+değişkenlerini açılışta okuyor; ayrıca veritabanı havuzu `globalThis`te
+saklandığı için (`lib/server/db.ts`) hot reload onu tazelemiyor.
+
+### Veritabanıyla çalışmak
+
+**Şema:** `npm run migrate` — `psql` gerekmiyor. Yeniden çalıştırmak zararsız;
+uygulananlar `garden.migration` defterinde.
+
+**Postalar konsola basılıyor** (doğrulama ve şifre sıfırlama bağlantıları dev
+sunucusunun çıktısında). Resend anahtarı gerekmiyor.
+
+**Doğrulanmış bir test hesabı** açmanın en kısa yolu — arayüzden kayıt olup
+posta beklemeye gerek yok:
+
+```js
+// node --env-file=.env.local -e "…"
+const { hashSync } = require('@node-rs/argon2');
+const pg = require('pg');
+const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await c.connect();
+await c.query(
+  `insert into garden.account (email, password_hash, email_verified_at, name, avatar_hex)
+   values ('wren@example.com', $1, now(), 'Wren', '#4F7FBF')`,
+  [hashSync('meadow-seven-days', { algorithm: 2 })],
+);
+```
+
+`algorithm: 2` argon2id demek; `Algorithm` bir `const enum` ve
+`isolatedModules` altında değer olarak erişilemiyor (bkz.
+`lib/server/password.ts`).
+
+**Temizlik:** `delete from garden.account where email like '%@example.com'`
+(kelebekler, oturumlar ve token'lar `on delete cascade` ile gidiyor),
+`delete from garden.butterfly`, sayacı 27'ye geri al.
+
+⚠ **TAZE ÇEREZ KABI GEREKTİĞİNDE farklı bir host kullan.** Misafirin günlük
+hakkı ve şifre sıfırlama çerezi `httpOnly`, yani JavaScript ile silinemiyor.
+`localhost:3000`, `127.0.0.1:3000` ve makinenin LAN adresi (`npm run dev`
+çıktısındaki "Network") tarayıcı için AYRI çerez kapları — misafir kontenjanı
+ve yem kelebek yolu böyle test edildi.
+
 **Durum hâllerini açan kanca** (yalnızca geliştirmede; durum kodlarının ne
 olduğu CLAUDE.md'de):
 
