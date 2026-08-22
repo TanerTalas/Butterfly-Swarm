@@ -1,8 +1,19 @@
 'use server';
 
-import { sessionClient } from '@/lib/supabase/server';
-import { readSession } from '@/lib/server/session';
-import { PASSWORD_MIN, NAME_MAX, AVATAR_COLOURS } from '@/lib/types';
+import { query, queryOne, transaction } from '@/lib/server/db';
+import { hashPassword, verifyPassword, isPasswordAcceptable } from '@/lib/server/password';
+import {
+  createSession,
+  destroySession,
+  readSession,
+} from '@/lib/server/session';
+import { issueEmailToken } from '@/lib/server/tokens';
+import {
+  sendVerificationEmail,
+  sendAlreadyRegisteredEmail,
+} from '@/lib/server/email';
+import { attemptKey, lockedFor, recordFailure, clearFailures } from '@/lib/server/throttle';
+import { NAME_MAX, AVATAR_COLOURS } from '@/lib/types';
 import type { Profile, SignInError } from '@/lib/types';
 
 /*
@@ -15,7 +26,7 @@ import type { Profile, SignInError } from '@/lib/types';
  *
  * ⚠ Hiçbiri istisna fırlatmıyor. Fırlatan bir Server Action istemciye
  * "an unexpected error occurred" diye geçiyor ve ekranlarda o dilin karşılığı
- * yok; dört red hâli çizili (D5/D6) ve cevap onlara oturmak zorunda.
+ * yok; red hâlleri çizili (D5/D6) ve cevap onlara oturmak zorunda.
  */
 
 export type SignInResult =
@@ -29,50 +40,73 @@ export type SignUpResult =
   | { ok: true }
   | { ok: false; error: SignInError };
 
-/*
- * Supabase hatasını ekranın bildiği dile çevirir.
- *
- * ⚠ `credentials` TEK bir mesaja karşılık geliyor: "email or password is
- * wrong". Hangi alanın yanlış olduğu SÖYLENMİYOR — söylenirse e-postanın
- * kayıtlı olup olmadığı ele verilir ve kullanıcı sayımına izin verilmiş olur.
- * Supabase de zaten iki durumu ayırmıyor; bu çeviri o davranışı koruyor.
- */
-function toSignInError(status: number | undefined): SignInError {
-  if (status === 429) return { kind: 'rate-limit' };
-  if (status === 400 || status === 401) return { kind: 'credentials' };
-  return { kind: 'network' };
-}
-
 export async function signIn(
   email: string,
   password: string,
 ): Promise<SignInResult> {
+  const key = attemptKey(email);
+
   try {
-    const supabase = await sessionClient();
+    const seconds = await lockedFor(key);
+    if (seconds !== null) {
+      return { ok: false, error: { kind: 'rate-limit', retryInSeconds: seconds } };
+    }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    if (error) return { ok: false, error: toSignInError(error.status) };
+    const account = await queryOne<{
+      id: string;
+      password_hash: string;
+      email_verified_at: Date | null;
+      name: string | null;
+      avatar_hex: string | null;
+      email: string;
+    }>(
+      `select id, password_hash, email_verified_at, name, avatar_hex, email
+         from account
+        where lower(email) = $1`,
+      [key],
+    );
 
     /*
-     * Profili action'ın kendisi okumuyor, `readSession()` okuyor. İkinci bir
-     * okuma yolu açılsaydı "profil eksik" kuralının iki kopyası olurdu ve
-     * biri güncellenmeden kalabilirdi.
+     * ⚠ Hesap yoksa da doğrulama ÇALIŞTIRILIYOR (`verifyPassword` null alınca
+     * sahte bir özetle aynı işi yapıyor). Atlanırsa cevap belirgin biçimde daha
+     * hızlı döner ve o süre farkı "bu e-posta kayıtlı mı" sorusunu yanıtlar —
+     * tek mesaj kuralı ölçüm yoluyla delinmiş olurdu.
      */
-    const session = await readSession();
+    const correct = await verifyPassword(password, account?.password_hash ?? null);
 
-    if (session.kind === 'member') {
-      return { ok: true, session: 'member', profile: session.profile };
-    }
-    if (session.kind === 'incomplete') {
-      return { ok: true, session: 'incomplete', email: session.email };
+    if (!account || !correct) {
+      await recordFailure(key);
+      return { ok: false, error: { kind: 'credentials' } };
     }
 
-    // Giriş başarılı görünüp oturum okunamadı: çerez yazılamamış demek.
-    return { ok: false, error: { kind: 'network' } };
+    /*
+     * ⚠ Doğrulanmamış hesap da AYNI mesajı alıyor.
+     *
+     * "Önce e-postanı doğrula" demek doğru bilgi olurdu ama e-postanın kayıtlı
+     * olduğunu ele verirdi — üstelik şifreyi bilmeyen birine. Doğrulama
+     * bağlantısı zaten kutusunda; ekran ondan fazlasını söylemiyor.
+     */
+    if (!account.email_verified_at) {
+      await recordFailure(key);
+      return { ok: false, error: { kind: 'credentials' } };
+    }
+
+    await clearFailures(key);
+    await createSession(account.id);
+
+    if (!account.name || !account.avatar_hex) {
+      return { ok: true, session: 'incomplete', email: account.email };
+    }
+
+    return {
+      ok: true,
+      session: 'member',
+      profile: {
+        name: account.name,
+        email: account.email,
+        avatarHex: account.avatar_hex,
+      },
+    };
   } catch {
     return { ok: false, error: { kind: 'network' } };
   }
@@ -86,35 +120,53 @@ export async function signUp(
    * ⚠ Şifre uzunluğu SUNUCUDA da bakılıyor. Arayüz zaten butonu kilitliyor
    * (`PASSWORD_MIN`), ama o kilit bir kolaylık; kuralın kendisi burada.
    *
-   * Kısa şifre `credentials` olarak dönüyor ve bu tam doğru bir eşleşme
-   * değil — ekranın dilinde "şifren kurallara uymuyor" diye bir hâl yok,
-   * çünkü tasarım o hâli hiç çizmedi (arayüzden ulaşılamıyor). Yeni bir
-   * mesaj uydurmak yerine var olan dile düşürülüyor.
+   * Kısa şifre `credentials` olarak dönüyor ve bu tam oturan bir eşleşme değil
+   * — ekranın dilinde "şifren kurallara uymuyor" diye bir hâl yok, çünkü
+   * tasarım onu hiç çizmedi (arayüzden ulaşılamıyor). Yeni bir mesaj uydurmak
+   * yerine var olan dile düşürülüyor.
    */
-  if (password.length < PASSWORD_MIN) {
+  if (!isPasswordAcceptable(password)) {
     return { ok: false, error: { kind: 'credentials' } };
   }
 
+  const address = email.trim();
+  const key = attemptKey(address);
+
   try {
-    const supabase = await sessionClient();
-
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
-
-    if (error) return { ok: false, error: toSignInError(error.status) };
+    const existing = await queryOne<{ id: string }>(
+      'select id from account where lower(email) = $1',
+      [key],
+    );
 
     /*
-     * ⚠ Zaten kayıtlı bir e-posta için de BURAYA düşülüyor.
+     * ⚠ Zaten kayıtlı bir e-posta da BAŞARI döndürüyor.
      *
-     * Supabase, e-posta doğrulaması açıkken var olan bir adres için hata
-     * döndürmüyor; sahte bir başarı dönüp postayı göndermiyor. Bilinçli ve
-     * bizim de istediğimiz davranış: "bu e-posta zaten kayıtlı" demek,
-     * girişteki tek mesaj kuralını arka kapıdan delerdi.
-     *
-     * Sonuç: kayıt ekranı her hâlükârda "postanı kontrol et" diyor.
+     * "Bu e-posta zaten kayıtlı" demek, girişteki tek mesaj kuralını arka
+     * kapıdan delerdi: kayıt formu bir kullanıcı sayma aracına dönüşürdü.
+     * Adresin gerçek sahibi denemeden haberdar olsun diye fark EKRANA değil
+     * yalnızca posta kutusuna yansıyor.
      */
+    if (existing) {
+      await sendAlreadyRegisteredEmail(address);
+      return { ok: true };
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    /*
+     * Hesap ve doğrulama token'ı TEK İŞLEMDE. Ayrı yazılsalardı token yazımı
+     * düştüğünde ortada doğrulanamayan bir hesap kalırdı ve o adresle bir daha
+     * kaydolunamazdı — kullanıcı kendi adresine kilitlenmiş olurdu.
+     */
+    const token = await transaction(async (run) => {
+      const rows = await run<{ id: string }>(
+        'insert into account (email, password_hash) values ($1, $2) returning id',
+        [address, passwordHash],
+      );
+      return issueEmailToken(rows[0].id, 'verify', run);
+    });
+
+    await sendVerificationEmail(address, token);
     return { ok: true };
   } catch {
     return { ok: false, error: { kind: 'network' } };
@@ -124,9 +176,8 @@ export async function signUp(
 /**
  * Hesap kurulumu: isim + avatar rengi.
  *
- * Kayıt iki adım olduğu için profil satırı boş açılıyor (`profiles.name` NULL,
- * trigger'la); burası onu dolduruyor ve kullanıcı ancak bundan sonra üye
- * sayılıyor.
+ * Kayıt iki adım olduğu için hesap satırı isimsiz açılıyor; burası onu
+ * dolduruyor ve kullanıcı ancak bundan sonra üye sayılıyor.
  */
 export async function completeSetup(
   name: string,
@@ -139,32 +190,23 @@ export async function completeSetup(
   if (!AVATAR_COLOURS.some((c) => c.hex === avatarHex)) return { ok: false };
 
   try {
-    const supabase = await sessionClient();
-
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return { ok: false };
-
     /*
-     * `sessionClient` ile yazılıyor: RLS'in `profiles_update_own` politikası
-     * `id`yi zaten kullanıcıya bağlıyor, yani yanlış satırı güncellemek
-     * mümkün değil. Servis anahtarıyla yazılsaydı o güvence kodun dikkatine
-     * kalırdı.
+     * ⚠ Hesap kimliği ÇEREZDEN geliyor, çağrıdan değil. İstemciden bir kimlik
+     * alınsaydı, herkes başkasının profilini yeniden adlandırabilirdi.
      */
-    const { error } = await supabase
-      .from('profiles')
-      .update({ name: trimmed, avatar_hex: avatarHex })
-      .eq('id', user.user.id);
+    const session = await readSession();
+    if (session.kind === 'guest') return { ok: false };
 
-    if (error) return { ok: false };
+    await query('update account set name = $1, avatar_hex = $2 where id = $3', [
+      trimmed,
+      avatarHex,
+      session.accountId,
+    ]);
 
-    return {
-      ok: true,
-      profile: {
-        name: trimmed,
-        email: user.user.email ?? '',
-        avatarHex: avatarHex,
-      },
-    };
+    const email =
+      session.kind === 'member' ? session.profile.email : session.email;
+
+    return { ok: true, profile: { name: trimmed, email, avatarHex } };
   } catch {
     return { ok: false };
   }
@@ -174,20 +216,9 @@ export async function completeSetup(
  * Çıkış.
  *
  * ⚠ Kelebekler çayırda KALIYOR. Salınan kelebek çayırın, salanın değil —
- * oturum kapansa da yedi gününü doldurmaya devam ediyor. (Sunucusuz sürümde
- * liste bellekte olduğu için çıkışta kalkıyorlardı; o satır E.3'te
- * `Garden.signOut()` içinden kalkacak.)
+ * oturum kapansa da yedi gününü doldurmaya devam ediyor. (`Garden.signOut()`
+ * bugün listeyi boşaltıyor; o satır E.3'te kalkacak.)
  */
 export async function signOut(): Promise<void> {
-  try {
-    const supabase = await sessionClient();
-    await supabase.auth.signOut();
-  } catch {
-    /*
-     * Çıkış SESSİZCE başarısız olabilir ve bu kabul edilebilir: çağıran taraf
-     * yerel durumu her hâlükârda temizliyor. Ekranda "çıkış yapılamadı" diye
-     * bir hâl yok ve olması da gerekmiyor — kullanıcı çıkmak istedi, arayüz
-     * çıkmış gibi davranıyor, çerez en geç süresi dolunca gidiyor.
-     */
-  }
+  await destroySession();
 }
