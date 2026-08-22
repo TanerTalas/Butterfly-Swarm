@@ -34,9 +34,7 @@ import { clearDraft } from '@/lib/draft';
 import { isNoticeDismissed, dismissNotice } from '@/lib/dismissed';
 import {
   expiresAt,
-  GUEST_DAILY_LIMIT,
   SLOT_LIMIT,
-  WING_COLOURS,
   type Butterfly,
   type Profile,
   type ReleaseFailure,
@@ -49,6 +47,10 @@ import {
   signOut as signOutAction,
   signUp as signUpAction,
 } from '@/app/actions/auth';
+import {
+  releaseAsGuest as releaseGuestAction,
+  releaseAsMember as releaseMemberAction,
+} from '@/app/actions/release';
 
 /*
  * Bahçe — tek sayfanın durum makinesi.
@@ -57,12 +59,14 @@ import {
  * olmuyor; yalnızca üstündeki kart değişiyor. Bu yüzden görünüm durumu
  * burada, sahnenin dışında ve üstünde duruyor.
  *
- * ⚠ SUNUCU YOK. Oturum, kelebek listesi ve sayaç bu bileşenin içinde yaşıyor
- * ve sayfa yenilenince sıfırlanıyor. Handoff'un kuralı net: sunucu tavanın,
- * ömrün ve sayacın sahibi; istemci uygunluk hesaplamıyor. Buradaki
- * kontroller yalnızca arayüzü gezilebilir kılmak için. Aşama C'de
- * `releaseAsGuest`, `completeSignIn` gibi fonksiyonlar birer sunucu
- * çağrısına dönüşecek, ekranlar aynı kalacak.
+ * Kimlik, salma ve sayaç SUNUCUDA (`app/actions/`). İstemci uygunluk
+ * hesaplamıyor: tavan, ömür, renk ve tohum hep sunucudan geliyor; buradaki
+ * kontroller yalnızca butonu doğru anda kilitlemek için.
+ *
+ * ⚠ KELEBEK LİSTESİ HÂLÂ BURADA. `butterflies` ve `guestButterflies` bu
+ * bileşenin belleğinde yaşıyor, yani `F5` onları siliyor — kelebek
+ * veritabanında duruyor ama çayır yalnızca bu oturumun saldıklarını
+ * gösteriyor. Aşama E.3 listeyi sunucudan okuyacak.
  */
 
 type View =
@@ -82,8 +86,11 @@ type View =
 export function Garden({
   initialTotal = 0,
   initialSession = { kind: 'guest' },
+  initialGuestUsed = false,
 }: {
   initialTotal?: number;
+  /** Misafir bugünkü hakkını kullandı mı (`app/page.tsx` → `guestReleaseUsed()`). */
+  initialGuestUsed?: boolean;
   /**
    * Sunucunun okuduğu oturum (`app/page.tsx` → `readSession()`).
    *
@@ -127,11 +134,10 @@ export function Garden({
   /*
    * Reddedilen salma ve reddedilen giriş (D3-2 / D4 / D5 / D6).
    *
-   * ⚠ Bunlara SUNUCU karar verecek; istemci uygunluk hesaplamıyor. Bugün
-   * hiçbiri kendiliğinden oluşmuyor — `failNext` ile denenebiliyorlar
-   * (aşağıdaki geliştirme kancası). Aşama C'de `releaseAsGuest` /
-   * `completeSignIn` birer sunucu çağrısına dönüştüğünde cevabı buraya
-   * yazacaklar; kartlar aynı kalacak.
+   * ⚠ Bunlara SUNUCU karar veriyor; istemci uygunluk hesaplamıyor. `failNext`
+   * kancası artık yalnızca ulaşması zor hâlleri denemek için duruyor —
+   * `guest-limit`, `slots-full`, `meadow-full` ve `credentials` gerçekten
+   * oluşabiliyor.
    */
   const [releaseFailure, setReleaseFailure] =
     useState<ReleaseFailure | null>(null);
@@ -232,14 +238,14 @@ export function Garden({
   const [finished] = useState<Butterfly[]>([]);
 
   /*
-   * Misafirin bugün kaç kelebek saldığı.
+   * Misafir bugünkü hakkını kullandı mı — SUNUCUDAN geliyor.
    *
-   * ⚠ Yalnızca arayüzün doğru şeyi söylemesi için. Gerçek sınır sunucuda,
-   * IP başına uygulanacak; buradaki sayaç sayfa yenilenince sıfırlanıyor,
-   * yani bir korumadan çok bir bilgi.
+   * ⚠ İstemci HESAPLAMIYOR. Hak `httpOnly` bir çerezde duruyor, yani tarayıcı
+   * kendisi bakamıyor bile; sunucu söylüyor (`guestReleaseUsed`). Değer ilk
+   * render'da biliniyor, sonradan bir effect'le sorulmuyor — sorulsaydı buton
+   * bir an açık görünüp sonra kilitlenirdi.
    */
-  const [guestReleasesToday, setGuestReleasesToday] = useState(0);
-  const guestBlocked = guestReleasesToday >= GUEST_DAILY_LIMIT;
+  const [guestBlocked, setGuestBlocked] = useState(initialGuestUsed);
 
   /*
    * Misafir kelebekleri.
@@ -377,12 +383,6 @@ export function Garden({
     setView(next);
   }
 
-  async function fakeDelay() {
-    setPending(true);
-    await new Promise((resolve) => setTimeout(resolve, 420));
-    setPending(false);
-  }
-
   /**
    * Zorlanmış hatayı okur ve TÜKETİR.
    *
@@ -395,64 +395,66 @@ export function Garden({
     return f;
   }
 
+  /*
+   * ⚠ RENK, TOHUM ve KİMLİK artık SUNUCUDAN geliyor.
+   *
+   * Renk istemcide çekildiği sürece kullanıcı yeniden deneyerek istediği
+   * rengi tutturabiliyordu; kartın sözü ise "The meadow picks the wings".
+   * Tohum da sunucudan, çünkü kelebek yenilemeden sonra da aynı boyda ve
+   * çayırın aynı kenarından girmek zorunda.
+   */
   async function releaseAsGuest() {
     // Yeni deneme, temiz sayfa: önceki red ekranda kalmamalı
     setReleaseFailure(null);
-    await fakeDelay();
 
-    const failure = takeForcedFailure<ReleaseFailure>();
-    if (failure) {
-      setReleaseFailure(failure);
+    const forced = takeForcedFailure<ReleaseFailure>();
+    if (forced) {
+      setReleaseFailure(forced);
       return;
     }
 
-    /*
-     * Rengi ÇAYIR seçiyor — kartın sözü bu ("The meadow picks the wings").
-     * Tek renk: ön ve arka kanat aynı. İki renkli kanat kayıtlı
-     * kullanıcılara özel, yerleşik ve misafir kelebekler paletten tek renk
-     * geziyor (projefikri.md §2).
-     *
-     * ⚠ Çekiliş sunucuya taşınacak. Burada olduğu sürece kullanıcı yeniden
-     * deneyerek istediği rengi tutturabilir.
-     */
-    const colour =
-      WING_COLOURS[Math.floor(Math.random() * WING_COLOURS.length)].hex;
+    setPending(true);
+    const result = await releaseGuestAction();
+    setPending(false);
 
-    const butterfly: Butterfly = {
-      id: newId(),
-      name: null,
-      foreHex: colour,
-      hindHex: colour,
-      releasedAt: new Date(),
-    };
+    if (!result.ok) {
+      setReleaseFailure(result.error);
+      /*
+       * Günlük hak reddi butonu da kilitliyor: kural ihlali, arıza değil.
+       * (`network` kilitlemiyor — bkz. ReleaseNotice.)
+       */
+      if (result.error.kind === 'guest-limit') setGuestBlocked(true);
+      return;
+    }
 
-    setGuestButterflies((list) => [...list, butterfly]);
-    setLastReleased(butterfly);
-    setTotal((n) => n + 1);
-    setGuestReleasesToday((n) => n + 1);
+    setGuestButterflies((list) => [...list, result.butterfly]);
+    setLastReleased(result.butterfly);
+    setTotal(result.total);
+    setGuestBlocked(true);
     reset('released');
   }
 
   async function releaseAsMember(name: string, fore: string, hind: string) {
     setReleaseFailure(null);
-    await fakeDelay();
 
-    const failure = takeForcedFailure<ReleaseFailure>();
-    if (failure) {
-      setReleaseFailure(failure);
+    const forced = takeForcedFailure<ReleaseFailure>();
+    if (forced) {
+      setReleaseFailure(forced);
       return;
     }
 
-    const butterfly: Butterfly = {
-      id: newId(),
-      name,
-      foreHex: fore,
-      hindHex: hind,
-      releasedAt: new Date(),
-    };
-    setButterflies((list) => [...list, butterfly]);
-    setLastReleased(butterfly);
-    setTotal((n) => n + 1);
+    setPending(true);
+    const result = await releaseMemberAction(name, fore, hind);
+    setPending(false);
+
+    if (!result.ok) {
+      setReleaseFailure(result.error);
+      return;
+    }
+
+    setButterflies((list) => [...list, result.butterfly]);
+    setLastReleased(result.butterfly);
+    setTotal(result.total);
 
     /*
      * Taslak artık bir KELEBEK. Silme burada, kartta değil: salmanın
@@ -806,15 +808,6 @@ export function Garden({
       </MeadowShell>
     </main>
   );
-}
-
-/*
- * `crypto.randomUUID` yalnızca güvenli bağlamlarda var; localhost dışında
- * http ile açılan bir önizlemede tanımsız oluyor ve salma akışı patlıyordu.
- * Kimlikler zaten geçici — sunucu gelince gerçek id veritabanından gelecek.
- */
-function newId(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 function Landing({

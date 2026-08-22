@@ -71,6 +71,17 @@ export type Butterfly = {
   foreHex: string;
   hindHex: string;
   releasedAt: Date;
+  /**
+   * Sahnenin görünüş çekilişlerini yaptığı tohum — SUNUCUDAN geliyor.
+   *
+   * ⚠ Yuvalar geri dönüşümlü olduğu için boy, çırpma hızı ve çayıra giriş
+   * noktası yuvadan DEĞİL tohumdan türetiliyor; aynı kelebek yenilemeden
+   * sonra da aynı görünmek zorunda (bkz. CLAUDE.md).
+   *
+   * Opsiyonel, çünkü sahne eksikse kimlikten türetiyor (`visitors.js` →
+   * `hashSeed`) — o yol hâlâ geçerli bir yedek.
+   */
+  seed?: number;
 };
 
 export type Profile = {
@@ -166,7 +177,18 @@ export function daysLeft(b: Butterfly, now = new Date()): number {
  * (`src/world/visitors.js`) — kural değişince çayır kendiliğinden uyuyor.
  */
 export function expiresAt(b: Butterfly): Date {
-  return new Date(b.releasedAt.getTime() + LIFESPAN_DAYS * 86_400_000);
+  return expiresFrom(b.releasedAt);
+}
+
+/**
+ * Salma anından bitiş anı.
+ *
+ * `expiresAt` bir kelebek ister, sunucu ise kelebeği daha yeni kuruyor ve
+ * elinde yalnızca an var. İkisi de burayı çağırıyor — `LIFESPAN_DAYS`i okuyan
+ * TEK yer, ki kural değiştiğinde bir taraf eski süreyle kalmasın.
+ */
+export function expiresFrom(releasedAt: Date): Date {
+  return new Date(releasedAt.getTime() + LIFESPAN_DAYS * 86_400_000);
 }
 
 export function formatReleased(d: Date): string {

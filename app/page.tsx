@@ -1,4 +1,5 @@
 import { Garden } from '@/components/Garden';
+import { guestReleaseUsed } from '@/app/actions/release';
 import { readReleaseTotal } from '@/lib/server/counter';
 import { readSession } from '@/lib/server/session';
 import type { Session } from '@/lib/types';
@@ -15,7 +16,11 @@ import type { Session } from '@/lib/types';
  * gerek yok.
  */
 export default async function Home() {
-  const [session, total] = await Promise.all([readSession(), readReleaseTotal()]);
+  const [session, total, guestUsed] = await Promise.all([
+    readSession(),
+    readReleaseTotal(),
+    guestReleaseUsed(),
+  ]);
 
   /*
    * ⚠ `accountId` İSTEMCİYE GEÇMİYOR.
@@ -38,5 +43,11 @@ export default async function Home() {
    * Burada durduğu sürece her sekme kendi 27'sinden başlıyordu ve sayaç küresel
    * bir toplam olmaktan çıkıyordu.
    */
-  return <Garden initialTotal={total} initialSession={initialSession} />;
+  return (
+    <Garden
+      initialTotal={total}
+      initialSession={initialSession}
+      initialGuestUsed={guestUsed}
+    />
+  );
 }

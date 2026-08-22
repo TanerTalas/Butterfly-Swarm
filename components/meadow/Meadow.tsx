@@ -9,6 +9,15 @@ export type MeadowVisitor = {
   foreHex: string;
   hindHex: string;
   /**
+   * Görünüş çekilişlerinin tohumu — SUNUCUDAN geliyor.
+   *
+   * ⚠ Yuvalar geri dönüşümlü: dokunulmazsa kelebek hangi yuvaya düştüyse onun
+   * boyunu ve giriş kenarını alır, yani yenilemeden sonra başka türlü görünür.
+   * Eksikse sahne kimlikten türetiyor (`visitors.js` → `hashSeed`) — geçerli
+   * bir yedek, ama sunucunun verdiği değer tercih ediliyor.
+   */
+  seed?: number;
+  /**
    * Ömrün iki ucu — kelebeğin çayırda ne kadar solmuş görüneceği bu
    * aralıktan türüyor. İkisi birden verilmezse kelebek hiç solmuyor.
    *
