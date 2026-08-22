@@ -3,10 +3,10 @@ import * as THREE from 'three';
 /*
  * Mouse'u 3B'ye taşıma.
  *
- * ROADMAP 4.1'de iki seçenek vardı; seçilen B: hedef, mouse ışını üzerinde
- * kameradan `focusDistance` kadar uzakta bir nokta. Sabit bir düzleme
- * (seçenek A) ışın atmaktan daha 3B hissi veriyor ve uçuş hacmi de zaten
- * kamera göreli olduğu için ikisi doğal biçimde örtüşüyor.
+ * Hedef, mouse ışını üzerinde kameradan `focusDistance` kadar uzakta bir
+ * nokta. Sabit bir düzleme ışın atmak da denendi; bu daha 3B hissi veriyor ve
+ * uçuş hacmi de zaten kamera göreli olduğu için ikisi doğal biçimde
+ * örtüşüyor.
  *
  * Hedef ayrıca yumuşatılıyor: mouse ani sıçradığında sürü zıplamasın.
  */

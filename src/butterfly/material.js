@@ -1,9 +1,16 @@
 import * as THREE from 'three';
 
 /*
- * Aşama 1'de materyaller düz PBR. Aşama 5'te kanat materyaline
- * `onBeforeCompile` ile vertex shader inject edilecek (kanat çırpma +
- * per-instance hue). O yüzden materyaller tek yerden üretiliyor.
+ * Materyaller TEK YERDEN üretiliyor.
+ *
+ * Sebebi enjeksiyon: sürü, buradan aldığı kanat materyaline `onBeforeCompile`
+ * ile shader ekliyor (çırpma + instance başına renk + solma). Materyal
+ * dağınık üretilseydi hangi kopyanın enjekte edildiğini izlemek imkânsız
+ * olurdu — ve o enjeksiyon materyal ömrü boyunca YALNIZCA BİR KEZ yapılabilir
+ * (bkz. `swarm/wingShader.js`).
+ *
+ * Laboratuvar kendi kopyalarını alıyor ve onlara hiçbir şey enjekte
+ * edilmiyor; iki yol bu yüzden birbirine karışmıyor.
  */
 
 export function createWingMaterial(map = null) {

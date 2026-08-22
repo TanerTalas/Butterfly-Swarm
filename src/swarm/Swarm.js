@@ -2,6 +2,7 @@
 import { buildSwarmGeometry } from './geometry.js';
 import { HINGES } from '../butterfly/geometry.js';
 import { injectFlapShader, syncFlapUniforms } from './wingShader.js';
+import { fadeScale, injectFadeShader } from './fadeShader.js';
 import { createWingMaterial, createBodyMaterial } from '../butterfly/material.js';
 import {
   wanderForce,
@@ -89,6 +90,17 @@ export class Swarm {
     // Menteşeler sabit olduğu için yeniden enjeksiyona zaten gerek yok.
     this.flapUniforms = injectFlapShader(this.wingMaterial, HINGES);
 
+    /*
+     * Solma İKİ materyali birden ilgilendiriyor: kanatlar dağılırken gövde
+     * yerinde kalırsa ekranda uçan bir leke kalıyor.
+     *
+     * Kanadınki `injectFlapShader`ın İÇİNDE, çünkü o materyalin tek bir
+     * `onBeforeCompile`'ı olabilir (yukarıdaki not). Gövde materyalinin
+     * başka enjeksiyonu yok, o yüzden kendi çağrısını alıyor — ve bu da
+     * materyal ömrü boyunca yalnızca burada, bir kez.
+     */
+    injectFadeShader(this.bodyMaterial);
+
     this._allocate();
     this.build();
   }
@@ -110,6 +122,16 @@ export class Swarm {
     // kabuk yerine bulut oluşturmasını sağlayan şey bu
     this.radiusBias = new Float32Array(n);
 
+    /*
+     * KALAN ÖMÜR oranı: 1 = yeni salınmış, 0 = yedi günü dolmuş
+     * (bkz. fadeShader.js).
+     *
+     * Hepsi 1'de başlıyor ve yerleşik kelebekler orada kalıyor — onların
+     * ömrü yok, hiç solmuyorlar. Yalnızca ziyaretçilerinki yazılıyor
+     * (`visitors.js`).
+     */
+    this.fade = new Float32Array(n).fill(1);
+
     // Ham rastgele çekilişler AYRI tutuluyor.
     //
     // `scale[i]` gibi türetilmiş değerler parametre değişince yeniden
@@ -128,6 +150,17 @@ export class Swarm {
      * yerleşik ve misafir kelebekler her zaman tek renk geziyor.
      */
     this.hueShift = new Float32Array(n * 2);
+
+    /*
+     * Doygunluk ve parlaklık ÇARPANLARI, yine kanat başına.
+     *
+     * 1 = deseni olduğu gibi bırak; hepsi böyle başlıyor. Yalnızca gerçek
+     * bir hex renk seçildiğinde 1'den ayrılıyorlar — beyaz kanat için
+     * doygunluk 0'a, siyah için parlaklık 0'a gidiyor. Ton tek başına bu
+     * iki rengi üretemiyor (bkz. wingShader.js).
+     */
+    this.wingSat = new Float32Array(n * 2).fill(1);
+    this.wingVal = new Float32Array(n * 2).fill(1);
 
     for (let i = 0; i < n; i++) this._seed(i);
     this.applyVariation();
@@ -156,6 +189,41 @@ export class Swarm {
     this._sizeRand[i] = Math.random() - 0.5;
     this._speedRand[i] = Math.random() - 0.5;
     this._hueRand[i] = Math.random(); // [0,1) — tam renk çarkı için
+  }
+
+  /**
+   * Bir kelebeğin çekilişlerini DIŞARIDAN verilen bir üreteçten yeniden
+   * kurar — yani görünüşünü yuvasından koparır.
+   *
+   * Havuz yuvaları geri dönüşümlü: ayrılan kelebeğin yerine sondaki
+   * taşınıyor, boşalan yuvaya bir sonraki kelebek düşüyor. Çekilişler
+   * yalnızca kurulumda yapıldığı sürece kelebek hangi yuvaya denk geldiyse
+   * onun boyunu ve çırpma hızını alıyor; aynı kelebek yeniden salındığında
+   * (yenileme, yeniden bağlanma) başka bir kelebek gibi görünüyor.
+   *
+   * `rand` kelebeğin kendi tohumundan geliyor (bkz. `visitors.js`), yani
+   * aynı kelebek her seferinde aynı boyda ve aynı hızda çırpıyor.
+   *
+   * Renk çekilişi (`_hueRand`) BİLEREK dışarıda: ziyaretçinin rengi
+   * çekilmiyor, seçiliyor ve `setWingTint` ile ayrıca yazılıyor.
+   */
+  reseedInstance(i, rand) {
+    this.phase[i] = rand();
+    this.noiseOffset[i] = rand() * 1000;
+    this.radiusBias[i] = Math.cbrt(rand());
+    this._sizeRand[i] = rand() - 0.5;
+    this._speedRand[i] = rand() - 0.5;
+
+    // `applyVariation()` ile aynı türetme, yalnızca tek kelebek için
+    const p = this.params;
+    this.scale[i] = p.scale * (1 + this._sizeRand[i] * p.sizeVariation);
+    this.flapSpeed[i] = p.flapSpeed * (1 + this._speedRand[i] * 0.35);
+
+    const geometry = this.wingMesh?.geometry;
+    for (const name of ['aPhase', 'aFlapSpeed']) {
+      const attr = geometry?.getAttribute(name);
+      if (attr) attr.needsUpdate = true;
+    }
   }
 
   /**
@@ -201,6 +269,29 @@ export class Swarm {
     built.wings.setAttribute(
       'aHue',
       new THREE.InstancedBufferAttribute(this.hueShift, 2),
+    );
+    built.wings.setAttribute(
+      'aSat',
+      new THREE.InstancedBufferAttribute(this.wingSat, 2),
+    );
+    built.wings.setAttribute(
+      'aVal',
+      new THREE.InstancedBufferAttribute(this.wingVal, 2),
+    );
+
+    /*
+     * Ömür İKİ geometriye birden takılıyor: gövde ve kanat ayrı materyaller,
+     * ayrı programlar, ama aynı diziyi okuyorlar. İki `InstancedBufferAttribute`,
+     * tek `Float32Array` — değer bir kez yazılıyor, `needsUpdate` iki kez
+     * işaretleniyor (`fadeNeedsUpdate`).
+     */
+    built.body.setAttribute(
+      'aFade',
+      new THREE.InstancedBufferAttribute(this.fade, 1),
+    );
+    built.wings.setAttribute(
+      'aFade',
+      new THREE.InstancedBufferAttribute(this.fade, 1),
     );
 
     this.bodyMesh = new THREE.InstancedMesh(
@@ -260,9 +351,103 @@ export class Swarm {
     this._hueNeedsUpdate();
   }
 
+  /**
+   * Bir kelebeğin kanat rengini TAM olarak ayarlar: ton + doygunluk +
+   * parlaklık. `wingTintFromColor()` bir hex'i bu üçlüye çeviriyor.
+   *
+   * `setWingHues` yalnızca tonu değiştirip doygunluk/parlaklığı olduğu gibi
+   * bırakıyor; gerçek bir renk uygulamak için BU kullanılmalı, yoksa beyaz
+   * ve siyah gibi doygunluğu olmayan renkler kırmızıya düşüyor.
+   */
+  setWingTint(i, fore, hind = fore) {
+    this.hueShift[i * 2] = fore.hue;
+    this.hueShift[i * 2 + 1] = hind.hue;
+    this.wingSat[i * 2] = fore.sat;
+    this.wingSat[i * 2 + 1] = hind.sat;
+    this.wingVal[i * 2] = fore.val;
+    this.wingVal[i * 2 + 1] = hind.val;
+    this._hueNeedsUpdate();
+  }
+
+  /**
+   * Bir kelebeğin kalan ömrünü ayarlar — 1 yeni salınmış, 0 yedi günü dolmuş.
+   *
+   * Görünüşü iki yerden değiştiriyor: boy `update()` içinde instance
+   * matrisine giriyor, çözülme shader'da (bkz. fadeShader.js).
+   *
+   * ⚠ Kelebeği KALDIRMIYOR. 0'a inen kelebek görünmez oluyor ama hâlâ uçuyor
+   * ve hâlâ bir yuva tutuyor; listeden düşürme kararı listenin sahibinde.
+   */
+  setFade(i, life) {
+    this.fade[i] = life < 0 ? 0 : life > 1 ? 1 : life;
+  }
+
+  /** `setFade` toplu yazıldıktan sonra bir kez — kare başına bir kez yeter. */
+  fadeNeedsUpdate() {
+    for (const mesh of [this.bodyMesh, this.wingMesh]) {
+      const attr = mesh?.geometry.getAttribute('aFade');
+      if (attr) attr.needsUpdate = true;
+    }
+  }
+
   _hueNeedsUpdate() {
-    const attr = this.wingMesh?.geometry.getAttribute('aHue');
-    if (attr) attr.needsUpdate = true;
+    const geometry = this.wingMesh?.geometry;
+    if (!geometry) return;
+    for (const name of ['aHue', 'aSat', 'aVal']) {
+      const attr = geometry.getAttribute(name);
+      if (attr) attr.needsUpdate = true;
+    }
+  }
+
+  /**
+   * Bir kelebeğin BÜTÜN durumunu başka bir yuvaya taşır.
+   *
+   * `update()` yalnızca `[0, count)` aralığını işliyor, yani canlı
+   * kelebekler dizinin başında bitişik durmak zorunda. Aradan biri
+   * ayrıldığında (ömrü doldu, hesap silindi) boşluk bırakılamaz: sondaki
+   * kelebek boşalan yuvaya taşınıp sayı bir azaltılıyor.
+   *
+   * Taşınan şey görünüşü değil DURUMU: konum, hız, yönelim, kip
+   * karışımları, ölçü, çırpma fazı ve rengi. Yalnızca renk kopyalansaydı
+   * o kelebek bir sonraki karede bambaşka bir yere ışınlanırdı.
+   *
+   * Ham rastgele çekilişler (`_sizeRand` vb.) de geliyor; kalsalardı bir
+   * panel dokunuşunda `applyVariation()` kelebeğin boyunu değiştirirdi.
+   */
+  copyInstance(from, to) {
+    if (from === to) return;
+
+    for (const [arr, stride] of [
+      [this.position, 3],
+      [this.velocity, 3],
+      [this.quaternion, 4],
+      [this.hueShift, 2],
+      [this.wingSat, 2],
+      [this.wingVal, 2],
+      [this.followMix, 1],
+      [this.fleeMix, 1],
+      [this.fade, 1],
+      [this.scale, 1],
+      [this.phase, 1],
+      [this.flapSpeed, 1],
+      [this.noiseOffset, 1],
+      [this.radiusBias, 1],
+      [this._sizeRand, 1],
+      [this._speedRand, 1],
+      [this._hueRand, 1],
+    ]) {
+      for (let k = 0; k < stride; k++) {
+        arr[to * stride + k] = arr[from * stride + k];
+      }
+    }
+
+    this._hueNeedsUpdate();
+    this.fadeNeedsUpdate();
+    const geometry = this.wingMesh?.geometry;
+    for (const name of ['aPhase', 'aFlapSpeed']) {
+      const attr = geometry?.getAttribute(name);
+      if (attr) attr.needsUpdate = true;
+    }
   }
 
   setCount(n) {
@@ -386,7 +571,8 @@ export class Swarm {
         ) * fl.bob;
       _tmp.copy(_pos);
       _tmp.y += bob;
-      _scale.setScalar(this.scale[i]);
+      // Solma boyu da küçültüyor; yerleşiklerde çarpan 1, hiç dokunmuyor
+      _scale.setScalar(this.scale[i] * fadeScale(this.fade[i]));
       _matrix.compose(_tmp, _q, _scale);
 
       this.bodyMesh.setMatrixAt(i, _matrix);

@@ -1,0 +1,249 @@
+/*
+ * Form alanları.
+ *
+ * Tasarımda her alan aynı: monospace küçük etiket, 48px kutu, 12px köşe,
+ * çok açık krem dolgu. İsim alanlarında değer Newsreader 20px ile yazılıyor
+ * (kelebek ismi editöryel bir şey, form verisi gibi görünmemeli).
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Etiket ile sağ üstteki sayaç aynı satırda, taban çizgisinde hizalı. */
+.field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/*
+ * Alan başlığındaki tıklanabilir ipucu — bugün tek kullanıcısı giriş
+ * kartındaki "forgot?".
+ *
+ * `hint` yuvası zaten `.stamp` içinde çiziliyor, ama buton tarayıcı
+ * sıfırlaması yüzünden o yazıyı devralmıyor. Ölçüler `.stamp`ten, renk ve
+ * hover `.link-cancel` kalıbından — yeni bir dil değil, var olan ikisinin
+ * birleşimi.
+ */
+.link-stamp {
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--color-accent);
+  transition: opacity 200ms ease;
+}
+.link-stamp:hover {
+  opacity: 0.7;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-label);
+}
+
+.field-input {
+  height: 48px;
+  width: 100%;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--line-field);
+  background: var(--color-input);
+  padding-inline: 16px;
+  font-size: 15px;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+.field-input::placeholder {
+  color: var(--color-placeholder);
+}
+.field-input:focus {
+  border-color: var(--line-focus);
+}
+.field-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* İsim gibi editöryel değerler. */
+.field-input--display {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+/* Şifre alanı: gösterme düğmesi kutunun İÇİNDE, genişlik değişmiyor. */
+.field-input--password {
+  padding-right: 48px;
+}
+
+.password-wrap {
+  position: relative;
+  display: block;
+}
+
+/*
+ * Gösterme düğmesi kutunun içinde sağda.
+ *
+ * Erişilebilirlik ayrıntıları bileşende: `type="button"`, duruma göre
+ * `aria-label`, `tabIndex` YOK (klavyeyle ulaşılabilmeli).
+ */
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  width: 36px;
+  border-radius: 999px;
+  color: var(--color-muted);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+.password-toggle:hover {
+  background: var(--color-panel);
+  color: var(--color-ink);
+}
+
+/* Çok satırlı mesaj alanı — iletişim formu. */
+.field-textarea {
+  height: 96px;
+  width: 100%;
+  resize: none;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--line-field);
+  background: var(--color-input);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+.field-textarea::placeholder {
+  color: var(--color-placeholder);
+}
+.field-textarea:focus {
+  border-color: var(--line-focus);
+}
+
+/* Ekranda ve okuyucularda görünmeyen bal küpü alanı. */
+.honeypot {
+  display: none;
+}
+
+/*
+ * Bölümlü denetim — giriş / kayıt sekmeleri.
+ * Etkin sekme krem bir kart gibi yükseliyor, diğeri pistin üstünde düz.
+ */
+.segmented {
+  display: flex;
+  height: 46px;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--color-track);
+  padding: 4px;
+}
+
+.segmented-option {
+  flex: 1;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: all 200ms ease;
+}
+.segmented-option:hover {
+  color: var(--color-body);
+}
+.segmented-option[aria-selected='true'],
+.segmented-option[aria-selected='true']:hover {
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 2px 6px rgba(74, 59, 56, 0.12);
+}
+
+/* Kart içindeki formun kendi ritmi — kartın `gap`ini tekrarlıyor. */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*
+ * Seçim halkası — renk örnekleri ve avatarlar.
+ * İki katman: içte kart kremi, dışta koyu. Böylece halka rengin üstünde
+ * değil, etrafında bir boşlukla duruyor.
+ */
+.ring-choice {
+  transition: box-shadow 200ms ease;
+}
+.ring-choice:hover {
+  box-shadow:
+    0 0 0 2px var(--color-card),
+    0 0 0 4px rgba(74, 59, 56, 0.32);
+}
+.ring-choice[data-selected='true'],
+.ring-choice[data-selected='true']:hover {
+  box-shadow:
+    0 0 0 2px var(--color-card),
+    0 0 0 4px var(--color-body);
+}
+
+.swatch {
+  border-radius: 999px;
+}
+
+/* Renk çarkı — ortasındaki krem nokta onu bir renk örneğinden ayırıyor. */
+.colour-wheel {
+  position: relative;
+  border-radius: 999px;
+}
+
+.colour-wheel-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: var(--color-card);
+}
+
+/*
+ * Hatalı alan.
+ *
+ * Yalnızca ÇERÇEVE dönüyor, dolgu değil: dolgu da kırmızıya kaysaydı iki
+ * hatalı alan yan yana geldiğinde kart bir uyarı panosuna dönüşüyordu — oysa
+ * söylenen şey tek bir cümlelik bir hata.
+ *
+ * ⚠ Girişte bu çerçeve İKİ ALANA birden düşüyor. Hangi alanın yanlış olduğu
+ * söylenmiyor (kullanıcı sayımına izin verirdi), dolayısıyla renk de
+ * söylememeli (bkz. SignInCard).
+ */
+.field-input--invalid,
+.field-input--invalid:hover {
+  border-color: var(--line-danger);
+}
+
+/*
+ * Odak halkası da uyarı rengine dönüyor. Dönmeseydi kullanıcı hatalı alana
+ * girdiği anda çerçeve normale dönüyor ve hata "düzelmiş" gibi görünüyordu.
+ */
+.field-input--invalid:focus,
+.field-input--invalid:focus-visible {
+  border-color: var(--line-danger-strong);
+  outline-color: var(--line-danger-strong);
+}

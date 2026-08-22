@@ -88,7 +88,7 @@ export function createSky(renderer, scene) {
  * yönlü ışık asıl olarak GÖLGE için var. Bu yüzden şiddeti tek başına
  * bakıldığında düşük görünüyor — environment'ın üstüne biniyor.
  */
-export function createLights(scene, skyCtl) {
+export function createLights(scene, skyCtl, shadowMapSize = 1024) {
   const sun = new THREE.DirectionalLight(0xfff0dc, 2.6);
   sun.castShadow = true;
 
@@ -104,7 +104,12 @@ export function createLights(scene, skyCtl) {
   sun.shadow.camera.bottom = -r;
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = r * 4;
-  sun.shadow.mapSize.set(2048, 2048);
+  /*
+   * Gölge haritası 2048'den 1024'e indi. Gölgeler alçak güneşte zaten uzun
+   * ve yumuşak; çözünürlüğün yarıya inmesi gözle seçilmiyor ama gölge
+   * geçişinin maliyeti dörtte bire düşüyor.
+   */
+  sun.shadow.mapSize.set(shadowMapSize, shadowMapSize);
   // Alçak güneş = çok yatık gölge ışınları = shadow acne. Normal bias yüzeyin
   // normali boyunca kaydırıyor, sabit bias'a göre bu açıda çok daha temiz.
   sun.shadow.normalBias = 0.04;

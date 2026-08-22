@@ -1,0 +1,31 @@
+/*
+ * Tek giriş noktası. Burada KURAL YOK, yalnızca sıra var.
+ *
+ * Stiller `app/styles/` altında role göre bölündü; bir bileşene bakarken
+ * hangi dosyaya gideceğin adından belli olsun diye. Sıra kasıtlı ve
+ * kaskad buna dayanıyor:
+ *
+ *   tokens → base → motion → typography → buttons → forms → card
+ *          → shell → screens → legal
+ *
+ * `screens.css` en sonda, çünkü tek bir ekranın ortak bir bileşeni ince
+ * ayarlaması gerekebiliyor (örn. hesap kartının satır aralığı). Sıra
+ * bozulursa o ayarlar sessizce etkisiz kalır.
+ *
+ * ⚠ Tailwind burada yalnızca preflight (tarayıcı sıfırlaması) ve tema
+ * değişkenleri için duruyor. Bileşenlerde yardımcı sınıf yığmıyoruz:
+ * üçten fazla sınıf gerekiyorsa o kural bir CSS dosyasına, anlamlı bir
+ * isimle yazılıyor.
+ */
+@import 'tailwindcss';
+
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/motion.css';
+@import './styles/typography.css';
+@import './styles/buttons.css';
+@import './styles/forms.css';
+@import './styles/card.css';
+@import './styles/shell.css';
+@import './styles/screens.css';
+@import './styles/legal.css';

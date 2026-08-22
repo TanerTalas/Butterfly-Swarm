@@ -1,0 +1,246 @@
+/*
+ * Butonlar — tasarımın en çok tekrar eden parçası.
+ *
+ * Hover'daki "kanatlar" bu tasarımın imzası. Bir transform değil: hiçbir şey
+ * yer değiştirmiyor, yalnızca iki kaydırılmış ve küçültülmüş gölge açılıyor.
+ *
+ * Süreler tasarımdan: renk 240ms, kanatlar 320ms — kanatlar bilerek daha
+ * yavaş, açılma hissi versin diye.
+ *
+ * ⚠ Kanatlar butonun 22px DIŞINA taşıyor. Bir kapsayıcıya `overflow`
+ * verilirse kesiliyorlar; kabuğun kaydırma kabı bu yüzden kenar boşluğu
+ * bırakıyor (bkz. shell.css).
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Ölçüler ── */
+.button--lg {
+  height: 52px; /* ana eylemler: "Release a butterfly", "Let it go" */
+  padding-inline: 28px;
+}
+.button--md {
+  height: 50px; /* kart içi birincil */
+  padding-inline: 24px;
+}
+.button--sm {
+  height: 44px; /* satır içi, tehlikeli eylemler */
+  padding-inline: 20px;
+}
+
+.button--block {
+  width: 100%;
+}
+
+/*
+ * Birincil buton.
+ *
+ * Durağan hâlde GÖLGE YOK: altındaki düşen gölge kaldırıldı, çünkü canlı
+ * çayırın üstünde butonu yüzdürmüyor kirletiyordu (kartlarda da aynı karar).
+ */
+.button--primary {
+  background: var(--color-accent);
+  color: var(--color-card);
+  transition:
+    background 240ms ease,
+    box-shadow 320ms ease;
+}
+.button--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  box-shadow:
+    -22px 0 0 -8px var(--wing-shadow),
+    22px 0 0 -8px var(--wing-shadow);
+}
+/* Küçük butonlarda kanatlar ±18px (tasarım notu) */
+.button--primary.button--sm:hover:not(:disabled) {
+  box-shadow:
+    -18px 0 0 -8px var(--wing-shadow),
+    18px 0 0 -8px var(--wing-shadow);
+}
+.button--primary:disabled {
+  background: var(--color-disabled);
+  color: var(--color-disabled-ink);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.button--secondary {
+  background: rgba(253, 246, 242, 0.72);
+  border: 1px solid var(--wash);
+  color: var(--color-ink);
+  transition:
+    background 240ms ease,
+    border-color 240ms ease;
+}
+.button--secondary:hover:not(:disabled) {
+  background: rgba(253, 246, 242, 0.96);
+  border-color: var(--wash-strong);
+}
+
+/*
+ * Bir sıradaki iki buton: birincisi kalan yeri alıyor, ikincisi kendi
+ * genişliğinde kalıyor. ("Let it go" + "Preview")
+ *
+ * ⚠ `flex: 1` DEĞİL — `flex: 1 1 auto`.
+ *
+ * `flex: 1` kısaltması `flex-basis: 0` demek ve temel ölçü ANA EKSENDE
+ * okunuyor. `.action-row` mobilde sütuna döndüğü için ana eksen dikey
+ * oluyor: `flex-basis: 0` butonun `height: 52px`ini eziyor, otomatik en
+ * küçük ölçü de metnin satır yüksekliğine düşüyor. Sonuç 22.5px'lik yassı
+ * bir şerit — dolgusu silinmiş gibi görünüyor.
+ *
+ * `auto` temel ölçüyü `width`/`height`tan okuyor: satırda yine kalan yeri
+ * alıyor (tek büyüyen öğe), sütunda 52px kalıyor.
+ */
+.button--grow {
+  flex: 1 1 auto;
+}
+
+/* Kendi satırının başına yaslanan buton (iletişim formu). */
+.button--start {
+  align-self: flex-start;
+}
+
+/*
+ * Yan yana duran ana eylemler. Mobilde alt alta ve tam genişlikte,
+ * 640px üstünde tek satırda.
+ */
+.action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 40rem) {
+  .action-row {
+    flex-direction: row;
+    gap: 16px;
+  }
+}
+
+/* Buton + altındaki açıklama notu. */
+.action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/*
+ * Yuvarlak ikon düğmesi — sayfa okları, satır içi denetimler.
+ */
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  width: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--color-ink);
+  transition: background-color 200ms ease;
+}
+.icon-button:hover:not(:disabled) {
+  background: var(--color-panel);
+}
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.icon-button-flip {
+  display: inline-flex;
+  rotate: 180deg;
+}
+
+/*
+ * Tehlikeli eylem — hesap silme. Dolgu yok, yalnızca kırmızı bir kenar;
+ * yanlışlıkla tıklanacak kadar davetkâr olmamalı.
+ */
+.button--danger {
+  border-radius: 999px;
+  border: 1px solid var(--line-danger);
+  color: var(--color-danger);
+  font-size: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+.button--danger:hover:not(:disabled) {
+  border-color: var(--line-danger-strong);
+  background: var(--wash-danger);
+}
+.button--danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button--danger-lg {
+  height: 48px;
+  padding-inline: 20px;
+}
+.button--danger-sm {
+  height: 44px;
+  padding-inline: 22px;
+}
+
+/*
+ * Google ile devam — marka işareti SOLDA, dört renkli hâliyle.
+ * Marka işaretleri yeniden renklendirilmiyor (handoff notu).
+ */
+.button--oauth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 50px;
+  border-radius: 999px;
+  border: 1px solid rgba(44, 34, 32, 0.18);
+  background: var(--color-input);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink);
+  transition: border-color 240ms ease;
+}
+.button--oauth:hover:not(:disabled) {
+  border-color: var(--wash-strong);
+}
+/*
+ * Google ile giriş henüz bağlı değil (bkz. SignInCard).
+ *
+ * Engelli dil BİRİNCİL BUTONUNKİ: soluk dolgu + soluk metin. Yeni bir kalıp
+ * icat edilmiyor. `opacity` kullanılmadı bilerek — Google'ın dört renkli
+ * işaretini de soluklaştırırdı ve marka işaretleri değiştirilmiyor.
+ */
+.button--oauth:disabled {
+  background: var(--color-disabled);
+  color: var(--color-disabled-ink);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Kartın en üstündeki geri dönüş bağlantısı. */
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-accent);
+  transition: opacity 200ms ease;
+}
+.back-link:hover {
+  opacity: 0.7;
+}

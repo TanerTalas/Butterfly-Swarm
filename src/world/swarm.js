@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Swarm, SWARM_DEFAULTS } from '../swarm/Swarm.js';
-import { WING_DEFAULTS } from '../butterfly/geometry.js';
+import { WING_COLORS, WING_DEFAULTS } from '../butterfly/geometry.js';
 import { DETAIL_DEFAULTS } from '../butterfly/wingDetail.js';
 import { FLAP_DEFAULTS } from '../butterfly/flap.js';
 import { FLIGHT_DEFAULTS } from '../flight/steering.js';
@@ -116,40 +116,81 @@ export function createWorldSwarm({ reducedMotion = false } = {}) {
 }
 
 /*
- * Desenin kendi taban rengi (`WING_COLORS.mid`, turuncu 0xe8781c) — ton
- * çarkında ~0.075'te duruyor.
+ * Desenin taban rengi — `WING_COLORS.mid` (turuncu 0xe8781c).
  *
- * Shader'a giden değer mutlak renk değil KAYDIRMA olduğu için hedef rengin
- * tonundan bunun çıkarılması gerekiyor. Sabit olarak yazılı çünkü desenin
- * taban rengi bir tasarım kararı; değişirse burası da değişmeli.
+ * Shader'a giden değerler MUTLAK renk değil, desenin üstüne uygulanan
+ * dönüşümler: ton için kaydırma, doygunluk ve parlaklık için çarpan. Bu
+ * yüzden hedef rengi tabanla kıyaslamak gerekiyor.
+ *
+ * Elle yazılmıyor, desenden TÜRETİLİYOR: taban renk bir tasarım kararı ve
+ * `wingDetail.js` içinden değiştirilebiliyor. Sabit yazılsaydı desen
+ * değiştiği an sessizce yanlış renk üretmeye başlardı.
  */
-const PATTERN_BASE_HUE = 0.0752;
-
-const _color = new THREE.Color();
+const PATTERN_BASE = rgbToHsv(WING_COLORS.mid);
 
 /**
- * Hex renkten ton kaydırmasına çevirir.
+ * Hex renkten kanat tintine çevirir: `{ hue, sat, val }`.
  *
- * Kayıp bir dönüşüm ve olması gereken de bu: kullanıcı düz bir boya değil
- * RENK AİLESİ seçiyor. Desenin kendi gradyanı (koyu kök → açık uç), koyu
- * kenar bandı ve damarları korunuyor; yalnızca renk çarkında dönüyorlar.
+ * Hâlâ kayıplı bir dönüşüm ve olması gereken de bu: kullanıcı düz bir boya
+ * değil RENK AİLESİ seçiyor. Desenin kendi gradyanı (koyu kök → açık uç),
+ * koyu kenar bandı ve damarları korunuyor.
  *
- * Doygunluk ve parlaklık yok sayılıyor — bu yüzden palet doygun renklerden
- * kuruldu (bkz. config.js).
+ * ⚠ Eskiden yalnızca TON taşınıyordu ve doygunluk/parlaklık atılıyordu.
+ * Bunun iki sonucu vardı:
+ *
+ *   - Beyaz (#FFFFFF) ve siyah (#000000) KIRMIZI çıkıyordu. Doygunluğu
+ *     sıfır bir rengin tonu tanımsızdır ve 0 döner; 0 da kırmızıdır.
+ *     Kullanıcının seçtiği şeyle hiç ilgisi olmayan bir renk.
+ *   - Pastel ve koyu tonların hepsi aynı doygun renge düşüyordu, yani
+ *     seçici "çalışmıyor" gibi görünüyordu.
+ *
+ * Doygunluk ve parlaklık artık ÇARPAN olarak taşınıyor: hedefin değeri
+ * tabana bölünüyor. Beyazda doygunluk çarpanı 0'a, siyahta parlaklık
+ * çarpanı 0'a gidiyor ve desen buna göre soluyor ya da kararıyor.
  */
-export function hueShiftFromColor(hex) {
-  const hsl = { h: 0, s: 0, l: 0 };
+export function wingTintFromColor(hex) {
   /*
-   * HSL'i sRGB uzayında istiyoruz.
+   * HSV doğrudan sRGB baytlarından hesaplanıyor, three'nin renk nesnesinden
+   * geçirilmeden.
    *
-   * `getHSL()` varsayılan olarak three'nin ÇALIŞMA uzayında (linear-sRGB)
-   * hesaplıyor. Shader'daki ton döndürmesi ise doku örneklendikten sonra,
-   * yani sRGB algısına yakın değerlerle çalışıyor. İkisi karışınca seçilen
-   * renkle ekrandaki renk tutmuyor — palet turkuaz diyor, kelebek yeşil
-   * çıkıyor.
+   * Bu şart: `THREE.Color` değeri ÇALIŞMA uzayında (linear-sRGB) tutuyor ve
+   * oradan alınan doygunluk/ton, shader'ın gördüğü değerlerle uyuşmuyor —
+   * shader dönüşümü doku örneklendikten SONRA, sRGB'ye yakın değerlerle
+   * yapıyor. Karıştırıldığında palet turkuaz diyor, kelebek yeşil çıkıyor.
    */
-  _color.setHex(hex, THREE.SRGBColorSpace).getHSL(hsl, THREE.SRGBColorSpace);
-  return hsl.h - PATTERN_BASE_HUE;
+  const hsv = rgbToHsv(hex);
+
+  return {
+    hue: hsv.h - PATTERN_BASE.h,
+    sat: hsv.s / PATTERN_BASE.s,
+    val: hsv.v / PATTERN_BASE.v,
+  };
+}
+
+/**
+ * 0xRRGGBB → `{ h, s, v }`, üçü de 0–1.
+ *
+ * Shader'daki `bfRgb2Hsv` ile aynı uzayda çalışıyor. three'nin `getHSL`'i
+ * kullanılmıyor çünkü o HSL veriyor; shader HSV ile çalışıyor ve ikisinin
+ * doygunluk tanımı farklı (HSL'de açık renklerin doygunluğu yüksek kalır).
+ */
+function rgbToHsv(hex) {
+  const r = ((hex >> 16) & 255) / 255;
+  const g = ((hex >> 8) & 255) / 255;
+  const b = (hex & 255) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+
+  let h = 0;
+  if (d > 0) {
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+
+  return { h, s: max === 0 ? 0 : d / max, v: max };
 }
 
 /**
@@ -163,11 +204,11 @@ export function hueShiftFromColor(hex) {
  */
 export function applyPalette(swarm, seed = 0x9a17c) {
   const rand = mulberry32(seed);
-  const shifts = WORLD.palette.map((c) => hueShiftFromColor(c.hex));
+  const tints = WORLD.palette.map((c) => wingTintFromColor(c.hex));
 
   for (let i = 0; i < swarm.capacity; i++) {
-    const shift = shifts[Math.floor(rand() * shifts.length) % shifts.length];
-    swarm.setWingHues(i, shift);
+    const tint = tints[Math.floor(rand() * tints.length) % tints.length];
+    swarm.setWingTint(i, tint);
   }
 }
 
@@ -230,10 +271,10 @@ export function enableSwarmFog(swarm) {
  * onlar tek renk (`applyPalette`).
  */
 export function setUserButterflyColors(swarm, index, foreHex, hindHex) {
-  swarm.setWingHues(
+  swarm.setWingTint(
     index,
-    hueShiftFromColor(foreHex),
-    hueShiftFromColor(hindHex),
+    wingTintFromColor(foreHex),
+    wingTintFromColor(hindHex),
   );
 }
 

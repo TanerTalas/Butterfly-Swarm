@@ -5,10 +5,8 @@ import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
  * Uçuş kuvvetleri — durumsuz fonksiyonlar.
  *
  * Her fonksiyon sonucu `out` vektörüne yazar ve onu döndürür; hiçbiri
- * yeni Vector3 ayırmaz. Aşama 5'te bunlar kare başına yüzlerce kez
- * çağrılacak, çöp üretmemeleri gerekiyor.
- *
- * Takip / kaçış kuvvetleri Aşama 4'te buraya eklenecek.
+ * yeni Vector3 ayırmaz. Sürüde bunlar kare başına YÜZLERCE kez çağrılıyor —
+ * çöp üretmemeleri gerekiyor.
  */
 
 export const FLIGHT_DEFAULTS = {

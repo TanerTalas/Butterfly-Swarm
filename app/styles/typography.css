@@ -1,0 +1,159 @@
+/*
+ * Tipografi — tasarımda tekrar eden metin rolleri.
+ *
+ * Sınıflar boyuta göre değil ROLE göre isimlendirildi: `.stamp` her yerde
+ * "bu bir zaman/kimlik damgası" demek, 11px olduğu için değil. Punto
+ * değişirse tek yerde değişiyor.
+ */
+
+/* Küçük, harf aralığı açılmış, büyük harf monospace başlık üstü. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.eyebrow--accent {
+  color: var(--color-accent);
+}
+
+/* İkincil monospace satır — durum ve açıklama. */
+.meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.meta--locked {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Damga: e-posta, salınma tarihi, hex değeri — solgun ve tek satır. */
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.stamp--truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sayaç: 3/5, "12 total", sayfa numarası. */
+.tally {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-label);
+}
+
+.tally--full {
+  color: var(--color-accent);
+}
+
+/*
+ * Damganın dolu hâli — kanat seçimindeki `5/5`.
+ *
+ * `.tally--full` ile aynı rengi kullanıyor: iki ekran da aynı şeyi
+ * söylüyor (yuvalar dolu), farklı görünmelerinin bir sebebi yok.
+ */
+.stamp--full {
+  color: var(--color-accent);
+}
+
+/* Alan altındaki notun ihlal hâli — şifre çok kısa. */
+.stamp--danger {
+  color: var(--color-danger);
+}
+
+/*
+ * Boş durum başlığı (D1, D2).
+ *
+ * `.card-title` değil: kartın kendi başlığı zaten üstte duruyor ve ikinci
+ * bir display başlık onunla yarışıyordu. Bu, kutunun içindeki tek satırlık
+ * bir cümle — gövde ölçüsünde ama mürekkep renginde, altındaki nottan
+ * ayrılsın diye.
+ */
+.empty-state-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--color-ink);
+}
+
+/*
+ * Not satırı — bir denetimin altında nedenini söyleyen açıklama.
+ * Satır aralığı 1.6, çünkü dar kartta iki satıra kırılıyor.
+ */
+.note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.14em;
+  color: var(--color-faint);
+}
+
+.note--center {
+  text-align: center;
+}
+
+/*
+ * Uyarı notu — reddedilen bir salma ya da hatalı bir giriş.
+ *
+ * Kalıp DEĞİŞMİYOR, yalnızca rengi dönüyor: aynı 11px mono satır, aynı yer
+ * (denetimin altı). Yeni bir uyarı kutusu icat etmemek bilinçli — kart
+ * zaten dar ve her hata için bir kutu açmak yerleşimi sıçratırdı.
+ *
+ * ⚠ Renk tek başına bir işaret değil. Bu satır her zaman NE OLDUĞUNU yazan
+ * bir metin taşıyor; kırmızı yalnızca onu bulmayı kolaylaştırıyor.
+ */
+.note--danger {
+  color: var(--color-danger);
+}
+
+/* İki satırlık bir notta üsttekini öne çıkarır. */
+.note--strong {
+  color: var(--color-body);
+}
+
+/*
+ * Metin bağlantısı — kart içindeki ikincil eylemler ("History", "sign out",
+ * geri dönüş). Zemini yok, yalnızca vurgu rengi ve hover'da soluklaşma.
+ */
+.text-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-accent);
+  transition: opacity 200ms ease;
+}
+.text-link:hover {
+  opacity: 0.7;
+}
+
+.text-link--center {
+  text-align: center;
+}
+
+.text-link--underline:hover {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Kart açıklaması — form değil, anlatı. */
+.body-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-body-soft);
+}

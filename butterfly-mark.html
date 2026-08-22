@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Butterfly Garden — the butterfly mark</title>
+
+<!--
+  Standalone spec sheet for the butterfly mark.
+
+  Everything is inline: no fonts, no scripts, no imports. Open the file
+  directly or hand it to a design tool.
+
+  The SVG below is byte-for-byte the same geometry the product ships
+  (components/Butterfly.tsx). If the mark changes here, it has to change
+  there too — and vice versa.
+-->
+
+<style>
+  :root {
+    /* Product design tokens, only the ones this page needs. */
+    --cream: #f7efe9;
+    --card: #fdf6f2;
+    --panel: #f4e7e0;
+    --ink: #2c2220;
+    --body-text: #4a3b38;
+    --muted: #7d6a63;
+    --faint: #8a746d;
+    --line: rgba(44, 34, 32, 0.1);
+    --line-strong: rgba(44, 34, 32, 0.2);
+    --accent: #a04f63;
+
+    /* The mark's own body colour — the one hard-coded value in the drawing. */
+    --mark-body: #43332f;
+
+    --display: Georgia, "Times New Roman", serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 48px 32px 96px;
+    background: var(--cream);
+    color: var(--body-text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; }
+
+  h1 {
+    margin: 0 0 8px;
+    font-family: var(--display);
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  h2 {
+    margin: 56px 0 4px;
+    font-family: var(--display);
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  .eyebrow {
+    margin: 0 0 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .lede { max-width: 62ch; margin: 0 0 8px; }
+  .note { max-width: 62ch; margin: 4px 0 0; font-size: 13px; color: var(--faint); }
+
+  .rule { height: 1px; margin: 32px 0 0; background: var(--line); border: 0; }
+
+  /* ── Specimen slabs ─────────────────────────────────────────────── */
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 28px;
+    margin-top: 24px;
+  }
+
+  .slab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    padding: 22px 26px;
+    background: var(--card);
+  }
+
+  .slab--panel { background: var(--panel); }
+
+  .caption {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* The avatar wrapper, copied from the product (app/styles/card.css). */
+  .avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--card);
+  }
+  .avatar--panel { background: var(--panel); }
+
+  /* ── Colour sets ────────────────────────────────────────────────── */
+
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 20px;
+  }
+
+  .swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 104px;
+  }
+
+  .chip {
+    height: 40px;
+    width: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+  }
+
+  .hex {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+  }
+
+  .name { font-size: 12px; color: var(--body-text); }
+
+  /* ── Source ─────────────────────────────────────────────────────── */
+
+  pre {
+    overflow-x: auto;
+    margin: 20px 0 0;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    padding: 20px 22px;
+    background: var(--card);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink);
+    tab-size: 2;
+  }
+
+  table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  td code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">butterfly garden</p>
+  <h1>The butterfly mark</h1>
+  <p class="lede">
+    One drawing, used everywhere in the interface. It is not the 3D butterfly
+    that flies in the meadow — that one is built from geometry and a texture
+    atlas. This is the flat mark: release preview, profile avatar, colour
+    swatches, list rows.
+  </p>
+  <p class="note">
+    Geometry is identical to the shipping component. Two wing paths are drawn
+    for the right side only; the left side is a mirror, so symmetry is exact
+    by construction rather than by hand.
+  </p>
+
+  <hr class="rule">
+
+  <!-- ══ 1. The mark ══════════════════════════════════════════════ -->
+  <h2>The mark</h2>
+  <p class="note">Forewing and hindwing are separate paths so each can take its own colour.</p>
+
+  <div class="row">
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="248" height="200" role="img" aria-label="butterfly mark, two colours">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F5FD0"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F5FD0" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        <g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none">
+          <path d="M60 23 C55 15, 48 9, 42 7"/>
+          <path d="M64 23 C69 15, 76 9, 82 7"/>
+          <circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+          <circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+        </g>
+      </svg>
+      <span class="caption">two colours · full</span>
+    </div>
+
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="248" height="200" role="img" aria-label="butterfly mark, one colour">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#7A3FC4"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#7A3FC4" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#7A3FC4"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#7A3FC4" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        <g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none">
+          <path d="M60 23 C55 15, 48 9, 42 7"/>
+          <path d="M64 23 C69 15, 76 9, 82 7"/>
+          <circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+          <circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+        </g>
+      </svg>
+      <span class="caption">one colour · full</span>
+    </div>
+
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="186" height="150" role="img" aria-label="butterfly mark, simple">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F9E4F"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F9E4F" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#2F9E4F"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#2F9E4F" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+      </svg>
+      <span class="caption">simple · no antennae</span>
+    </div>
+  </div>
+
+  <p class="note">
+    <strong>Simple</strong> drops the antennae and nothing else. Below roughly
+    40&nbsp;px the antennae collapse into two grey specks that read as dirt, so
+    every small placement uses this variant.
+  </p>
+
+  <hr class="rule">
+
+  <!-- ══ 2. Real sizes ════════════════════════════════════════════ -->
+  <h2>Where it is used</h2>
+  <p class="note">Drawn here at the exact sizes the product asks for.</p>
+
+  <div class="row">
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="124" height="100" aria-hidden="true">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F5FD0"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#2F5FD0" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        <g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none">
+          <path d="M60 23 C55 15, 48 9, 42 7"/>
+          <path d="M64 23 C69 15, 76 9, 82 7"/>
+          <circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+          <circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+        </g>
+      </svg>
+      <span class="caption">124 × 100 — release preview</span>
+    </div>
+
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="92" height="74" aria-hidden="true">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#B9A69E"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#B9A69E" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#C9B8B1"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#C9B8B1" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        <g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none">
+          <path d="M60 23 C55 15, 48 9, 42 7"/>
+          <path d="M64 23 C69 15, 76 9, 82 7"/>
+          <circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+          <circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+        </g>
+      </svg>
+      <span class="caption">92 × 74 — guest, locked</span>
+    </div>
+
+    <div class="slab slab--panel">
+      <span class="avatar avatar--panel" style="width:68px;height:68px">
+        <svg viewBox="0 0 124 100" width="42" height="34" aria-hidden="true">
+          <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#4F7FBF"/>
+          <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#4F7FBF" transform="scale(-1,1) translate(-124,0)"/>
+          <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#4F7FBF"/>
+          <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#4F7FBF" transform="scale(-1,1) translate(-124,0)"/>
+          <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        </svg>
+      </span>
+      <span class="caption">42 × 34 in a 68 circle — avatar</span>
+    </div>
+
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="33" height="27" aria-hidden="true">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#E8A01C"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#E8A01C" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#17B3A3" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+        <g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none">
+          <path d="M60 23 C55 15, 48 9, 42 7"/>
+          <path d="M64 23 C69 15, 76 9, 82 7"/>
+          <circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+          <circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/>
+        </g>
+      </svg>
+      <span class="caption">33 × 27 — list row</span>
+    </div>
+
+    <div class="slab">
+      <svg viewBox="0 0 124 100" width="24" height="19" aria-hidden="true">
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#6F8A5A"/>
+        <path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z" fill="#6F8A5A" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#6F8A5A"/>
+        <path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z" fill="#6F8A5A" transform="scale(-1,1) translate(-124,0)"/>
+        <path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85 C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z" fill="#43332F"/>
+      </svg>
+      <span class="caption">24 × 19 — colour swatch</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Placement</th><th>Size</th><th>Variant</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Release preview (wing chooser)</td><td><code>124 × 100</code></td><td>full, two colours</td></tr>
+      <tr><td>Guest release, locked panel</td><td><code>92 × 74</code></td><td>full, greyed</td></tr>
+      <tr><td>Account card avatar</td><td><code>42 × 34</code></td><td>simple, one colour</td></tr>
+      <tr><td>Setup avatar</td><td><code>38 × 31</code></td><td>simple, one colour</td></tr>
+      <tr><td>Meadow header avatar</td><td><code>28 × 23</code></td><td>simple, one colour</td></tr>
+      <tr><td>My butterflies, list row</td><td><code>33 × 27</code></td><td>full, two colours</td></tr>
+      <tr><td>Avatar colour swatch</td><td><code>28 × 23</code></td><td>simple, one colour</td></tr>
+      <tr><td>Settings colour swatch</td><td><code>24 × 19</code></td><td>simple, one colour</td></tr>
+    </tbody>
+  </table>
+
+  <hr class="rule">
+
+  <!-- ══ 3. Colours ═══════════════════════════════════════════════ -->
+  <h2>Wing colours</h2>
+  <p class="note">
+    Five fixed colours. They must stay identical to the 3D scene's palette —
+    the same five hexes are compiled into the meadow. None of them is pink:
+    the whole scene is sakura pink and a pink butterfly disappears into it.
+  </p>
+
+  <div class="swatches">
+    <div class="swatch"><span class="chip" style="background:#17B3A3"></span><span class="name">turquoise</span><span class="hex">#17B3A3</span></div>
+    <div class="swatch"><span class="chip" style="background:#2F5FD0"></span><span class="name">blue</span><span class="hex">#2F5FD0</span></div>
+    <div class="swatch"><span class="chip" style="background:#E8A01C"></span><span class="name">amber</span><span class="hex">#E8A01C</span></div>
+    <div class="swatch"><span class="chip" style="background:#7A3FC4"></span><span class="name">purple</span><span class="hex">#7A3FC4</span></div>
+    <div class="swatch"><span class="chip" style="background:#2F9E4F"></span><span class="name">green</span><span class="hex">#2F9E4F</span></div>
+  </div>
+
+  <h2>Avatar colours</h2>
+  <p class="note">Five, for the profile mark. Softer than the wing palette; these never appear in the meadow.</p>
+
+  <div class="swatches">
+    <div class="swatch"><span class="chip" style="background:#4F7FBF"></span><span class="name">blue</span><span class="hex">#4F7FBF</span></div>
+    <div class="swatch"><span class="chip" style="background:#D98AA6"></span><span class="name">pink</span><span class="hex">#D98AA6</span></div>
+    <div class="swatch"><span class="chip" style="background:#E8A01C"></span><span class="name">amber</span><span class="hex">#E8A01C</span></div>
+    <div class="swatch"><span class="chip" style="background:#7A6BC4"></span><span class="name">purple</span><span class="hex">#7A6BC4</span></div>
+    <div class="swatch"><span class="chip" style="background:#6F8A5A"></span><span class="name">green</span><span class="hex">#6F8A5A</span></div>
+  </div>
+
+  <h2>Surfaces</h2>
+  <div class="swatches">
+    <div class="swatch"><span class="chip" style="background:#F7EFE9"></span><span class="name">page</span><span class="hex">#F7EFE9</span></div>
+    <div class="swatch"><span class="chip" style="background:#FDF6F2"></span><span class="name">card</span><span class="hex">#FDF6F2</span></div>
+    <div class="swatch"><span class="chip" style="background:#F4E7E0"></span><span class="name">panel</span><span class="hex">#F4E7E0</span></div>
+    <div class="swatch"><span class="chip" style="background:#43332F"></span><span class="name">mark body</span><span class="hex">#43332F</span></div>
+    <div class="swatch"><span class="chip" style="background:#2C2220"></span><span class="name">ink</span><span class="hex">#2C2220</span></div>
+    <div class="swatch"><span class="chip" style="background:#A04F63"></span><span class="name">accent</span><span class="hex">#A04F63</span></div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ══ 4. Source ════════════════════════════════════════════════ -->
+  <h2>Source</h2>
+  <p class="note">
+    Copy this as-is. <code>FORE</code> is the forewing, <code>HIND</code> the
+    hindwing; each is drawn twice, the second time mirrored. Draw order matters:
+    hindwings first so the forewings sit on top of them, then the body, then the
+    antennae.
+  </p>
+
+<pre>&lt;svg viewBox="0 0 124 100" width="124" height="100"&gt;
+  &lt;!-- hindwings — drawn first, they sit under the forewings --&gt;
+  &lt;path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z"
+        fill="HIND"/&gt;
+  &lt;path d="M65 48 C77 48, 95 53, 100 63 C106 74, 98 87, 86 86 C73 85, 65 74, 63 60 Z"
+        fill="HIND" transform="scale(-1,1) translate(-124,0)"/&gt;
+
+  &lt;!-- forewings --&gt;
+  &lt;path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z"
+        fill="FORE"/&gt;
+  &lt;path d="M63 34 C70 19, 88 5, 103 6 C117 7, 121 21, 112 34 C104 45, 84 51, 68 46 Z"
+        fill="FORE" transform="scale(-1,1) translate(-124,0)"/&gt;
+
+  &lt;!-- body: thick at the head, tapering to the tail --&gt;
+  &lt;path d="M62 21 C66 21, 68 26, 68 33 L68 61 C68 73, 65 82, 62 85
+           C59 82, 56 73, 56 61 L56 33 C56 26, 58 21, 62 21 Z"
+        fill="#43332F"/&gt;
+
+  &lt;!-- antennae: dropped in the `simple` variant --&gt;
+  &lt;g stroke="#43332F" stroke-width="2.2" stroke-linecap="round" fill="none"&gt;
+    &lt;path d="M60 23 C55 15, 48 9, 42 7"/&gt;
+    &lt;path d="M64 23 C69 15, 76 9, 82 7"/&gt;
+    &lt;circle cx="41" cy="6" r="2.4" fill="#43332F" stroke="none"/&gt;
+    &lt;circle cx="83" cy="6" r="2.4" fill="#43332F" stroke="none"/&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;</pre>
+
+  <h2>Rules</h2>
+  <table>
+    <tbody>
+      <tr>
+        <td><strong>Only the right side is drawn.</strong></td>
+        <td>The left is <code>scale(-1,1) translate(-124,0)</code> of the same path, so symmetry cannot drift.</td>
+      </tr>
+      <tr>
+        <td><strong>Forewing and hindwing stay separate paths.</strong></td>
+        <td>Members colour them independently; guests get one colour on both. Merging them removes a product feature.</td>
+      </tr>
+      <tr>
+        <td><strong>Body colour is fixed.</strong></td>
+        <td><code>#43332F</code>. It is the only hard-coded colour in the drawing — everything else is passed in.</td>
+      </tr>
+      <tr>
+        <td><strong>It must survive 24&nbsp;px.</strong></td>
+        <td>The smallest placement is a colour swatch. Anything that turns to mush at that size does not belong in the mark.</td>
+      </tr>
+      <tr>
+        <td><strong>The aspect ratio is 124 : 100.</strong></td>
+        <td>Every size in the table above keeps it. Stretching the mark is not a variant.</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

@@ -35,6 +35,23 @@ export const WORLD = {
   residentCount: 60,
 
   /*
+   * ZİYARETÇİ KONTENJANLARI — misafir ve üye kelebekleri için ayrı tavan.
+   *
+   * ⚠ Bunlar ADRES ARALIĞI DEĞİL, KONTENJAN. Kelebekler tek bir bitişik
+   * blokta duruyor (`[residentCount, count)`) ve öyle durmak zorunda:
+   * `Swarm.update()` yalnızca `[0, count)` aralığını dönüyor ve
+   * `InstancedMesh.count` da aynı sayı. İki ayrı fiziksel bölge açılsaydı
+   * aradaki boş yuvalar "uçmayan ama çizilen" kelebekler olurdu.
+   *
+   * Bölünen şey KABUL: blokta kaç misafir, kaç üye kelebeği olabileceği.
+   *
+   * Toplamları `capacity - residentCount` ile birebir eşleşmeli; eşleşmezse
+   * `createVisitors` kurulumda uyarıyor.
+   */
+  guestSlots: 20,
+  memberSlots: 120,
+
+  /*
    * KELEBEK PALETİ — 5 sabit renk (projefikri.md §4).
    *
    * Yerleşik ve misafir kelebekler bu paletten RASTGELE bir renk alıyor ve
@@ -43,8 +60,12 @@ export const WORLD = {
    *
    * Hiçbiri pembe/magenta DEĞİL, bilinçli: sahne baştan aşağı sakura pembesi
    * ve pembe kelebek zeminde kayboluyor (§4 — sakura tuzağı). Hepsi doygun,
-   * çünkü renk desene ton DÖNDÜRMESİ olarak uygulanıyor; soluk bir renk
-   * dönmek için yeterli tona sahip olmuyor.
+   * çünkü uzaktan bakılan küçük bir nesnede rengin okunması için doygunluk
+   * gerekiyor — soluk kelebek çimenle karışıyor.
+   *
+   * (Teknik bir zorunluluk DEĞİL artık: renk artık ton + doygunluk +
+   * parlaklık olarak taşınıyor, yani soluk ve koyu renkler de doğru
+   * çalışıyor. Buradaki tercih görünürlükle ilgili.)
    */
   palette: [
     { name: 'turkuaz', hex: 0x17b3a3 },
@@ -117,7 +138,14 @@ export const WORLD = {
      * (bkz. trees.js — LOD). Değeri büyütmek kaliteyi, küçültmek fps'i
      * artırıyor.
      */
-    lodRadius: 20,
+    /*
+     * 20'den 15'e indi. Bu yarıçapın içindeki ağaçlar hem pahalı modeli
+     * kullanıyor hem GÖLGE düşürüyor, yani iki kez çiziliyorlar. Ölçümde
+     * ağaçlar bütün sahnenin %52'siydi (498.667 üçgen) ve bunun yarısı
+     * gölge geçişiydi. 15'te gölge düşüren ağaç sayısı belirgin azalıyor,
+     * kaybedilen şey ise avlunun dışındaki gölgeler — kimsenin bakmadığı yer.
+     */
+    lodRadius: 15,
 
     /*
      * Kadrajı çerçeveleyen ağaçlar. Kameranın başlangıç noktasının hemen

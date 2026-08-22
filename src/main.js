@@ -190,7 +190,7 @@ createPanel({
 // ── Döngü ──────────────────────────────────────────────────────────────────
 // THREE.Clock deprecated. connect() Page Visibility API'sini bağlıyor:
 // arka plandan dönüldüğünde devasa bir dt üretmiyor, yani kelebek
-// ışınlanmıyor (ROADMAP Aşama 3 kabul kriteri).
+// ışınlanmıyor.
 const timer = new THREE.Timer();
 timer.connect(document);
 

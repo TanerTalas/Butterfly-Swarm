@@ -1,4 +1,11 @@
 import * as THREE from 'three';
+import { FLAP_DEFAULTS } from '../butterfly/flap.js';
+import {
+  FADE_VERTEX_COMMON,
+  FADE_VERTEX_MAIN,
+  FADE_FRAGMENT_COMMON,
+  FADE_FRAGMENT_MAIN,
+} from './fadeShader.js';
 
 /*
  * Kanat çırpmasının GPU tarafı.
@@ -10,9 +17,20 @@ import * as THREE from 'three';
  * hızını (`aFlapSpeed`) taşıyor.
  *
  * Buradaki `bfWave` / `bfVelocity`, `butterfly/flap.js` içindeki
- * `flapWave` / `flapVelocity` fonksiyonlarının GLSL karşılığı. Aşama 2'de o
- * matematik bilerek saf ve durumsuz yazılmıştı; burada birebir çevrildi.
+ * `flapWave` / `flapVelocity` fonksiyonlarının GLSL karşılığı. O matematik
+ * tam da bu çeviri mümkün olsun diye saf ve durumsuz yazıldı.
  * İKİSİ BİRLİKTE DEĞİŞMELİ.
+ *
+ * ⚠ SOLMA DA BURADAN GİRİYOR. Kanat materyalinin tek bir
+ * `onBeforeCompile`'ı olabilir (aşağıdaki nota bakın), o yüzden solmanın
+ * GLSL parçaları `fadeShader.js`ten alınıp bu enjeksiyonun İÇİNE
+ * ekleniyor. Ayrı bir `injectFadeShader(wingMaterial)` çağrısı bunu ezer
+ * ve kanatlar çırpmayı bırakırdı.
+ *
+ * ⚠ Aşağıdaki GLSL bloklarının içine BACKTICK yazma — kod bir JavaScript
+ * şablon literali içinde duruyor ve backtick literali erkenden kapatıp
+ * bütün dosyayı sözdizimi hatasına düşürüyor. Aynı sebeple ${...} da
+ * yazılamaz; oradaki tek geçerli kullanım bilinçli enterpolasyon.
  */
 
 const WING_FORE = 0.5; // aWingId eşiği: < 0.5 ön kanat, > 0.5 arka kanat
@@ -31,11 +49,51 @@ attribute float aFlapSpeed;
  */
 attribute vec2 aHue;
 
+/*
+ * Doygunluk ve parlaklık ÇARPANI, yine kanat başına (x = ön, y = arka).
+ *
+ * Ton tek başına yetmiyordu: ton döndürmesi doygunluğu ve parlaklığı aynen
+ * bırakıyor, dolayısıyla desenden beyaz, siyah veya pastel bir kanat
+ * ÜRETİLEMİYORDU. Beyaz seçen kullanıcı kırmızı kanat alıyordu, çünkü
+ * doygunluğu sıfır bir rengin tonu tanımsız (0 = kırmızı) ve kod yalnızca
+ * o tona bakıyordu.
+ *
+ * Çarpan olarak taşınıyorlar, mutlak değer olarak değil: desenin kendi
+ * gradyanı (koyu kök → açık uç), koyu kenar bandı ve damarları korunuyor.
+ * 1.0 = deseni olduğu gibi bırak.
+ */
+attribute vec2 aSat;
+attribute vec2 aVal;
+
 varying float vHueShift;
+varying float vSat;
+varying float vVal;
 
 uniform float uTime;
-uniform vec3  uForeHinge;
-uniform vec3  uHindHinge;
+/*
+ * TEK PİVOT — ön ve arka kanat aynı nokta etrafında dönüyor.
+ *
+ * Önce her kanadın kendi menteşesi vardı (uForeHinge / uHindHinge) ve
+ * ikisi aynı açıyla dönse bile aralarındaki mesafe KORUNMUYORDU: farklı
+ * merkezler etrafındaki dönüş, iki yüzeyi birbirine göre kaydırıyor ve arka
+ * kanat ön kanadın içinden geçiyordu.
+ *
+ * Ölçüm: duruşta iki kanat arasındaki en dar boşluk +0.031 birim, yani
+ * kesişme yok. Çırpma açıldığında ayrı menteşelerle 385 hücrenin 81'i
+ * ihlalliydi. Tek pivotta dönüşüm iki kanat için BİREBİR aynı afin dönüşüm
+ * oluyor; dönme bir izometri olduğu için tüm noktalar arası mesafeler
+ * aynen korunuyor ve duruşta kesişmeyen iki yüzey hiçbir fazda kesişemiyor.
+ *
+ * Bedeli: arka kanat artık kendi kökü etrafında değil, ön kanadın menteşesi
+ * etrafında dönüyor. Çırpma Z ekseni etrafında olduğu için menteşenin z
+ * farkı bu dönüşü hiç etkilemiyor; yalnızca burulmada (X ekseni) 0.2
+ * birimlik kaldıraç farkı oluşuyor ve 16°'lik burulmada bu ~0.055 birim.
+ * Görünmeyecek kadar küçük, karşılığında geçiş tamamen imkânsız.
+ *
+ * ⚠ HINGES yine iki ayrı değer taşıyor ve taşımalı: kanat GEOMETRİLERİ
+ * o noktalara göre kuruluyor. Değişen yalnızca dönüş pivotu.
+ */
+uniform vec3  uWingPivot;
 uniform float uFlapUp;        // radyan
 uniform float uFlapDown;      // radyan
 uniform float uDownstroke;
@@ -81,7 +139,7 @@ void bfSetup() {
   float isHind = step(${WING_FORE.toFixed(1)}, aWingId);
   bfIsHind = isHind;
 
-  bfHinge = mix(uForeHinge, uHindHinge, isHind);
+  bfHinge = uWingPivot;
   float cycle = uTime * aFlapSpeed + aPhase - isHind * uHindLag;
   float amp = uAmplitude * mix(1.0, uHindAmp, isHind);
 
@@ -122,6 +180,8 @@ vec3 bfTransformNormal(vec3 n) {
  */
 const FRAGMENT_COMMON = /* glsl */ `
 varying float vHueShift;
+varying float vSat;
+varying float vVal;
 uniform float uSaturation;
 
 vec3 bfRgb2Hsv(vec3 c) {
@@ -142,7 +202,9 @@ vec3 bfHsv2Rgb(vec3 c) {
 vec3 bfTint(vec3 rgb) {
   vec3 hsv = bfRgb2Hsv(rgb);
   hsv.x = fract(hsv.x + vHueShift);
-  hsv.y = clamp(hsv.y * uSaturation, 0.0, 1.0);
+  // uSaturation genel panel ayarı, vSat ise bu kanadın seçilen rengi
+  hsv.y = clamp(hsv.y * uSaturation * vSat, 0.0, 1.0);
+  hsv.z = clamp(hsv.z * vVal, 0.0, 1.0);
   return bfHsv2Rgb(hsv);
 }
 `;
@@ -156,17 +218,33 @@ vec3 bfTint(vec3 rgb) {
  * Bu yüzden kurulum normal bloğunda yapılıp konum bloğunda tekrar kullanılıyor.
  */
 export function injectFlapShader(material, hinges) {
+  /*
+   * Başlangıç değerleri `FLAP_DEFAULTS`tan okunuyor, elle YAZILMIYOR.
+   *
+   * Önce burada 0.42 / 0.12 / 0.85 gibi sayılar sabit duruyordu ve aynı
+   * değerlerin ikinci bir kopyasıydı. Varsayılanlar değiştiğinde (arka kanat
+   * gecikmesi 0'a çekildiğinde) bu kopya sessizce eskidi: ilk `syncFlapUniforms`
+   * çağrısına kadar kanatlar hâlâ eski gecikmeyle çırpıyordu.
+   *
+   * İlk kare çizilmeden önce senkron çalıştığı için görünür bir hata
+   * değildi, ama iki doğruluk kaynağı olması sorunun kendisi.
+   */
   const uniforms = {
     uTime: { value: 0 },
-    uForeHinge: { value: hinges.fore.clone() },
-    uHindHinge: { value: hinges.hind.clone() },
+    /*
+     * Pivot ÖN kanadın menteşesi. Ortalama ya da arka menteşe de olurdu —
+     * geçiş açısından üçü de eşdeğer, çünkü belirleyici olan tek pivot
+     * olması. Ön menteşe seçildi çünkü bugünkü görüntüye en yakın olan o:
+     * ön kanadın hareketi hiç değişmiyor, arka kanat ona uyuyor.
+     */
+    uWingPivot: { value: hinges.fore.clone() },
     uFlapUp: { value: 0 },
     uFlapDown: { value: 0 },
-    uDownstroke: { value: 0.42 },
-    uAmplitude: { value: 1 },
+    uDownstroke: { value: FLAP_DEFAULTS.downstrokeFraction },
+    uAmplitude: { value: FLAP_DEFAULTS.flapAmplitude },
     uTwist: { value: 0 },
-    uHindLag: { value: 0.12 },
-    uHindAmp: { value: 0.85 },
+    uHindLag: { value: FLAP_DEFAULTS.hindLag },
+    uHindAmp: { value: FLAP_DEFAULTS.hindAmplitude },
     uSaturation: { value: 1 },
   };
 
@@ -174,22 +252,39 @@ export function injectFlapShader(material, hinges) {
     Object.assign(shader.uniforms, uniforms);
 
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\n${VERTEX_COMMON}`)
+      .replace(
+        '#include <common>',
+        `#include <common>\n${VERTEX_COMMON}\n${FADE_VERTEX_COMMON}`,
+      )
       .replace(
         '#include <beginnormal_vertex>',
         `#include <beginnormal_vertex>
          bfSetup();
          vHueShift = mix(aHue.x, aHue.y, bfIsHind);
+         vSat = mix(aSat.x, aSat.y, bfIsHind);
+         vVal = mix(aVal.x, aVal.y, bfIsHind);
          objectNormal = bfTransformNormal(objectNormal);`,
       )
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-         transformed = bfTransform(transformed);`,
+         transformed = bfTransform(transformed);
+         ${FADE_VERTEX_MAIN}`,
       );
 
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\n${FRAGMENT_COMMON}`)
+      .replace(
+        '#include <common>',
+        `#include <common>\n${FRAGMENT_COMMON}\n${FADE_FRAGMENT_COMMON}`,
+      )
+      /*
+       * Solma kesmesi main'in BAŞINDA — atılacak fragment için doku
+       * örneklemesi ve ışıklandırma hiç çalışmıyor.
+       */
+      .replace(
+        '#include <clipping_planes_fragment>',
+        `#include <clipping_planes_fragment>\n${FADE_FRAGMENT_MAIN}`,
+      )
       // map_fragment texture'ı örnekleyip diffuseColor'a çarpıyor; tonu
       // hemen sonrasında kaydırıyoruz
       .replace(
