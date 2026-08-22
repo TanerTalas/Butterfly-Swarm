@@ -1,16 +1,19 @@
 Bu dizindeki doku atlasları Inkwell projesinden alınmıştır.
 
-  hearth-grass-atlas.png   (kaynakta: public/textures/hearth-grass-atlas-v6-palette.png)
-  inkwell-petals.png       (kaynakta: public/plant-lab/inkwell-flower-petal-variants-v2.png)
+  hearth-grass-atlas.webp  (kaynakta: public/textures/hearth-grass-atlas-v6-palette.png)
+  inkwell-petals.webp      (kaynakta: public/plant-lab/inkwell-flower-petal-variants-v2.png)
 
 Kaynak: https://github.com/siliconjungle/inkwell-webgpu-flowers
 
 Yalnızca doku varlıkları kullanıldı; projenin kendisi ham WebGPU/WGSL
 üzerine kurulu ve kodu bu projeye taşınmadı.
 
-MIT lisansı telif bildiriminin korunmasını şart koşuyor. Aşağıdaki metin
-bu yüzden burada duruyor ve yayına çıkarken sitenin lisans/atıf sayfasına
-da eklenmelidir (bkz. projefikri.md §10).
+Dosyalar PNG'den WEBP'ye çevrildi (yalnızca sıkıştırma; içerik aynı).
+
+MIT lisansı telif bildiriminin korunmasını şart koşuyor. Aşağıdaki metin bu
+yüzden burada duruyor ve bu dosya `public/` içinde olduğu için yayındaki
+siteyle birlikte dağıtılıyor (`/textures/CREDITS.txt`). Ayrı bir atıf sayfası
+yapılmamasına karar verildi; bu dosya SİLİNMEZ ve `public/` dışına taşınmaz.
 
 ------------------------------------------------------------------------
 

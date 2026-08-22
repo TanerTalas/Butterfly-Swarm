@@ -282,9 +282,9 @@ export function Meadow({
        * hiç bilmiyordu.
        *
        * Yer tutucu YAKALANMIŞ BİR KARE DEĞİL, tokenlardan çizilmiş bir
-       * gökyüzü/ufuk/zemin gradyanı. `meadow-fallback.png` duruyor ama 3.5
-       * MB: yükleme sırasında indirmek, yükleme göstergesini yüklemenin
-       * kendisinden pahalı yapardı. Gradyan bedava ve ilk boyada hazır.
+       * gökyüzü/ufuk/zemin gradyanı. `meadow-fallback.webp` duruyor ama
+       * yükleme sırasında indirilmiyor: gradyan bedava ve ilk boyada hazır,
+       * poster ise yalnızca sahne HİÇ çizilemediğinde (D8) gösteriliyor.
        *
        * Yükleniyor SİNYALİ ufuk boyunca yavaşça geçen bir ışık. Metin
        * bilerek yok: karşılama başlığı bu katmanın üstünde duruyor ve
@@ -331,7 +331,7 @@ export function Meadow({
        */}
       {status === 'unsupported' && (
         <Image
-          src="/meadow-fallback.png"
+          src="/meadow-fallback.webp"
           alt=""
           fill
           priority

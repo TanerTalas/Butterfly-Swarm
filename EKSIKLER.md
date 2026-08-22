@@ -136,7 +136,13 @@ sıkışacak yer burası.
   göre yazıldı (22 Ağustos'ta sitenin bugünkü mimarisine göre yenilendi) ama
   hukuki inceleme görmedi; KVKK/GDPR sürümleriyle değişmeli. Veri olarak
   duruyorlar (`lib/legal.ts`), JSX değil.
-- **Model dosyaları ~6 MB ham PNG doku.** KTX2'ye çevrilip küçültülmeli.
+- **KTX2 (VRAM) yapılmadı.** Bütün varlıklar PNG'den WEBP'ye çevrildi ve
+  `public/` 14,2 MB → 3,2 MB indi (modeller 6,0 → 1,5; atlaslar 4,8 → 1,4;
+  poster 3,5 → 0,2). Bu yalnızca İNDİRME kazancı: WebP de GPU'ya ham RGBA
+  olarak çıkıyor, yani çim atlası hâlâ 24 MB VRAM istiyor. Onu düşürmenin yolu
+  KTX2/Basis ve encoder (`toktx`, KTX-Software) makinede kurulu değil — npm'de
+  tarayıcı dışı bir karşılığı da yok. Kurulursa dönüşüm ve `KTX2Loader`
+  bağlanması yarım günlük iş.
 - **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; tam CSP
   yazılmadı. İki gereksinim birden: three.js için `worker-src blob:`, Turnstile
   için `script-src` ve `frame-src` içinde `https://challenges.cloudflare.com`.
