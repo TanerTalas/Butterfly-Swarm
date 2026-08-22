@@ -3,7 +3,7 @@
 **Bu dosyada YALNIZCA yapılmamış işler var.** Biten bir iş buradan siliniyor;
 ondan geriye kalması gereken bir kural varsa `CLAUDE.md`'ye taşınıyor.
 
-Son güncelleme: 21 Ağustos 2026.
+Son güncelleme: 22 Ağustos 2026.
 
 Aşamalı sıra `ROADMAP.md` → Bölüm II'de. Aşağısı o sıranın açık kalemleri.
 
@@ -15,42 +15,54 @@ Aşamalı sıra `ROADMAP.md` → Bölüm II'de. Aşağısı o sıranın açık k
 yönetimi ve metinler tamam. Sahne canlı: kelebek salınıyor, izleniyor,
 soluyor.
 
-⚠ **SUNUCU YOK.** Oturum, kelebek listesi ve sayaç `Garden` içinde yaşıyor ve
-sayfa yenilenince sıfırlanıyor. Kalan işlerin neredeyse tamamı buna bağlı.
+**Kimlik gerçek.** Hesap açılıyor, e-posta doğrulanıyor, giriş yapılıyor ve
+oturum yenilemeden sağ çıkıyor (E.1 bitti).
+
+⚠ **KELEBEK LİSTESİ HÂLÂ BELLEKTE.** Salınan kelebekler `Garden` içinde yaşıyor
+ve `F5` onları siliyor; sayaç ise artık veritabanında. Kalan sunucu işinin
+tamamı bu ayrımın kapanmasıyla ilgili (E.2 salma, E.3 liste).
 
 | | |
 |---|---|
 | Ekranlar | Karşılama, misafir salma, onay, giriş/kayıt, hesap kurulumu, çayır, kanat seçimi, kelebeklerim, geçmiş, hesabım, ayarlar, veda, 4 yasal sayfa |
 | Sahne | Canlı three.js sakura çayırı: 60 yerleşik + 20 misafir + 120 üye yuvası |
 | Mobil | 390px'te denendi |
+| Veritabanı | Postgres (Neon, Frankfurt). Şema `garden`; `npm run migrate` |
 | Build | `npm run build` geçiyor (8/8 sayfa), `tsc --noEmit` temiz |
 
 ---
 
 ## 1. Sunucu
 
-Şu an giriş diye bir şey yok — `Garden.tsx` `completeSignIn()` e-postayı alıp
-kendi kafasından `Wren` adında bir profil uyduruyor. Şifreye hiç bakılmıyor,
-oturum yok, yenileyince her şey gidiyor.
+**E.1 (şema + kimlik) BİTTİ.** Gerçek hesapla girilip çıkılabiliyor, yenilemede
+oturum duruyor, şifre argon2id özeti olarak saklanıyor, kayıt e-posta
+doğrulamasından geçiyor. Kurallar `CLAUDE.md` → "Kimlik"te.
+
+Kalanlar aşağıda.
 
 ### 1.1 Kimlik
 
-- Gerçek hesap: e-posta + şifre, şifre **hash'lenmiş** (argon2id/bcrypt),
-  e-posta doğrulama, şifre sıfırlama.
-- Oturum: `httpOnly`, `Secure`, `SameSite=Lax` çerez. Token'ı istemci
-  belleğinde tutma.
-- **Giriş hatası tek mesaj:** "email or password is wrong". E-postanın
-  kayıtlı olup olmadığını ele veren ayrı bir mesaj yok (kullanıcı sayımına
-  izin verir).
-- **Cloudflare** girişte ve kayıtta. Bot koruması bizim yazacağımız bir şey
-  değil.
+- **Şifre sıfırlama.** `email_token` tablosunda `purpose = 'reset'` yeri hazır
+  ve tek kullanımlık token mekanizması çalışıyor; eksik olan akış ve ekran.
+- **Google ile giriş.** Buton çizili ama bağlı değil ve bu yüzden DEVRE DIŞI
+  duruyor. Kendi auth'umuzu yazdığımız için OAuth akışını da yazmak gerekiyor
+  (~150 satır, kütüphane gerekmez).
+- **Cloudflare Turnstile** girişte ve kayıtta. Bot koruması bizim yazacağımız
+  bir şey değil.
+- **Deneme kısıtı IP başına da olmalı.** Bugün yalnızca e-posta anahtarıyla
+  (`garden.sign_in_attempt`) ve bu, adresini bilen birinin bir hesabı kasten
+  kilitlemesine açık. Kilit kısa ömürlü olduğu için zarar da kısa ömürlü, ama
+  asıl çözüm IP.
 - **Yetki kontrolü her uç noktada.** Kelebek silme/düzenleme sahibine bağlı
-  olmalı; `id` tahmin edilebilir olmamalı.
+  olmalı; `id` tahmin edilebilir olmamalı. (Bugünkü uç noktalarda hesap kimliği
+  hep çerezden okunuyor, çağrıdan değil — kural bu, yeni uç noktalarda da
+  korunmalı.)
 - CSRF, güvenlik başlıkları ve tam CSP (bkz. §5).
-- **Kayıt doğrulama hâli çizili ama BAĞLANMADI.** `SignInCard`ın
-  `status="verify"` prop'u hazır; kayıt bugün doğrudan hesap kurulumuna
-  gidiyor. Posta gönderimi olmadan akışı oraya sokmak, kayıt olanı hiç
-  açılmayacak bir kapının önünde bırakırdı.
+- **Şifre gücü yalnızca uzunluğa bakıyor** (`PASSWORD_MIN` = 10). Handoff sızmış
+  şifre listesine bakılmasını da istiyor.
+- **Kısa şifrenin sunucu reddi `credentials` diline düşüyor** ve bu tam oturan
+  bir eşleşme değil — "şifren kurallara uymuyor" diye çizilmiş bir hâl yok.
+  Arayüzden ulaşılamayan bir yol olduğu için bugün sorun değil.
 
 ### 1.2 Salma ve tavanlar
 
@@ -178,6 +190,14 @@ sıkışacak yer burası.
 - **Model dosyaları ~6 MB ham PNG doku.** KTX2'ye çevrilip küçültülmeli.
 - **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; three.js için
   `worker-src blob:` gereken tam CSP yazılmadı.
+- ⚠ **Vercel fonksiyon bölgesi `fra1` yapılmalı.** Varsayılan `iad1`
+  (Washington) ve veritabanı Frankfurt'ta; düzeltilmezse HER sorgu Atlantik'i
+  geçer. Bir sayfa açılışı birkaç sorgu yapıyor, yani bu tek ayar yüzlerce ms
+  demek. Bölgeyi Neon tarafında düzeltmek mümkün DEĞİL — orada sonradan
+  değiştirilemiyor.
+- **Üretim ortam değişkenleri:** `DATABASE_URL` (üretim veritabanı, pooled),
+  `APP_URL` (alan adı), `RESEND_API_KEY` + `MAIL_FROM`. Son ikisi boş kalırsa
+  kaydolan herkes hiç açılmayacak bir kapının önünde kalır.
 
 ---
 
