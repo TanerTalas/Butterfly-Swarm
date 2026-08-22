@@ -3,7 +3,7 @@
 **Bu dosyada YALNIZCA yapılmamış işler var.** Biten bir iş buradan siliniyor;
 ondan geriye kalması gereken bir kural varsa `CLAUDE.md`'ye taşınıyor.
 
-Son güncelleme: 22 Ağustos 2026.
+Son güncelleme: 23 Ağustos 2026.
 
 Aşamalı sıra `ROADMAP.md` → Bölüm II'de. Aşağısı o sıranın açık kalemleri.
 
@@ -50,7 +50,10 @@ Aşama E bitti; kalan kalemler kötüye kullanım ve sertleştirme tarafında.
   kilitlemesine açık. Kilit kısa ömürlü olduğu için zarar da kısa ömürlü, ama
   asıl çözüm IP. Özetleme yolu artık hazır (`lib/server/contact.ts` →
   `hashIp`).
-- CSRF, güvenlik başlıkları ve tam CSP (bkz. §5).
+- **CSRF için ayrı bir token yok.** Bugünkü koruma `SameSite=Lax` çerez +
+  Server Action'ların kendi POST protokolü; başka sitenin gönderdiği bir forma
+  çerez eklenmiyor. Güvenlik başlıkları ve tam CSP yazıldı
+  (`next.config.mjs`, kurallar CLAUDE.md'de).
 - **Şifre gücü yalnızca uzunluğa bakıyor** (`PASSWORD_MIN` = 10). Handoff sızmış
   şifre listesine bakılmasını da istiyor.
 - **Kısa şifrenin sunucu reddi `credentials` diline düşüyor** ve bu tam oturan
@@ -116,6 +119,10 @@ Kalanlar:
 - Kanat renk örnekleri hâlâ 28px; dokunma hedefi 44px'e çıkarılabilir.
 - `daysLeft()` hâlâ istemcide hesaplanıyor ve yalnızca ilerleme çubuğunu
   çiziyor; uygunluk kararı zaten sunucuda.
+- **`app/icon.svg`in zemini BEYAZ**, PNG simgelerinki saydam. realfavicon
+  böyle verdi; sekmede beyaz bir kare duruyor, takımın geri kalanında
+  yuvarlak kartın köşeleri saydam. Düzeltmesi SVG'deki
+  `<rect width="1000" height="1000" fill="#ffffff">` satırını silmek.
 
 ---
 
@@ -132,18 +139,17 @@ sıkışacak yer burası.
 
 ## 5. Yayına çıkmadan önce zorunlu
 
-- **Depo private yapılmalı.** Şu an herkese açık. Handoff bunu şart koşuyor;
-  `design_handoff_butterfly_garden/` bu yüzden commit'lenmedi.
 - **Yasal metinler gerçek değil.** Sade dille ve ürünün gerçek davranışına
   göre yazıldı (22 Ağustos'ta sitenin bugünkü mimarisine göre yenilendi) ama
   hukuki inceleme görmedi; KVKK/GDPR sürümleriyle değişmeli. Veri olarak
   duruyorlar (`lib/legal.ts`), JSX değil.
-- **Inkwell atıfı.** MIT lisansı telif bildiriminin korunmasını şart koşuyor;
-  `public/textures/CREDITS.txt` var ama sitenin atıf sayfasına da girmeli.
-- **Model dosyaları ~6 MB ham PNG doku.** KTX2'ye çevrilip küçültülmeli.
-- **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; tam CSP
-  yazılmadı. İki gereksinim birden: three.js için `worker-src blob:`, Turnstile
-  için `script-src` ve `frame-src` içinde `https://challenges.cloudflare.com`.
+- **KTX2 (VRAM) yapılmadı.** Bütün varlıklar PNG'den WEBP'ye çevrildi ve
+  `public/` 14,2 MB → 3,2 MB indi (modeller 6,0 → 1,5; atlaslar 4,8 → 1,4;
+  poster 3,5 → 0,2). Bu yalnızca İNDİRME kazancı: WebP de GPU'ya ham RGBA
+  olarak çıkıyor, yani çim atlası hâlâ 24 MB VRAM istiyor. Onu düşürmenin yolu
+  KTX2/Basis ve encoder (`toktx`, KTX-Software) makinede kurulu değil — npm'de
+  tarayıcı dışı bir karşılığı da yok. Kurulursa dönüşüm ve `KTX2Loader`
+  bağlanması yarım günlük iş.
 - **Üretim ortam değişkenleri:**
   - `DATABASE_URL` (üretim veritabanı, pooled), `APP_URL` (alan adı)
   - `RESEND_API_KEY` + `MAIL_FROM` — boş kalırsa kaydolan herkes hiç

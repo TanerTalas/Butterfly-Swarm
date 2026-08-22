@@ -79,10 +79,10 @@ export async function createGroundCover({ ground, avoid = [] } = {}) {
   ]);
 
   if (grassAtlas && ground) applyGroundGrass(ground, grassAtlas);
-  else if (!grassAtlas) stats.missing.push('hearth-grass-atlas.png');
+  else if (!grassAtlas) stats.missing.push('hearth-grass-atlas.webp');
 
   if (petalAtlas) addFlowers(group, petalAtlas, avoid, stats);
-  else stats.missing.push('inkwell-petals.png');
+  else stats.missing.push('inkwell-petals.webp');
 
   group.userData.stats = stats;
   return group;

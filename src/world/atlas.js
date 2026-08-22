@@ -14,11 +14,11 @@ import * as THREE from 'three';
  *
  * Kullanılabilen şey SANAT VARLIKLARI — ve zaten pahalı olan taraf onlar:
  *
- *   hearth-grass-atlas.png   3072×2048, 3×2 ızgara, 1024²'lik zemin çimi
+ *   hearth-grass-atlas.webp  3072×2048, 3×2 ızgara, 1024²'lik zemin çimi
  *                            karoları (tepeden bakış). Zemin dokusu olarak
  *                            kullanılıyor: SIFIR üçgen maliyeti.
  *
- *   inkwell-petals.png       2048×1280, 8×5 ızgara, 256²'lik TAÇYAPRAK'lar.
+ *   inkwell-petals.webp      2048×1280, 8×5 ızgara, 256²'lik TAÇYAPRAK'lar.
  *                            Tam çiçek değil — çiçek bunlardan kuruluyor
  *                            (bkz. groundcover.js). Gerçek alfa kanalı var,
  *                            yani alphaTest doğrudan çalışıyor.
@@ -26,8 +26,18 @@ import * as THREE from 'three';
 
 const loader = new THREE.TextureLoader();
 
-export const GRASS_ATLAS_URL = '/textures/hearth-grass-atlas.png';
-export const PETAL_ATLAS_URL = '/textures/inkwell-petals.png';
+/*
+ * ⚠ Atlaslar WEBP. PNG'den çevrildiler ve PNG'ler depodan kalktı: çim atlası
+ * 2,36 MB → 0,97 MB, taçyapraklar 2,39 MB → 0,41 MB. Kayıplı sıkıştırma ama
+ * taçyaprakların ALFASI kayıpsıza yakın tutuldu (`alphaQuality: 100`), çünkü
+ * alfa doğrudan `alphaTest`e giriyor ve bozulması taçyaprak kenarlarını
+ * tırtıklardı.
+ *
+ * Bu yalnızca İNDİRME kazancı: WebP de GPU'ya ham RGBA olarak çıkıyor, yani
+ * VRAM aynı (çim atlası 24 MB). Onu düşürmek KTX2 ister (EKSIKLER §5).
+ */
+export const GRASS_ATLAS_URL = '/textures/hearth-grass-atlas.webp';
+export const PETAL_ATLAS_URL = '/textures/inkwell-petals.webp';
 
 // Çim atlasının ızgarası
 export const GRASS_GRID = { cols: 3, rows: 2 };
