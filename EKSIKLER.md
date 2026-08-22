@@ -18,12 +18,13 @@ soluyor.
 **Kimlik gerçek.** Hesap açılıyor, e-posta doğrulanıyor, giriş yapılıyor ve
 oturum yenilemeden sağ çıkıyor (E.1 bitti).
 
-**Salma gerçek.** Kelebek veritabanına yazılıyor, kontenjanlar sunucuda
-uygulanıyor, dört red de dönüyor, sayaç artıyor (E.2 bitti).
+**Salma ve kalıcılık gerçek.** Kelebek veritabanına yazılıyor, kontenjanlar
+sunucuda uygulanıyor, dört red de dönüyor, sayaç artıyor (E.2). Çayır, kişisel
+liste ve geçmiş sunucudan geliyor: `F5` hiçbir şeyi kaybetmiyor ve çayır ortak
+bir yer (E.3).
 
-⚠ **ÇAYIRIN LİSTESİ HÂLÂ BELLEKTE.** Kelebek veritabanında duruyor ama sahneye
-verilen liste `Garden`ın belleğinden geliyor: `F5` onu siliyor ve başkasının
-kelebeği hiç görünmüyor. Sıradaki iş bu (E.3).
+⚠ **HESAP SİLME SAHTE** ve önce bir arayüz eksiği kapanmalı (§1.3). Ömrü dolanın
+rengini silen zamanlanmış iş de yok, yani geçmiş kendiliğinden dolmuyor.
 
 | | |
 |---|---|
@@ -86,24 +87,26 @@ hak, renk çekilişi, tohum ve sayaç. Dört red de gerçekten dönüyor. Kurall
 
 ### 1.3 Liste ve kalıcılık
 
-- **Yenilemede kayboluyor.** Liste bellekte; `F5` çayırı yerleşiklere
-  döndürüyor.
-- **Çıkışta kelebekler çayırdan kalkıyor** (`Garden.tsx` `signOut`) ve bu
-  DOĞRU DEĞİL: salınan kelebek çayırın, salanın değil. Oturum kapansa da
-  uçmalı. Listeyi tutan kimse olmadığı için şimdilik kalkıyorlar; liste
-  sunucudan gelince o satır kalkacak.
-- **History verisi.** Ekran hazır ve boş durumunu gösteriyor; ömrünü
-  tamamlamış kelebek listesi sunucudan gelecek. Saklanan şey isim ve tarih —
-  renk ve çayırdaki yer gitmiş oluyor (gizlilik metni bunu söylüyor).
-- **Rengi silen iş yazılmadı.** `garden.butterfly.fore_hex`/`hind_hex`
-  nullable ve "renk yoksa ömrü dolmuş" kuralı şemada kurulu, ama ömrü dolanın
-  rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı dolmaz ve gizlilik
+**Büyük kısmı BİTTİ.** Çayır, "Kelebeklerim" ve geçmiş sunucudan geliyor
+(`lib/server/meadow.ts`); `F5` çayırı bozmuyor, başkasının kelebeği görünüyor,
+çıkış yapan birinin kelebeği uçmaya devam ediyor.
+
+- ⚠ **HESAP SİLME HÂLÂ SAHTE.** `Garden.deleteAccount()` yalnızca ekranı
+  temizliyor; hiçbir şey silinmiyor ve yenileyince hesap geri geliyor.
+  Sunucu tarafı yazılmadan önce ARAYÜZDE bir eksik kapanmalı: uyarı metni
+  silmenin kalıcı olduğunu söylüyor ve yeniden kimlik doğrulama şart, ama
+  `SettingsCard` yalnızca hesap adını yazdırıyor — isim yazmak bir arayüz
+  eşiği, yetki kanıtı değil. **Şifre alanı gerekiyor ve tasarımda çizili
+  değil.**
+- **Rengi silen iş yazılmadı.** `fore_hex`/`hind_hex` nullable ve "renk yoksa
+  ömrü dolmuş" kuralı hem şemada hem sorgularda kurulu, ama ömrü dolanın
+  rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı KENDİLİĞİNDEN
+  dolmaz (bugün yalnızca elle eklenmiş satırlarla dolduruluyor) ve gizlilik
   metninin sözü tutulmaz.
-- **Çayır YALNIZCA senin kelebeklerini gösteriyor.** `meadow.sync()` listesi
-  `Garden`ın belleğinden geliyor, yani başkasının saldığı kelebek görünmüyor.
-  Liste sunucudan okunmaya başlayınca çayır gerçekten ortak bir yer olacak —
-  ve sahnedeki yem kelebek yolu ancak o zaman devreye girecek (bugün liste
-  küçük olduğu için kontenjan sahnede hiç dolmuyor).
+- **Listeler yalnızca giriş anında ve sayfa açılışında çekiliyor.** Başka bir
+  sekmede salınan kelebek bu sekmenin çayırında görünmüyor. Bugün sorun değil
+  (çayır sessiz bir yer), ama "canlı" hissi isteniyorsa periyodik bir
+  yenileme gerekir.
 
 ### 1.4 Ömrün gerçekten işlemesi
 
@@ -122,16 +125,23 @@ yapılamaz.
 
 ### 1.5 Hesap silme
 
-Arayüz tarafı bitti: `SettingsCard` onay adımı gösteriyor ve kullanıcı hesap
-ismini yazmadan `Delete for good` açılmıyor. Eksik olan tamamen sunucu —
-`deleteAccount()` şu an yalnızca durumu temizliyor.
+`SettingsCard` onay adımı gösteriyor ve kullanıcı hesap ismini yazmadan
+`Delete for good` açılmıyor. `deleteAccount()` şu an yalnızca ekranı
+temizliyor — hiçbir şey silinmiyor.
 
-- Hesabın ve ona bağlı verinin gerçekten silinmesi (kelebekler, geçmiş,
-  iletişim kayıtları). **Kalıcı, geri alma penceresi yok.**
+⚠ **Önce ARAYÜZ eksiği:** kartta şifre alanı yok. İsim yazmak bir eşik, yetki
+kanıtı değil; alan eklenmeden sunucu tarafını yazmak, verdiği sözü tutmayan
+bir uç nokta açmak olur. Tasarımda çizili değil, yani yeni bir parça.
+
+Sunucu tarafında:
+
+- Şifreyle yeniden kimlik doğrulama.
+- Hesabın ve ona bağlı verinin gerçekten silinmesi. **Kalıcı, geri alma
+  penceresi yok.** (`on delete cascade` kelebekleri, oturumları ve token'ları
+  zaten götürüyor — denendi.)
 - Kelebeklerin çayırdan **anında** kalkması — uyarı metninin verdiği söz bu.
-- Bütün oturumların sonlandırılması.
-- Silmeden önce yeniden kimlik doğrulama (şifre). İsim yazmak arayüz eşiği,
-  yetki kanıtı değil.
+- Bütün oturumların sonlandırılması. Mekanizma hazır:
+  `destroyAllSessions()` (`lib/server/session.ts`), henüz çağıran yok.
 
 ### 1.6 İletişim formu
 
