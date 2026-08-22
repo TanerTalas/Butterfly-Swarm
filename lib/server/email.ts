@@ -17,9 +17,17 @@ type Mail = {
   text: string;
 };
 
-/** Bağlantıların gövdesi. Üretimde alan adı, geliştirmede dev sunucusu. */
+/**
+ * Bağlantıların gövdesi. Üretimde alan adı, geliştirmede dev sunucusu.
+ *
+ * ⚠ `||` kullanılıyor, `??` DEĞİL ve bu fark bir hataydı. `.env` dosyasında
+ * boş bırakılmış bir satır (`APP_URL=`) değişkeni TANIMSIZ değil BOŞ STRING
+ * yapıyor; `??` yalnızca `null`/`undefined` için devreye girdiğinden varsayılan
+ * atlanıyordu ve doğrulama postasındaki bağlantı gövdesiz çıkıyordu
+ * (`/auth/confirm?token=…` — tıklanacak bir adres değil).
+ */
 export function appUrl(): string {
-  return process.env.APP_URL ?? 'http://localhost:3000';
+  return process.env.APP_URL || 'http://localhost:3000';
 }
 
 async function deliver(mail: Mail): Promise<void> {
