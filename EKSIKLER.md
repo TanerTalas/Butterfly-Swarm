@@ -46,8 +46,6 @@ Kalanlar aşağıda.
 
 ### 1.1 Kimlik
 
-- **Şifre sıfırlama.** `email_token` tablosunda `purpose = 'reset'` yeri hazır
-  ve tek kullanımlık token mekanizması çalışıyor; eksik olan akış ve ekran.
 - **Google ile giriş.** Buton çizili ama bağlı değil ve bu yüzden DEVRE DIŞI
   duruyor. Kendi auth'umuzu yazdığımız için OAuth akışını da yazmak gerekiyor
   (~150 satır, kütüphane gerekmez).
@@ -93,11 +91,7 @@ hak, renk çekilişi, tohum ve sayaç. Dört red de gerçekten dönüyor. Kurall
 
 - ⚠ **HESAP SİLME HÂLÂ SAHTE.** `Garden.deleteAccount()` yalnızca ekranı
   temizliyor; hiçbir şey silinmiyor ve yenileyince hesap geri geliyor.
-  Sunucu tarafı yazılmadan önce ARAYÜZDE bir eksik kapanmalı: uyarı metni
-  silmenin kalıcı olduğunu söylüyor ve yeniden kimlik doğrulama şart, ama
-  `SettingsCard` yalnızca hesap adını yazdırıyor — isim yazmak bir arayüz
-  eşiği, yetki kanıtı değil. **Şifre alanı gerekiyor ve tasarımda çizili
-  değil.**
+  Ayrıntısı §1.5'te.
 - **Rengi silen iş yazılmadı.** `fore_hex`/`hind_hex` nullable ve "renk yoksa
   ömrü dolmuş" kuralı hem şemada hem sorgularda kurulu, ama ömrü dolanın
   rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı KENDİLİĞİNDEN
@@ -129,19 +123,21 @@ yapılamaz.
 `Delete for good` açılmıyor. `deleteAccount()` şu an yalnızca ekranı
 temizliyor — hiçbir şey silinmiyor.
 
-⚠ **Önce ARAYÜZ eksiği:** kartta şifre alanı yok. İsim yazmak bir eşik, yetki
-kanıtı değil; alan eklenmeden sunucu tarafını yazmak, verdiği sözü tutmayan
-bir uç nokta açmak olur. Tasarımda çizili değil, yani yeni bir parça.
+**KARAR: şifre sorulmayacak.** İsim yazma eşiği tek eşik olarak kalıyor; onay
+adımına şifre alanı eklenmeyecek.
 
-Sunucu tarafında:
+⚠ Bedeli açıkça: **çalınmış ya da açık bırakılmış bir oturumla hesap kalıcı
+olarak silinebiliyor** ve geri alınamıyor. Bu bilinen ve kabul edilmiş bir
+risk, gözden kaçmış bir eksik değil.
 
-- Şifreyle yeniden kimlik doğrulama.
+Sunucu tarafında kalanlar:
+
 - Hesabın ve ona bağlı verinin gerçekten silinmesi. **Kalıcı, geri alma
   penceresi yok.** (`on delete cascade` kelebekleri, oturumları ve token'ları
   zaten götürüyor — denendi.)
 - Kelebeklerin çayırdan **anında** kalkması — uyarı metninin verdiği söz bu.
-- Bütün oturumların sonlandırılması. Mekanizma hazır:
-  `destroyAllSessions()` (`lib/server/session.ts`), henüz çağıran yok.
+- Bütün oturumların sonlandırılması. Mekanizma hazır ve şifre sıfırlamada
+  çalıştığı görüldü: `destroyAllSessions()` (`lib/server/session.ts`).
 
 ### 1.6 İletişim formu
 
