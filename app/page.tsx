@@ -1,10 +1,11 @@
 import { Garden } from '@/components/Garden';
 import { guestReleaseUsed } from '@/app/actions/release';
+import { readAccountFacts } from '@/lib/server/account';
 import { readReleaseTotal } from '@/lib/server/counter';
 import { readMeadow, readOwnHistory, readOwnLive } from '@/lib/server/meadow';
 import { resetPending } from '@/lib/server/reset';
 import { readSession } from '@/lib/server/session';
-import type { Butterfly, Session } from '@/lib/types';
+import type { AccountFacts, Butterfly, Session } from '@/lib/types';
 
 /*
  * Tek sayfa. Yasal sayfalar dışında her şey `Garden` içinde yaşıyor.
@@ -33,10 +34,12 @@ export default async function Home() {
    */
   let mine: Butterfly[] = [];
   let history: Butterfly[] = [];
+  let account: AccountFacts | null = null;
   if (session.kind === 'member') {
-    [mine, history] = await Promise.all([
+    [mine, history, account] = await Promise.all([
       readOwnLive(session.accountId),
       readOwnHistory(session.accountId),
+      readAccountFacts(session.accountId),
     ]);
   }
 
@@ -65,6 +68,7 @@ export default async function Home() {
       initialMeadow={meadow}
       initialButterflies={mine}
       initialHistory={history}
+      initialAccount={account}
     />
   );
 }

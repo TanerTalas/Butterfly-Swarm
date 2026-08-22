@@ -8,6 +8,7 @@ import {
   readSession,
 } from '@/lib/server/session';
 import { issueEmailToken } from '@/lib/server/tokens';
+import { readAccountFacts } from '@/lib/server/account';
 import { readOwnHistory, readOwnLive } from '@/lib/server/meadow';
 import {
   sendVerificationEmail,
@@ -15,7 +16,7 @@ import {
 } from '@/lib/server/email';
 import { attemptKey, lockedFor, recordFailure, clearFailures } from '@/lib/server/throttle';
 import { NAME_MAX, AVATAR_COLOURS } from '@/lib/types';
-import type { Butterfly, Profile, SignInError } from '@/lib/types';
+import type { AccountFacts, Butterfly, Profile, SignInError } from '@/lib/types';
 
 /*
  * ── Kimlik Server Action'ları (Aşama E.1) ─────────────────────────────────
@@ -47,6 +48,14 @@ export type SignInResult =
       profile: Profile;
       butterflies: Butterfly[];
       history: Butterfly[];
+      /**
+       * "Hesabım"daki iki sayı ve ayarlardaki kilit.
+       *
+       * Listelerle aynı sebeple burada: sayfa açılırken de okunuyorlar ama o
+       * an kullanıcı misafirdi. Olmasaydı giriş yapan biri kendi hesabında
+       * "0 released in total" görürdü.
+       */
+      account: AccountFacts | null;
     }
   /** Giriş başarılı ama hesap kurulumu yapılmamış — `setup` ekranına. */
   | { ok: true; session: 'incomplete'; email: string }
@@ -115,9 +124,10 @@ export async function signIn(
       return { ok: true, session: 'incomplete', email: account.email };
     }
 
-    const [butterflies, history] = await Promise.all([
+    const [butterflies, history, facts] = await Promise.all([
       readOwnLive(account.id),
       readOwnHistory(account.id),
+      readAccountFacts(account.id),
     ]);
 
     return {
@@ -130,6 +140,7 @@ export async function signIn(
       },
       butterflies,
       history,
+      account: facts,
     };
   } catch {
     return { ok: false, error: { kind: 'network' } };

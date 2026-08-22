@@ -20,8 +20,10 @@ import { AVATAR_COLOURS, NAME_MAX, type Profile } from '@/lib/types';
  * kaydedilmemiş değişiklik varken buton etkin, yokken devre dışı: kullanıcı
  * ne zaman gerçekten bir şey harcadığını görüyor.
  *
- * ⚠ Kilidi SUNUCU uygulamalı (Aşama C). Buradaki durum yalnızca arayüz;
- * istemcide tutulan bir tarih tarayıcı yenilenince sıfırlanır.
+ * ⚠ Kilidi SUNUCU uyguluyor (`app/actions/account.ts`) ve bitiş anı hesap
+ * satırında duruyor. Buradaki `lockedUntil` yalnızca onun görünen yüzü:
+ * istemcide tutulan bir tarih tarayıcı yenilenince sıfırlanırdı ve not
+ * tutulmayan bir söz olurdu.
  */
 export function SettingsCard({
   profile,
@@ -34,7 +36,7 @@ export function SettingsCard({
   onBack: () => void;
   onSave: (name: string, avatarHex: string) => void;
   onDelete: () => void;
-  /** Doluysa değişiklik kilitli — sunucudan gelecek. */
+  /** Doluysa değişiklik kilitli — sunucudan geliyor (`readAccountFacts`). */
   lockedUntil?: Date | null;
 }) {
   const [name, setName] = useState(profile.name);
