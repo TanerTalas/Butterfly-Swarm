@@ -18,9 +18,12 @@ soluyor.
 **Kimlik gerçek.** Hesap açılıyor, e-posta doğrulanıyor, giriş yapılıyor ve
 oturum yenilemeden sağ çıkıyor (E.1 bitti).
 
-⚠ **KELEBEK LİSTESİ HÂLÂ BELLEKTE.** Salınan kelebekler `Garden` içinde yaşıyor
-ve `F5` onları siliyor; sayaç ise artık veritabanında. Kalan sunucu işinin
-tamamı bu ayrımın kapanmasıyla ilgili (E.2 salma, E.3 liste).
+**Salma gerçek.** Kelebek veritabanına yazılıyor, kontenjanlar sunucuda
+uygulanıyor, dört red de dönüyor, sayaç artıyor (E.2 bitti).
+
+⚠ **ÇAYIRIN LİSTESİ HÂLÂ BELLEKTE.** Kelebek veritabanında duruyor ama sahneye
+verilen liste `Garden`ın belleğinden geliyor: `F5` onu siliyor ve başkasının
+kelebeği hiç görünmüyor. Sıradaki iş bu (E.3).
 
 | | |
 |---|---|
@@ -66,23 +69,20 @@ Kalanlar aşağıda.
 
 ### 1.2 Salma ve tavanlar
 
-- **Misafir günlük hakkı bir ÇEREZDE.** Çerez silinebilir ve bu kabul edilmiş
-  bir şey; asıl koruma misafir kontenjanının tavanı (bkz. CLAUDE.md).
-  Arayüz hazır: `GUEST_DAILY_LIMIT`, dolduğunda buton *One a day* olup
-  kilitleniyor.
-- **Kontenjanlar sunucuda da geçerli olmalı**: kişi başı 5 üye kelebeği,
-  çayırda 20 misafir + 120 üye yuvası. Sahne bunları kendi tarafında zaten
-  uyguluyor ama sahne bir GÖRÜNÜM — kural sunucunun.
-- **Red cevapları `ReleaseFailure` şekline oturmalı** (`lib/types.ts`):
-  `guest-limit`, `slots-full`, `meadow-full`, `network`. Dördünün de arayüz
-  karşılığı çizili ve çalışıyor.
-- **Uygunluğu istemci HESAPLAMIYOR**: kalan gün, yuva sayısı, günlük hak —
-  hepsi sunucudan gelen değerler. `daysLeft()` yalnızca çubuğu çiziyor.
-- **Misafir kelebeğinin rengi sunucuda çekilsin.** Bugün istemcide
-  (`Garden.releaseAsGuest`) ve kullanıcı yeniden deneyerek istediği rengi
-  tutturabiliyor.
-- **Salma sayacı ARTIRMALI.** Sayaç veritabanında (`garden.counters`) ve
-  okunuyor, ama kimse üstüne eklemiyor — salma sunucuya taşınınca artacak.
+**E.2 BİTTİ.** Salma sunucuda (`app/actions/release.ts`): kontenjanlar, günlük
+hak, renk çekilişi, tohum ve sayaç. Dört red de gerçekten dönüyor. Kurallar
+`CLAUDE.md` → "Salma"da.
+
+- **Kalan gün hâlâ istemcide hesaplanıyor** (`daysLeft()`). Bugün yalnızca
+  ilerleme çubuğunu çizdiği için zararsız; ömrü dolanı listeden düşürecek olan
+  §1.4 bunu sunucuya taşımalı.
+- **IP başına kısıt yok.** Günlük hak yalnızca çerezde ve çerez silinebilir —
+  kabul edilmiş bir şey (asıl koruma kontenjan tavanı), ama salma tek
+  kimliksiz yazma noktası ve handoff IP başına da sınır istiyor.
+- **İsim moderasyonu yok.** Kelebek isimleri başkalarına görünen kullanıcı
+  içeriği; handoff Unicode normalizasyonu, sıfır genişlikli karakterlerin
+  ayıklanması, küfür/hakaret listesi ve kaldırılabilir bir moderasyon kuyruğu
+  istiyor. Bugün yalnızca uzunluk kontrol ediliyor.
 
 ### 1.3 Liste ve kalıcılık
 
@@ -99,8 +99,11 @@ Kalanlar aşağıda.
   nullable ve "renk yoksa ömrü dolmuş" kuralı şemada kurulu, ama ömrü dolanın
   rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı dolmaz ve gizlilik
   metninin sözü tutulmaz.
-- **`seed` üretimi hâlâ istemcide.** Sütun şemada duruyor; salma sunucuya
-  taşınınca değeri sunucu çekecek (`visitors.js` → `hashSeed` yerine).
+- **Çayır YALNIZCA senin kelebeklerini gösteriyor.** `meadow.sync()` listesi
+  `Garden`ın belleğinden geliyor, yani başkasının saldığı kelebek görünmüyor.
+  Liste sunucudan okunmaya başlayınca çayır gerçekten ortak bir yer olacak —
+  ve sahnedeki yem kelebek yolu ancak o zaman devreye girecek (bugün liste
+  küçük olduğu için kontenjan sahnede hiç dolmuyor).
 
 ### 1.4 Ömrün gerçekten işlemesi
 
