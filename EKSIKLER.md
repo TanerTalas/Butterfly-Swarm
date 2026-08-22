@@ -81,9 +81,8 @@ Kalanlar aşağıda.
 - **Misafir kelebeğinin rengi sunucuda çekilsin.** Bugün istemcide
   (`Garden.releaseAsGuest`) ve kullanıcı yeniden deneyerek istediği rengi
   tutturabiliyor.
-- **Sayacın 27'lik tohumu sunucuya taşınmalı.** Şu an `app/page.tsx`'te;
-  orada kaldığı sürece her sekme kendi 27'sinden başlıyor ve sayaç küresel
-  bir toplam olmaktan çıkıyor.
+- **Salma sayacı ARTIRMALI.** Sayaç veritabanında (`garden.counters`) ve
+  okunuyor, ama kimse üstüne eklemiyor — salma sunucuya taşınınca artacak.
 
 ### 1.3 Liste ve kalıcılık
 
@@ -96,10 +95,12 @@ Kalanlar aşağıda.
 - **History verisi.** Ekran hazır ve boş durumunu gösteriyor; ömrünü
   tamamlamış kelebek listesi sunucudan gelecek. Saklanan şey isim ve tarih —
   renk ve çayırdaki yer gitmiş oluyor (gizlilik metni bunu söylüyor).
-- **`seed` alanı şimdiden şemaya konsun.** İstemci bugün onu kimlikten
-  türetiyor; sunucudan gelmeye başladığında yalnızca o değer değişecek.
-- **`expires_at` MUTLAK bir an olarak saklansın**, "kaç gün" olarak değil
-  (bkz. CLAUDE.md — motor ömrün kaç gün olduğunu bilmiyor).
+- **Rengi silen iş yazılmadı.** `garden.butterfly.fore_hex`/`hind_hex`
+  nullable ve "renk yoksa ömrü dolmuş" kuralı şemada kurulu, ama ömrü dolanın
+  rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı dolmaz ve gizlilik
+  metninin sözü tutulmaz.
+- **`seed` üretimi hâlâ istemcide.** Sütun şemada duruyor; salma sunucuya
+  taşınınca değeri sunucu çekecek (`visitors.js` → `hashSeed` yerine).
 
 ### 1.4 Ömrün gerçekten işlemesi
 
@@ -145,9 +146,8 @@ yalnızca `setSent(true)` yapıyor.
 ## 2. Sunucu gelince kaldırılacaklar
 
 - **`window.__garden` geliştirme kancası.** Üretimde derlenmiyor ama gerçek
-  red cevapları gelince gereksizleşiyor (bkz. Notlar).
-- **`Garden.seedButterflies()`** — hesap ekranlarını dolduran üç örnek
-  kelebek.
+  red cevapları gelince gereksizleşiyor (bkz. Notlar). D1 ve D6 zaten gerçek
+  olabiliyor; kalan dördü salmaya bağlı.
 
 ---
 
