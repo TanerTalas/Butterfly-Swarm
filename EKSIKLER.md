@@ -12,19 +12,15 @@ Aşamalı sıra `ROADMAP.md` → Bölüm II'de. Aşağısı o sıranın açık k
 ## Durum özeti
 
 **Tasarım işi kalmadı.** Bütün ekranlar, durum hâlleri, mobil yerleşim, odak
-yönetimi ve metinler tamam. Sahne canlı: kelebek salınıyor, izleniyor,
-soluyor.
+yönetimi ve metinler tamam. Sahne canlı: kelebek salınıyor, izleniyor, soluyor.
 
-**Kimlik gerçek.** Hesap açılıyor, e-posta doğrulanıyor, giriş yapılıyor ve
-oturum yenilemeden sağ çıkıyor (E.1 bitti).
+**Sunucu bitti (E).** Kimlik, salma, kontenjanlar, listeler, hesap silme ve
+iletişim formu gerçek. **Ömür de işliyor (F):** yedi günü dolan kelebek
+listeden düşüyor, yuva boşalıyor, veda ekranı gerçek bir olaya bağlı, profil
+kilidi sunucuda ve rengi silen günlük süpürme yazıldı.
 
-**Salma ve kalıcılık gerçek.** Kelebek veritabanına yazılıyor, kontenjanlar
-sunucuda uygulanıyor, dört red de dönüyor, sayaç artıyor (E.2). Çayır, kişisel
-liste ve geçmiş sunucudan geliyor: `F5` hiçbir şeyi kaybetmiyor ve çayır ortak
-bir yer (E.3).
-
-⚠ **HESAP SİLME SAHTE** ve önce bir arayüz eksiği kapanmalı (§1.3). Ömrü dolanın
-rengini silen zamanlanmış iş de yok, yani geçmiş kendiliğinden dolmuyor.
+Kalanlar: kötüye kullanıma karşı ikinci sıra korumalar (§1) ve yayın
+hazırlığı (§5).
 
 | | |
 |---|---|
@@ -32,33 +28,28 @@ rengini silen zamanlanmış iş de yok, yani geçmiş kendiliğinden dolmuyor.
 | Sahne | Canlı three.js sakura çayırı: 60 yerleşik + 20 misafir + 120 üye yuvası |
 | Mobil | 390px'te denendi |
 | Veritabanı | Postgres (Neon, Frankfurt). Şema `garden`; `npm run migrate` |
-| Build | `npm run build` geçiyor (8/8 sayfa), `tsc --noEmit` temiz |
+| Zamanlanmış iş | `app/api/cron/sweep` — Vercel Cron, günde bir (`vercel.json`) |
 
 ---
 
 ## 1. Sunucu
 
-**E.1 (şema + kimlik) BİTTİ.** Gerçek hesapla girilip çıkılabiliyor, yenilemede
-oturum duruyor, şifre argon2id özeti olarak saklanıyor, kayıt e-posta
-doğrulamasından geçiyor. Kurallar `CLAUDE.md` → "Kimlik"te.
-
-Kalanlar aşağıda.
+Aşama E bitti; kalan kalemler kötüye kullanım ve sertleştirme tarafında.
 
 ### 1.1 Kimlik
 
 - **Google ile giriş.** Buton çizili ama bağlı değil ve bu yüzden DEVRE DIŞI
   duruyor. Kendi auth'umuzu yazdığımız için OAuth akışını da yazmak gerekiyor
   (~150 satır, kütüphane gerekmez).
-- **Cloudflare Turnstile** girişte ve kayıtta. Bot koruması bizim yazacağımız
-  bir şey değil.
+- **Cloudflare Turnstile GİRİŞTE ve KAYITTA yok.** Sunucu tarafı hazır
+  (`lib/server/turnstile.ts`) ve iletişim formunda çalışıyor; giriş kartına
+  bağlanması ayrı bir iş — site anahtarının `app/page.tsx`ten `Garden`a, oradan
+  `SignInCard`a geçmesi gerekiyor (`NEXT_PUBLIC_` yok, prop olarak).
 - **Deneme kısıtı IP başına da olmalı.** Bugün yalnızca e-posta anahtarıyla
   (`garden.sign_in_attempt`) ve bu, adresini bilen birinin bir hesabı kasten
   kilitlemesine açık. Kilit kısa ömürlü olduğu için zarar da kısa ömürlü, ama
-  asıl çözüm IP.
-- **Yetki kontrolü her uç noktada.** Kelebek silme/düzenleme sahibine bağlı
-  olmalı; `id` tahmin edilebilir olmamalı. (Bugünkü uç noktalarda hesap kimliği
-  hep çerezden okunuyor, çağrıdan değil — kural bu, yeni uç noktalarda da
-  korunmalı.)
+  asıl çözüm IP. Özetleme yolu artık hazır (`lib/server/contact.ts` →
+  `hashIp`).
 - CSRF, güvenlik başlıkları ve tam CSP (bkz. §5).
 - **Şifre gücü yalnızca uzunluğa bakıyor** (`PASSWORD_MIN` = 10). Handoff sızmış
   şifre listesine bakılmasını da istiyor.
@@ -68,13 +59,6 @@ Kalanlar aşağıda.
 
 ### 1.2 Salma ve tavanlar
 
-**E.2 BİTTİ.** Salma sunucuda (`app/actions/release.ts`): kontenjanlar, günlük
-hak, renk çekilişi, tohum ve sayaç. Dört red de gerçekten dönüyor. Kurallar
-`CLAUDE.md` → "Salma"da.
-
-- **Kalan gün hâlâ istemcide hesaplanıyor** (`daysLeft()`). Bugün yalnızca
-  ilerleme çubuğunu çizdiği için zararsız; ömrü dolanı listeden düşürecek olan
-  §1.4 bunu sunucuya taşımalı.
 - **IP başına kısıt yok.** Günlük hak yalnızca çerezde ve çerez silinebilir —
   kabul edilmiş bir şey (asıl koruma kontenjan tavanı), ama salma tek
   kimliksiz yazma noktası ve handoff IP başına da sınır istiyor.
@@ -83,80 +67,46 @@ hak, renk çekilişi, tohum ve sayaç. Dört red de gerçekten dönüyor. Kurall
   ayıklanması, küfür/hakaret listesi ve kaldırılabilir bir moderasyon kuyruğu
   istiyor. Bugün yalnızca uzunluk kontrol ediliyor.
 
-### 1.3 Liste ve kalıcılık
+### 1.3 Listeler ve canlılık
 
-**Büyük kısmı BİTTİ.** Çayır, "Kelebeklerim" ve geçmiş sunucudan geliyor
-(`lib/server/meadow.ts`); `F5` çayırı bozmuyor, başkasının kelebeği görünüyor,
-çıkış yapan birinin kelebeği uçmaya devam ediyor.
-
-- ⚠ **HESAP SİLME HÂLÂ SAHTE.** `Garden.deleteAccount()` yalnızca ekranı
-  temizliyor; hiçbir şey silinmiyor ve yenileyince hesap geri geliyor.
-  Ayrıntısı §1.5'te.
-- **Rengi silen iş yazılmadı.** `fore_hex`/`hind_hex` nullable ve "renk yoksa
-  ömrü dolmuş" kuralı hem şemada hem sorgularda kurulu, ama ömrü dolanın
-  rengini boşaltan zamanlanmış iş yok. Onsuz geçmiş ekranı KENDİLİĞİNDEN
-  dolmaz (bugün yalnızca elle eklenmiş satırlarla dolduruluyor) ve gizlilik
-  metninin sözü tutulmaz.
 - **Listeler yalnızca giriş anında ve sayfa açılışında çekiliyor.** Başka bir
   sekmede salınan kelebek bu sekmenin çayırında görünmüyor. Bugün sorun değil
   (çayır sessiz bir yer), ama "canlı" hissi isteniyorsa periyodik bir
-  yenileme gerekir.
+  yenileme gerekir. Ömrün dolması bunun istisnası: onu istemci kendisi
+  düşürüyor (`Garden`daki 30 saniyelik tur).
+- ⚠ **Ömrün dolması TARAYICININ SAATİNE bakıyor.** Karşılaştırılan iki uç da
+  sunucudan geliyor ama "şimdi" istemcinin; saati epeyce şaşmış bir tarayıcı
+  kelebeği erken ya da geç düşürür. Yenilemede sunucu düzeltiyor, o yüzden
+  bugün kozmetik.
+- **Köprüde `recolor` yok.** Fark hesabı `id` üzerinden bakıyor; var olan bir
+  kelebeğin rengi değişirse sahneye yansımaz. Bugün renk salındıktan sonra
+  değişmediği için sorun değil.
 
-### 1.4 Ömrün gerçekten işlemesi
+### 1.4 İletişim formu
 
-Hepsi "ömür doldu" diyecek bir otoriteye dayanıyor, o yüzden sunucudan önce
-yapılamaz.
+Uç nokta, saklama, saatlik kısıt ve bot kontrolü yazıldı (`app/actions/contact.ts`).
+Kalanlar:
 
-- **Ömrü dolan kelebeği listeden düşür.** Sahnedeki solma zaten çalışıyor ve
-  kelebek görünmez oluyor; ama sahne onu KALDIRMIYOR, çünkü listeden düşürme
-  kararı listenin sahibinin. Eksik olan tetikleyici.
-- **Boşalan yuva havuza dönüyor.** Mekanizma hazır (`visitors.remove`).
-- **Veda ekranı** (`farewell`) gerçek bir olaya bağlanacak; bugün hiç
-  tetiklenmiyor.
-- **Ayarlardaki 1 günlük renk kilidi** sunucuda uygulanacak; `lockedUntil`
-  prop'u duruyor ama kimse doldurmuyor ve istemcideki tarih yenilemede
-  sıfırlanıyor.
-
-### 1.5 Hesap silme
-
-`SettingsCard` onay adımı gösteriyor ve kullanıcı hesap ismini yazmadan
-`Delete for good` açılmıyor. `deleteAccount()` şu an yalnızca ekranı
-temizliyor — hiçbir şey silinmiyor.
-
-**KARAR: şifre sorulmayacak.** İsim yazma eşiği tek eşik olarak kalıyor; onay
-adımına şifre alanı eklenmeyecek.
-
-⚠ Bedeli açıkça: **çalınmış ya da açık bırakılmış bir oturumla hesap kalıcı
-olarak silinebiliyor** ve geri alınamıyor. Bu bilinen ve kabul edilmiş bir
-risk, gözden kaçmış bir eksik değil.
-
-Sunucu tarafında kalanlar:
-
-- Hesabın ve ona bağlı verinin gerçekten silinmesi. **Kalıcı, geri alma
-  penceresi yok.** (`on delete cascade` kelebekleri, oturumları ve token'ları
-  zaten götürüyor — denendi.)
-- Kelebeklerin çayırdan **anında** kalkması — uyarı metninin verdiği söz bu.
-- Bütün oturumların sonlandırılması. Mekanizma hazır ve şifre sıfırlamada
-  çalıştığı görüldü: `destroyAllSessions()` (`lib/server/session.ts`).
-
-### 1.6 İletişim formu
-
-`components/legal/ContactForm.tsx` hiçbir yere göndermiyor — gönderim
-yalnızca `setSent(true)` yapıyor.
-
-- Gerçek bir uç nokta + e-posta gönderimi.
-- **Cloudflare Turnstile.** Bal küpü alanı duruyor ama tek başına yetmiyor;
-  form kimliksiz bir yazma noktası.
-- Gönderenin adresi doğrulanmıyor: yanıt yazılacaksa ilişkilendirme sunucuda
-  yapılmalı.
+- **Üretimde Turnstile anahtarları gerekiyor.** `TURNSTILE_SITE_KEY` /
+  `TURNSTILE_SECRET_KEY` boşken kontrol YAPILMIYOR ve form açık kalıyor —
+  bilinçli bir tercih (bkz. `lib/server/turnstile.ts`), ama üretimde bir eksik.
+- **`CONTACT_TO` boşsa mesaj `MAIL_FROM`a düşüyor**, o da okunan bir kutu
+  olmayabilir. Gerçek bir kutu tanımlanmalı.
+- **Mesajların saklama süresi belirsiz.** Gizlilik metni "cevaplayabilmek için
+  duruyor" diyor ama silen bir iş yok; süpürmeye bir kural eklenmeli (ör. bir
+  yıl) ve metin o süreyi söylemeli.
+- **Gönderenin adresi doğrulanmıyor.** Cevap yazan kişi adresi görüp bilerek
+  seçiyor (`reply_to` bilerek kullanılmıyor); yine de yanlış kişiye yazma
+  riski insanın elinde.
+- **Gelen kutusu arayüzü yok.** Mesajlar tabloda duruyor, okunması SQL ile.
 
 ---
 
 ## 2. Sunucu gelince kaldırılacaklar
 
-- **`window.__garden` geliştirme kancası.** Üretimde derlenmiyor ama gerçek
-  red cevapları gelince gereksizleşiyor (bkz. Notlar). D1 ve D6 zaten gerçek
-  olabiliyor; kalan dördü salmaya bağlı.
+- **`window.__garden` geliştirme kancası.** Üretimde derlenmiyor ve artık
+  hâllerin çoğu gerçekten oluşabiliyor (D1, D3, D4, D6); yalnızca WebGL'siz
+  tarayıcı hâli (D8) ile ulaşılması zor redler için duruyor.
 
 ---
 
@@ -164,10 +114,8 @@ yalnızca `setSent(true)` yapıyor.
 
 - Sahnenin düşük kalite profiline geçmesi (`pickQuality` 900px'e bakıyor).
 - Kanat renk örnekleri hâlâ 28px; dokunma hedefi 44px'e çıkarılabilir.
-- **Köprüde `recolor` yok.** Fark hesabı `id` üzerinden bakıyor; var olan bir
-  kelebeğin rengi değişirse sahneye yansımaz. Bugün renk salındıktan sonra
-  değişmediği için sorun değil — ayarlardaki kilit gerçek bir renk
-  düzenlemesine dönüşürse gerekecek.
+- `daysLeft()` hâlâ istemcide hesaplanıyor ve yalnızca ilerleme çubuğunu
+  çiziyor; uygunluk kararı zaten sunucuda.
 
 ---
 
@@ -175,11 +123,6 @@ yalnızca `setSent(true)` yapıyor.
 
 **Renk seçicide doygunluk alt sınırı.** Soluk bir renk seçen kullanıcı
 kelebeğini çayırda kaybediyor. Serbest hex girişi duruyor, sınır konmadı.
-
-**Sayaç tohumu ile gizlilik metni.** Metin sayıyı "the count of how many
-butterflies have been released" diye tarif ediyor; 27'lik sahte tohumla
-birlikte bu tam doğru değil. Metin yumuşatılmalı ya da tohum kaldırılmalı —
-hukuki incelemede (§5) sorulacak yerlerden biri.
 
 **Üye kontenjanının büyümesi.** 120 yuva ≈ aynı anda en fazla 24 üyenin beş
 kelebeği. `meadow-full` bir güvenlik supabı, çözüm değil; ürün büyürse ilk
@@ -192,21 +135,26 @@ sıkışacak yer burası.
 - **Depo private yapılmalı.** Şu an herkese açık. Handoff bunu şart koşuyor;
   `design_handoff_butterfly_garden/` bu yüzden commit'lenmedi.
 - **Yasal metinler gerçek değil.** Sade dille ve ürünün gerçek davranışına
-  göre yazıldı ama hukuki inceleme görmedi; KVKK/GDPR sürümleriyle
-  değişmeli. Veri olarak duruyorlar (`lib/legal.ts`), JSX değil.
+  göre yazıldı (22 Ağustos'ta sitenin bugünkü mimarisine göre yenilendi) ama
+  hukuki inceleme görmedi; KVKK/GDPR sürümleriyle değişmeli. Veri olarak
+  duruyorlar (`lib/legal.ts`), JSX değil.
 - **Inkwell atıfı.** MIT lisansı telif bildiriminin korunmasını şart koşuyor;
   `public/textures/CREDITS.txt` var ama sitenin atıf sayfasına da girmeli.
 - **Model dosyaları ~6 MB ham PNG doku.** KTX2'ye çevrilip küçültülmeli.
-- **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; three.js için
-  `worker-src blob:` gereken tam CSP yazılmadı.
-- ⚠ **Vercel fonksiyon bölgesi `fra1` yapılmalı.** Varsayılan `iad1`
-  (Washington) ve veritabanı Frankfurt'ta; düzeltilmezse HER sorgu Atlantik'i
-  geçer. Bir sayfa açılışı birkaç sorgu yapıyor, yani bu tek ayar yüzlerce ms
-  demek. Bölgeyi Neon tarafında düzeltmek mümkün DEĞİL — orada sonradan
-  değiştirilemiyor.
-- **Üretim ortam değişkenleri:** `DATABASE_URL` (üretim veritabanı, pooled),
-  `APP_URL` (alan adı), `RESEND_API_KEY` + `MAIL_FROM`. Son ikisi boş kalırsa
-  kaydolan herkes hiç açılmayacak bir kapının önünde kalır.
+- **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; tam CSP
+  yazılmadı. İki gereksinim birden: three.js için `worker-src blob:`, Turnstile
+  için `script-src` ve `frame-src` içinde `https://challenges.cloudflare.com`.
+- **Üretim ortam değişkenleri:**
+  - `DATABASE_URL` (üretim veritabanı, pooled), `APP_URL` (alan adı)
+  - `RESEND_API_KEY` + `MAIL_FROM` — boş kalırsa kaydolan herkes hiç
+    açılmayacak bir kapının önünde kalır
+  - `CONTACT_TO` — iletişim mesajlarının düşeceği kutu
+  - `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` — boşken bot kontrolü yok
+  - `IP_HASH_SECRET` — boşken IP özeti anahtarsız üretiliyor
+  - `CRON_SECRET` — **boşken süpürme HİÇ çalışmıyor** (uç nokta her isteği
+    reddediyor) ve renk silme sözü tutulmaz
+- **Cron dağıtımdan sonra doğrulanmalı.** `vercel.json` günde bir çağırıyor;
+  Vercel'in Hobby planı günlük sıklıktan fazlasına izin vermiyor.
 
 ---
 
@@ -224,13 +172,18 @@ yazıyor; birlikte çalıştıklarında CSS tamamen kaybolabiliyor.
 değişkenlerini açılışta okuyor; ayrıca veritabanı havuzu `globalThis`te
 saklandığı için (`lib/server/db.ts`) hot reload onu tazelemiyor.
 
+⚠️ Uzun süre açık kalan dev sunucusunun statik render işçisi çökebiliyor:
+`/legal/*` rotaları 500 dönüp `Jest worker encountered 2 child process
+exceptions` diyor, `/` çalışmaya devam ediyor. Kodla ilgisi yok — sunucuyu
+yeniden başlatmak çözüyor.
+
 ### Veritabanıyla çalışmak
 
 **Şema:** `npm run migrate` — `psql` gerekmiyor. Yeniden çalıştırmak zararsız;
 uygulananlar `garden.migration` defterinde.
 
-**Postalar konsola basılıyor** (doğrulama ve şifre sıfırlama bağlantıları dev
-sunucusunun çıktısında). Resend anahtarı gerekmiyor.
+**Postalar konsola basılıyor** (doğrulama, şifre sıfırlama ve iletişim
+mesajları dev sunucusunun çıktısında). Resend anahtarı gerekmiyor.
 
 **Doğrulanmış bir test hesabı** açmanın en kısa yolu — arayüzden kayıt olup
 posta beklemeye gerek yok:
@@ -252,9 +205,25 @@ await c.query(
 `isolatedModules` altında değer olarak erişilemiyor (bkz.
 `lib/server/password.ts`).
 
+**Ömrün dolmasını denemek** için kelebeği yaşlandır — beklemek gerekmiyor:
+
+```sql
+update garden.butterfly set expires_at = now() - interval '1 minute'
+ where owner_id = (select id from garden.account where email = 'wren@example.com');
+```
+
+Çayır ekranında en geç 30 saniye içinde veda ekranı açılıyor.
+
+**Süpürmeyi elle çalıştırmak** (`.env.local`de `CRON_SECRET` dolu olmalı):
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sweep
+```
+
 **Temizlik:** `delete from garden.account where email like '%@example.com'`
-(kelebekler, oturumlar ve token'lar `on delete cascade` ile gidiyor),
-`delete from garden.butterfly`, sayacı 27'ye geri al.
+(kelebekler, oturumlar ve token'lar `on delete cascade` ile gidiyor; iletişim
+mesajları `set null` ile KALIYOR), `delete from garden.butterfly`,
+`delete from garden.contact_message`, sayacı 27'ye geri al.
 
 ⚠ **TAZE ÇEREZ KABI GEREKTİĞİNDE farklı bir host kullan.** Misafirin günlük
 hakkı ve şifre sıfırlama çerezi `httpOnly`, yani JavaScript ile silinemiyor.
