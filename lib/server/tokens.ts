@@ -60,6 +60,57 @@ export async function issueEmailToken(
  * aynı anda iki kez tıklanınca ikisi de geçerli görürdü; `used_at is null`
  * koşulunu `update`in içine koymak bu yarışı veritabanına çözdürüyor.
  */
+/**
+ * Token geçerli mi — TÜKETMEDEN.
+ *
+ * ⚠ Şifre sıfırlamada bağlantıya tıklamak token'ı HARCAMAMALI: harcanma, yeni
+ * şifre gönderildiğinde olmalı. Yoksa bağlantıyı açıp formu doldurmadan
+ * vazgeçen (ya da sekmesi kapanan) kullanıcı, kendi bağlantısını yakmış olurdu
+ * ve baştan istemek zorunda kalırdı.
+ *
+ * Bu yüzden salt-okunur. Gerçek koruma `consumeEmailToken`ın atomik
+ * `update`inde; burası yalnızca ölü bir bağlantının kullanıcıyı boşuna form
+ * doldurtmasını engelliyor.
+ */
+export async function emailTokenValid(
+  token: string,
+  purpose: TokenPurpose,
+): Promise<boolean> {
+  const row = await queryOne<{ ok: boolean }>(
+    `select true as ok
+       from garden.email_token
+      where token_hash = $1
+        and purpose = $2
+        and used_at is null
+        and expires_at > now()`,
+    [hashToken(token), purpose],
+  );
+
+  return row !== null;
+}
+
+/**
+ * Bu amaçla en son ne zaman token üretildiği. Token yoksa `null`.
+ *
+ * Sıfırlama isteğinin art arda basılmasına karşı: her basış yeni bir posta
+ * demek ve uç nokta kimliksiz, yani bir posta topu hâline gelebilir.
+ */
+export async function lastTokenIssuedAt(
+  accountId: string,
+  purpose: TokenPurpose,
+): Promise<Date | null> {
+  const row = await queryOne<{ created_at: Date }>(
+    `select created_at
+       from garden.email_token
+      where account_id = $1 and purpose = $2
+      order by created_at desc
+      limit 1`,
+    [accountId, purpose],
+  );
+
+  return row?.created_at ?? null;
+}
+
 export async function consumeEmailToken(
   token: string,
   purpose: TokenPurpose,

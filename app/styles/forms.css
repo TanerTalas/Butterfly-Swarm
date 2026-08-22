@@ -20,6 +20,25 @@
   gap: 12px;
 }
 
+/*
+ * Alan başlığındaki tıklanabilir ipucu — bugün tek kullanıcısı giriş
+ * kartındaki "forgot?".
+ *
+ * `hint` yuvası zaten `.stamp` içinde çiziliyor, ama buton tarayıcı
+ * sıfırlaması yüzünden o yazıyı devralmıyor. Ölçüler `.stamp`ten, renk ve
+ * hover `.link-cancel` kalıbından — yeni bir dil değil, var olan ikisinin
+ * birleşimi.
+ */
+.link-stamp {
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--color-accent);
+  transition: opacity 200ms ease;
+}
+.link-stamp:hover {
+  opacity: 0.7;
+}
+
 .field-label {
   font-family: var(--font-mono);
   font-size: 12px;

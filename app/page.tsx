@@ -2,6 +2,7 @@ import { Garden } from '@/components/Garden';
 import { guestReleaseUsed } from '@/app/actions/release';
 import { readReleaseTotal } from '@/lib/server/counter';
 import { readMeadow, readOwnHistory, readOwnLive } from '@/lib/server/meadow';
+import { resetPending } from '@/lib/server/reset';
 import { readSession } from '@/lib/server/session';
 import type { Butterfly, Session } from '@/lib/types';
 
@@ -17,11 +18,12 @@ import type { Butterfly, Session } from '@/lib/types';
  * gerek yok.
  */
 export default async function Home() {
-  const [session, total, guestUsed, meadow] = await Promise.all([
+  const [session, total, guestUsed, meadow, reset] = await Promise.all([
     readSession(),
     readReleaseTotal(),
     guestReleaseUsed(),
     readMeadow(),
+    resetPending(),
   ]);
 
   /*
@@ -59,6 +61,7 @@ export default async function Home() {
       initialTotal={total}
       initialSession={initialSession}
       initialGuestUsed={guestUsed}
+      initialResetPending={reset}
       initialMeadow={meadow}
       initialButterflies={mine}
       initialHistory={history}

@@ -21,6 +21,7 @@ import { GuestReleaseCard } from '@/components/release/GuestReleaseCard';
 import { ReleasedView } from '@/components/release/ReleasedView';
 import { WingsCard } from '@/components/release/WingsCard';
 import { SignInCard } from '@/components/account/SignInCard';
+import { ForgotCard, ResetCard } from '@/components/account/ResetCards';
 import { SetupCard } from '@/components/account/SetupCard';
 import { AccountCard } from '@/components/account/AccountCard';
 import { SettingsCard } from '@/components/account/SettingsCard';
@@ -52,6 +53,10 @@ import {
   releaseAsGuest as releaseGuestAction,
   releaseAsMember as releaseMemberAction,
 } from '@/app/actions/release';
+import {
+  requestPasswordReset,
+  resetPassword,
+} from '@/app/actions/password';
 
 /*
  * Bahçe — tek sayfanın durum makinesi.
@@ -79,6 +84,8 @@ type View =
   | 'guest-release'
   | 'released'
   | 'signin'
+  | 'forgot'
+  | 'reset'
   | 'setup'
   | 'meadow'
   | 'wings'
@@ -92,6 +99,7 @@ export function Garden({
   initialTotal = 0,
   initialSession = { kind: 'guest' },
   initialGuestUsed = false,
+  initialResetPending = false,
   initialMeadow = [],
   initialButterflies = [],
   initialHistory = [],
@@ -99,6 +107,13 @@ export function Garden({
   initialTotal?: number;
   /** Misafir bugünkü hakkını kullandı mı (`app/page.tsx` → `guestReleaseUsed()`). */
   initialGuestUsed?: boolean;
+  /**
+   * Sıfırlama çerezi duruyor mu — yani kullanıcı postadaki bağlantıdan geldi.
+   *
+   * Token buraya GELMİYOR, yalnızca "bir sıfırlama sürüyor" bilgisi geliyor.
+   * Token `httpOnly` çerezde kalıyor ve onu okuyan tek yer sunucu.
+   */
+  initialResetPending?: boolean;
   /** Çayırda uçan HERKESİN kelebeği — isimsiz, sahipsiz (`readMeadow()`). */
   initialMeadow?: MeadowEntry[];
   /** Üyenin kendi uçan kelebekleri (`readOwnLive()`). */
@@ -122,13 +137,13 @@ export function Garden({
    * bağlantısından gelen kullanıcı da buraya iniyor (`/auth/confirm` oturumu
    * kurup `/`'e bırakıyor).
    */
-  const [view, setView] = useState<View>(() =>
-    initialSession.kind === 'incomplete'
-      ? 'setup'
-      : initialSession.kind === 'member'
-        ? 'meadow'
-        : 'landing',
-  );
+  const [view, setView] = useState<View>(() => {
+    // Sıfırlama bağlantısından gelen her şeyin önünde: hesabına giremeyen biri
+    // için yapılacak tek iş bu.
+    if (initialResetPending) return 'reset';
+    if (initialSession.kind === 'incomplete') return 'setup';
+    return initialSession.kind === 'member' ? 'meadow' : 'landing';
+  });
 
   /*
    * Geri donus yigini.
@@ -179,6 +194,9 @@ export function Garden({
 
   /** Kayıt alındı, doğrulama postası yolda — `SignInCard status="verify"`. */
   const [awaitingVerify, setAwaitingVerify] = useState(false);
+
+  /** Sıfırlama bağlantısı, form doldurulurken ölmüş. */
+  const [resetExpired, setResetExpired] = useState(false);
 
   /*
    * Kullanıcının KENDİ uçan kelebekleri — "Kelebeklerim"in kaynağı ve beş
@@ -550,6 +568,47 @@ export function Garden({
   }
 
   /*
+   * ── Şifre sıfırlama ─────────────────────────────────────────────────────
+   *
+   * ⚠ Cevaba BAKILMIYOR ve bakılmamalı: `requestPasswordReset` her zaman
+   * başarı döndürüyor, çünkü kayıtlı adresle kayıtlı olmayanı ayırt eden bir
+   * cevap bu formu kullanıcı sayma aracına çevirirdi. Kart "gönderildi"
+   * ekranını kendi gösteriyor.
+   */
+  async function askPasswordReset(email: string) {
+    setPending(true);
+    await requestPasswordReset(email);
+    setPending(false);
+  }
+
+  async function submitNewPassword(password: string) {
+    setPending(true);
+    const result = await resetPassword(password);
+    setPending(false);
+
+    if (!result.ok) {
+      /*
+       * Ölü bağlantıya tıklayan buraya HİÇ gelmiyor (sessizce çayıra düşüyor,
+       * bkz. `/auth/confirm`). Buraya gelip de bunu görmek, formu doldururken
+       * bağlantının süresinin dolması demek.
+       *
+       * `password` reddi arayüzden ulaşılamıyor — buton zaten kilitli.
+       */
+      if (result.reason === 'link') setResetExpired(true);
+      return;
+    }
+
+    /*
+     * Şifre değişti ve sunucu oturumu kurdu. Profil ve listeler için sayfa
+     * yeniden yükleniyor: tek sayfa mimarisinde bunu yapmanın alternatifi,
+     * `resetPassword`ın da profili ve iki listeyi döndürmesiydi — `signIn`
+     * gibi. Sıfırlama nadir bir olay, tam bir yükleme burada kabul edilebilir
+     * ve akışı basit tutuyor.
+     */
+    window.location.href = '/';
+  }
+
+  /*
    * ⚠ ÇAYIR BOŞALMIYOR. Salınan kelebek çayırın, salanın değil — oturum
    * kapansa da yedi gününü doldurmaya devam ediyor. Burada temizlenen tek
    * şey KİŞİSEL olan: profil ve "Kelebeklerim" listesi.
@@ -726,6 +785,24 @@ export function Garden({
               onDone={completeSignIn}
               onBack={back}
               onNeedsSetup={startSignUp}
+              onForgot={() => go('forgot')}
+            />
+          )}
+
+          {view === 'forgot' && (
+            <ForgotCard
+              pending={pending}
+              onSend={askPasswordReset}
+              onBack={back}
+            />
+          )}
+
+          {view === 'reset' && (
+            <ResetCard
+              pending={pending}
+              expired={resetExpired}
+              onSubmit={submitNewPassword}
+              onBack={() => reset(signedIn ? 'meadow' : 'landing')}
             />
           )}
 

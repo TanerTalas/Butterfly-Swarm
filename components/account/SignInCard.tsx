@@ -41,6 +41,7 @@ export function SignInCard({
   onDone,
   onNeedsSetup,
   onBack,
+  onForgot,
   error,
   onAttempt,
   pending = false,
@@ -56,6 +57,8 @@ export function SignInCard({
   onDone: (email: string, password: string) => void;
   onNeedsSetup: (email: string, password: string) => void;
   onBack: () => void;
+  /** "forgot?" — şifre sıfırlama ekranına. */
+  onForgot: () => void;
   /** Sunucunun reddi. `null` iken kart temiz. */
   error?: SignInError | null;
   /** Her gönderimde çağrılıyor — `Garden` önceki hatayı buradan siliyor. */
@@ -159,6 +162,25 @@ export function SignInCard({
           <PasswordField
             ref={passwordRef}
             label="password"
+            /*
+             * ⚠ YALNIZCA giriş sekmesinde. Kayıt olan birine "şifreni mi
+             * unuttun" diye sormak anlamsız — henüz bir şifresi yok.
+             *
+             * Alanın başlığındaki `hint` yuvası kullanılıyor: orada zaten
+             * karakter sayacı gibi küçük bilgiler duruyor (`.stamp`), yani
+             * yeni bir yer açılmıyor.
+             */
+            hint={
+              tab === 'in' ? (
+                <button
+                  type="button"
+                  onClick={onForgot}
+                  className="link-stamp"
+                >
+                  forgot?
+                </button>
+              ) : undefined
+            }
             autoComplete={tab === 'in' ? 'current-password' : 'new-password'}
             placeholder={`at least ${PASSWORD_MIN} characters`}
             value={password}

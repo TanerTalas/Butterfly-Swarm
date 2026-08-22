@@ -107,6 +107,37 @@ export async function sendVerificationEmail(
 }
 
 /**
+ * Şifre sıfırlama bağlantısı.
+ *
+ * ⚠ Ömür yine BİR SAAT ve metin bunu söylüyor, çünkü ekran da söylüyor. Süre
+ * `lib/server/tokens.ts` → `TOKEN_MINUTES`; üç yer tek sayıdan besleniyor.
+ *
+ * Metin, isteği yapmayan birine ne olduğunu da anlatıyor: sıfırlama isteği tek
+ * başına hiçbir şeyi değiştirmiyor, eski şifre bağlantı kullanılana kadar
+ * çalışmaya devam ediyor.
+ */
+export async function sendPasswordResetEmail(
+  to: string,
+  token: string,
+): Promise<void> {
+  const link = `${appUrl()}/auth/confirm?token=${token}&purpose=reset`;
+
+  await deliver({
+    to,
+    subject: 'A new password for the meadow',
+    text: [
+      'Follow this link to set a new password:',
+      '',
+      link,
+      '',
+      'The link lasts an hour and works once. If you did not ask for it,',
+      'nothing has changed — your old password still works and you can',
+      'ignore this message.',
+    ].join('\n'),
+  });
+}
+
+/**
  * Zaten kayıtlı bir adrese kayıt denendiğinde giden posta.
  *
  * ⚠ Bu posta girişteki TEK MESAJ kuralının parçası. Kayıt ekranı e-postanın
