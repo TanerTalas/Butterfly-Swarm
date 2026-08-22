@@ -40,8 +40,15 @@ import {
   type Butterfly,
   type Profile,
   type ReleaseFailure,
+  type Session,
   type SignInError,
 } from '@/lib/types';
+import {
+  completeSetup,
+  signIn as signInAction,
+  signOut as signOutAction,
+  signUp as signUpAction,
+} from '@/app/actions/auth';
 
 /*
  * Bahçe — tek sayfanın durum makinesi.
@@ -72,37 +79,35 @@ type View =
   | 'history'
   | 'farewell';
 
-/** Sunucu gelene kadar hesap ekranlarını dolduran örnek kelebekler. */
-function seedButterflies(): Butterfly[] {
-  const day = 86_400_000;
-  const now = Date.now();
-  return [
-    {
-      id: 'seed-mint',
-      name: 'Mint',
-      foreHex: WING_COLOURS[0].hex,
-      hindHex: WING_COLOURS[1].hex,
-      releasedAt: new Date(now - day),
-    },
-    {
-      id: 'seed-olive',
-      name: 'Olive',
-      foreHex: WING_COLOURS[4].hex,
-      hindHex: WING_COLOURS[2].hex,
-      releasedAt: new Date(now - 5 * day),
-    },
-    {
-      id: 'seed-juno',
-      name: 'Juno',
-      foreHex: WING_COLOURS[3].hex,
-      hindHex: WING_COLOURS[3].hex,
-      releasedAt: new Date(now - 3 * day),
-    },
-  ];
-}
-
-export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
-  const [view, setView] = useState<View>('landing');
+export function Garden({
+  initialTotal = 0,
+  initialSession = { kind: 'guest' },
+}: {
+  initialTotal?: number;
+  /**
+   * Sunucunun okuduğu oturum (`app/page.tsx` → `readSession()`).
+   *
+   * ⚠ Oturum İLK RENDER'da biliniyor, sonradan bir effect'le sorulmuyor.
+   * Sorulsaydı sayfa önce misafir hâlinde çizilir, sonra üye hâline
+   * sıçrardı — yenilemede her seferinde görünen bir titreme.
+   */
+  initialSession?: Session;
+}) {
+  /*
+   * Açılış ekranı OTURUMDAN geliyor.
+   *
+   * Hesap kurulumunu yarıda bırakıp yenileyen biri `setup`ta devam ediyor;
+   * `landing`e düşseydi hesabı var ama girilemeyen bir hâlde kalırdı. Doğrulama
+   * bağlantısından gelen kullanıcı da buraya iniyor (`/auth/confirm` oturumu
+   * kurup `/`'e bırakıyor).
+   */
+  const [view, setView] = useState<View>(() =>
+    initialSession.kind === 'incomplete'
+      ? 'setup'
+      : initialSession.kind === 'member'
+        ? 'meadow'
+        : 'landing',
+  );
 
   /*
    * Geri donus yigini.
@@ -139,7 +144,22 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
    */
   const forcedFailure = useRef<ReleaseFailure | SignInError | null>(null);
 
-  const [profile, setProfile] = useState<Profile | null>(null);
+  /*
+   * Profil oturumdan başlıyor. `incomplete` hâlinde İSMİ BOŞ bir profil
+   * kuruluyor: `setup` ekranı e-postayı gösterebilsin diye. `signedIn` ismin
+   * dolu olmasına baktığı için bu kullanıcı henüz üye sayılmıyor.
+   */
+  const [profile, setProfile] = useState<Profile | null>(() =>
+    initialSession.kind === 'member'
+      ? initialSession.profile
+      : initialSession.kind === 'incomplete'
+        ? { name: '', email: initialSession.email, avatarHex: '#4F7FBF' }
+        : null,
+  );
+
+  /** Kayıt alındı, doğrulama postası yolda — `SignInCard status="verify"`. */
+  const [awaitingVerify, setAwaitingVerify] = useState(false);
+
   const [butterflies, setButterflies] = useState<Butterfly[]>([]);
   const [lastReleased, setLastReleased] = useState<Butterfly | null>(null);
   const [expired, setExpired] = useState<Butterfly | null>(null);
@@ -444,28 +464,82 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
     reset('released');
   }
 
-  function completeSignIn(email: string) {
+  async function completeSignIn(email: string, password: string) {
     const failure = takeForcedFailure<SignInError>();
     if (failure) {
       setSignInError(failure);
       return;
     }
 
-    setProfile({ name: 'Wren', email, avatarHex: '#4F7FBF' });
-    setButterflies(seedButterflies());
+    setPending(true);
+    const result = await signInAction(email, password);
+    setPending(false);
+
+    if (!result.ok) {
+      setSignInError(result.error);
+      return;
+    }
+
+    /*
+     * Hesap kurulumu yarım kalmışsa oraya. Profil İSMİ BOŞ kuruluyor; `setup`
+     * ekranı e-postayı gösteriyor ve `signedIn` false kalıyor.
+     */
+    if (result.session === 'incomplete') {
+      setProfile({ name: '', email: result.email, avatarHex: '#4F7FBF' });
+      reset('setup');
+      return;
+    }
+
+    setProfile(result.profile);
     reset(afterSignIn);
   }
 
   /*
-   * ⚠ Çıkışta kelebekler çayırdan kalkıyor ve bu DOĞRU DEĞİL: salınan kelebek
-   * çayırın, salanın değil — oturum kapansa da uçmaya devam etmeli. Sunucu
-   * olmadığı için listeyi kimse tutmuyor, kelebekler yalnızca `butterflies`
-   * içinde yaşıyor. Aşama C'de liste sunucudan geldiğinde bu satır kalkacak.
+   * Kayıt.
+   *
+   * ⚠ Doğrudan hesap kurulumuna GİTMİYOR — doğrulama ekranına gidiyor. Hesap
+   * açıldı ama e-postası doğrulanana kadar giriş yapamıyor; kurulum, bağlantıya
+   * tıklandıktan sonra (`/auth/confirm` → `/` → oturum `incomplete`) geliyor.
+   *
+   * ⚠ Zaten kayıtlı bir e-posta da BURAYA düşüyor ve ekran hiçbir fark
+   * göstermiyor. Kasıtlı: "bu e-posta zaten kayıtlı" demek, girişteki tek mesaj
+   * kuralını arka kapıdan delerdi. Fark yalnızca posta kutusunda.
    */
-  function signOut() {
+  async function startSignUp(email: string, password: string) {
+    const failure = takeForcedFailure<SignInError>();
+    if (failure) {
+      setSignInError(failure);
+      return;
+    }
+
+    setPending(true);
+    const result = await signUpAction(email, password);
+    setPending(false);
+
+    if (!result.ok) {
+      setSignInError(result.error);
+      return;
+    }
+
+    setProfile({ name: '', email, avatarHex: '#4F7FBF' });
+    setAwaitingVerify(true);
+  }
+
+  /*
+   * ⚠ Kelebekleri listeden düşüren satır HÂLÂ BURADA ve hâlâ yanlış: salınan
+   * kelebek çayırın, salanın değil — oturum kapansa da uçmaya devam etmeli.
+   *
+   * Kalkamamasının sebebi listenin kaynağı: kelebekler hâlâ yalnızca bu
+   * bileşenin belleğinde yaşıyor, yani çıkışta boşaltılmasalar da yenilemede
+   * kayboluyorlar. Liste sunucudan gelmeye başladığında (E.3) bu iki satır
+   * birlikte kalkacak.
+   */
+  async function signOut() {
     setProfile(null);
     setButterflies([]);
+    setAwaitingVerify(false);
     reset('landing');
+    await signOutAction();
   }
 
   function deleteAccount() {
@@ -614,13 +688,12 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
           {view === 'signin' && (
             <SignInCard
               error={signInError}
+              pending={pending}
+              status={awaitingVerify ? 'verify' : 'idle'}
               onAttempt={() => setSignInError(null)}
               onDone={completeSignIn}
               onBack={back}
-              onNeedsSetup={(email) => {
-                setProfile({ name: '', email, avatarHex: '#4F7FBF' });
-                go('setup');
-              }}
+              onNeedsSetup={startSignUp}
             />
           )}
 
@@ -628,9 +701,18 @@ export function Garden({ initialTotal = 0 }: { initialTotal?: number }) {
             <SetupCard
               email={profile.email}
               onBack={back}
-              onDone={(name, avatarHex) => {
-                setProfile({ ...profile, name, avatarHex });
-                setButterflies(seedButterflies());
+              onDone={async (name, avatarHex) => {
+                const result = await completeSetup(name, avatarHex);
+
+                /*
+                 * Reddedilirse ekranda kalınıyor. Kurulumun tek reddedilme yolu
+                 * oturumun düşmüş olması ve o hâlde ileri gitmek, isimsiz bir
+                 * profille çayıra girmek demekti — kartta kalmak, kullanıcının
+                 * yazdığını da koruyor.
+                 */
+                if (!result.ok) return;
+
+                setProfile(result.profile);
                 reset(afterSignIn);
               }}
             />

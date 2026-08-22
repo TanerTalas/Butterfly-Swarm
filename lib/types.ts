@@ -128,8 +128,20 @@ export type SignInError =
   | { kind: 'rate-limit'; retryInSeconds?: number }
   | { kind: 'network' };
 
+/*
+ * Oturum — SUNUCUDAN gelen hâli.
+ *
+ * `app/page.tsx` bunu okuyup `Garden`a veriyor, yani sunucu/istemci sınırını
+ * geçiyor: içinde yalnızca düz veri olmak zorunda.
+ *
+ * ⚠ `incomplete` ayrı bir hâl ve öyle kalmalı. Kayıt İKİ adım (önce e-posta +
+ * şifre, sonra isim + renk); arada kalan kullanıcı giriş yapmış ama üye değil.
+ * `member` gibi davranılsaydı isimsiz bir profille çayıra girer ve kelebeğinin
+ * yanında boş bir isim görünürdü.
+ */
 export type Session =
   | { kind: 'guest' }
+  | { kind: 'incomplete'; email: string }
   | { kind: 'member'; profile: Profile };
 
 /**

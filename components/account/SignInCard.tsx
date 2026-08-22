@@ -43,21 +43,36 @@ export function SignInCard({
   onBack,
   error,
   onAttempt,
+  pending = false,
   status = 'idle',
 }: {
-  onDone: (email: string) => void;
-  onNeedsSetup: (email: string) => void;
+  /*
+   * ⚠ ŞİFRE KARTTAN ÇIKIYOR ve bu bilinçli bir imza.
+   *
+   * Sunucusuz sürümde yalnızca e-posta veriliyordu, çünkü şifreye bakan kimse
+   * yoktu. Artık `signIn` action'ı ikisini birden istiyor. Şifre `Garden`da
+   * SAKLANMIYOR — doğrudan action'a geçiriliyor ve orada kalıyor.
+   */
+  onDone: (email: string, password: string) => void;
+  onNeedsSetup: (email: string, password: string) => void;
   onBack: () => void;
   /** Sunucunun reddi. `null` iken kart temiz. */
   error?: SignInError | null;
   /** Her gönderimde çağrılıyor — `Garden` önceki hatayı buradan siliyor. */
   onAttempt?: () => void;
   /**
+   * İstek sürerken buton kilitli.
+   *
+   * Sunucusuz sürümde gerekmiyordu: cevap aynı karede geliyordu. Gerçek bir
+   * gecikme varken kilitsiz buton iki kez basılabiliyor ve kayıt akışında bu
+   * iki ayrı deneme demek.
+   */
+  pending?: boolean;
+  /**
    * `verify`: kayıt alındı, e-posta doğrulaması bekleniyor.
    *
-   * ⚠ Bugün bu hâle GİRİLMİYOR ve girilmemeli: doğrulama bir sunucu işi ve
-   * akışı şimdiden oraya sokmak, kayıt olan kullanıcıyı hiç açılmayacak bir
-   * kapının önünde bırakırdı. Tasarımı hazır, tetikleyicisi §3'te.
+   * Artık gerçekten girilen bir hâl: `signUp` action'ı doğrulama postasını
+   * gönderiyor ve bağlantı `/auth/confirm`e iniyor.
    */
   status?: 'idle' | 'verify';
 }) {
@@ -69,7 +84,10 @@ export function SignInCard({
   const short = password.length > 0 && password.length < PASSWORD_MIN;
   const locked = error?.kind === 'rate-limit';
   const canSubmit =
-    email.includes('@') && password.length >= PASSWORD_MIN && !locked;
+    email.includes('@') &&
+    password.length >= PASSWORD_MIN &&
+    !locked &&
+    !pending;
 
   /*
    * Hata GELDİĞİNDE şifreyi temizleyip odağı oraya taşı.
@@ -120,8 +138,8 @@ export function SignInCard({
           e.preventDefault();
           if (!canSubmit) return;
           onAttempt?.();
-          if (tab === 'in') onDone(email);
-          else onNeedsSetup(email);
+          if (tab === 'in') onDone(email, password);
+          else onNeedsSetup(email, password);
         }}
       >
         <div className="field-group">
@@ -165,15 +183,35 @@ export function SignInCard({
          * Yani doğrulama tek yerde kalıyor, iki kez yazılmıyor.
          */}
         <Button size="md" type="submit" fullWidth disabled={!canSubmit}>
-          {locked ? 'Too many attempts' : tab === 'in' ? 'Sign in' : 'Sign up'}
+          {/*
+           * Bekleme dili kartın kendi icadı değil: "Letting it go…" kalıbı
+           * salma kartlarında kurulu (ulaç + üç nokta), buradaki onu izliyor.
+           */}
+          {locked
+            ? 'Too many attempts'
+            : pending
+              ? tab === 'in'
+                ? 'Signing in…'
+                : 'Signing up…'
+              : tab === 'in'
+                ? 'Sign in'
+                : 'Sign up'}
         </Button>
       </form>
 
-      <button
-        type="button"
-        onClick={() => onNeedsSetup('you@example.com')}
-        className="button--oauth"
-      >
+      {/*
+       * ⚠ HENÜZ BAĞLI DEĞİL ve bu yüzden devre dışı.
+       *
+       * Sunucusuz sürümde buton sahte bir e-postayla (`you@example.com`)
+       * doğrudan hesap kurulumuna atlıyordu — gösterim iskelesiydi. Kimlik
+       * gerçek olduğuna göre o yol artık var olmayan bir hesaba oturum açmaya
+       * çalışırdı; çalışıyormuş gibi duran bir buton, kilitli duran bir
+       * butondan daha kötü.
+       *
+       * Bağlanması Google OAuth akışını yazmak demek (~150 satır, kütüphane
+       * gerekmiyor); ayrı bir iş olarak duruyor.
+       */}
+      <button type="button" disabled className="button--oauth">
         <GoogleMark />
         Continue with Google
       </button>
