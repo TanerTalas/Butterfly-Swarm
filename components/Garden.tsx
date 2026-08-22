@@ -36,6 +36,7 @@ import { isNoticeDismissed, dismissNotice } from '@/lib/dismissed';
 import {
   expiresAt,
   SLOT_LIMIT,
+  type AccountFacts,
   type Butterfly,
   type MeadowEntry,
   type Profile,
@@ -43,6 +44,10 @@ import {
   type Session,
   type SignInError,
 } from '@/lib/types';
+import {
+  deleteAccount as deleteAccountAction,
+  updateProfile,
+} from '@/app/actions/account';
 import {
   completeSetup,
   signIn as signInAction,
@@ -103,6 +108,7 @@ export function Garden({
   initialMeadow = [],
   initialButterflies = [],
   initialHistory = [],
+  initialAccount = null,
 }: {
   initialTotal?: number;
   /** Misafir bugünkü hakkını kullandı mı (`app/page.tsx` → `guestReleaseUsed()`). */
@@ -120,6 +126,14 @@ export function Garden({
   initialButterflies?: Butterfly[];
   /** Üyenin ömrünü tamamlamışları — isim ve tarih (`readOwnHistory()`). */
   initialHistory?: Butterfly[];
+  /**
+   * Hesabın kendisiyle ilgili üç değer (`readAccountFacts()`): kaç kelebek
+   * salındığı, ne zamandır üye olunduğu ve profil kilidinin bittiği an.
+   *
+   * Misafirde null. Veritabanı susmuşsa da null — "Hesabım"daki iki sayı ve
+   * ayarlardaki kilit, sayfanın açılmasını engelleyecek şeyler değil.
+   */
+  initialAccount?: AccountFacts | null;
   /**
    * Sunucunun okuduğu oturum (`app/page.tsx` → `readSession()`).
    *
@@ -300,6 +314,15 @@ export function Garden({
    * (`visitors.js` → `DECOY_INDEX`).
    */
   const [meadowList, setMeadowList] = useState<MeadowEntry[]>(initialMeadow);
+
+  /*
+   * Hesabın kendi sayıları ve profil kilidi — SUNUCUDAN.
+   *
+   * ⚠ Kilit istemcide TUTULMUYOR, yalnızca gösteriliyor. Eskiden kilit sadece
+   * bu bileşenin durumundaydı ve yenilemek onu sıfırlıyordu; ayarlardaki
+   * "cannot be changed again for 1 day" notu tutulmayan bir sözdü.
+   */
+  const [account, setAccount] = useState<AccountFacts | null>(initialAccount);
 
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
@@ -533,6 +556,7 @@ export function Garden({
      */
     setButterflies(result.butterflies);
     setFinished(result.history);
+    setAccount(result.account);
     reset(afterSignIn);
   }
 
@@ -620,24 +644,44 @@ export function Garden({
     setProfile(null);
     setButterflies([]);
     setFinished([]);
+    setAccount(null);
     setAwaitingVerify(false);
     reset('landing');
     await signOutAction();
   }
 
   /*
-   * ⚠ HENÜZ GERÇEKTEN SİLMİYOR — yalnızca ekranı temizliyor.
+   * Hesabı siler. KALICI ve geri alma penceresi yok.
    *
-   * Sunucu tarafı yazılmadı ve arayüzde bir eksik var: uyarı metni silmenin
-   * kalıcı olduğunu söylüyor ve EKSIKLER şifreyle yeniden doğrulama şart
-   * koşuyor, ama `SettingsCard` yalnızca hesap adını yazdırıyor — isim yazmak
-   * bir arayüz eşiği, yetki kanıtı değil. Alan eklenmeden sunucu tarafını
-   * yazmak, sözü tutmayan bir uç nokta açmak olurdu.
+   * ⚠ ÇAYIR DA TEMİZLENİYOR — çıkıştan (`signOut`) ayrıldığı tek nokta bu.
+   * Orada kelebekler çayırın malı ve uçmaya devam ediyor; burada satırları
+   * silindi, yani başkalarının ekranında da yoklar. Uyarı metninin sözü
+   * ("your butterflies leave the meadow at once") tam olarak bu.
+   *
+   * Sunucu neyi sildiğini biliyor ama İSTEMCİ bilmiyor: `meadowList` isimsiz
+   * ve sahipsiz (bkz. yukarısı). Hangi satırların gideceğini ancak
+   * kullanıcının kendi listesindeki kimliklerden çıkarabiliyoruz.
+   *
+   * ⚠ Ekran sunucu CEVAP VERDİKTEN SONRA temizleniyor. Önce temizlenseydi,
+   * düşen bir istekten sonra kullanıcı silinmiş sanır ve yenileyince hesabını
+   * yerinde bulurdu.
    */
-  function deleteAccount() {
+  async function deleteAccount() {
+    // İki kez basılan düğme iki silme isteği demek; ikincisi zaten oturumsuz.
+    if (pending) return;
+    setPending(true);
+    const result = await deleteAccountAction();
+    setPending(false);
+    if (!result.ok) return;
+
+    const mine = new Set(butterflies.map((b) => b.id));
+    setMeadowList((list) => list.filter((e) => !mine.has(e.id)));
+
     setProfile(null);
     setButterflies([]);
     setFinished([]);
+    setAccount(null);
+    stopWatching();
     reset('landing');
   }
 
@@ -649,6 +693,88 @@ export function Garden({
     }
     go(flyingNow >= SLOT_LIMIT ? 'butterflies' : 'wings');
   }
+
+  /*
+   * ── Ömrün dolması (Aşama F) ─────────────────────────────────────────────
+   *
+   * Sunucu ömrü dolanı zaten GÖRMÜYOR: bütün sorgular `expires_at > now()`
+   * diyor, yani yenilenen bir sayfada o kelebek hiç gelmiyor. Eksik olan,
+   * sayfayı AÇIK BIRAKAN kullanıcıydı — kelebek sahnede solup görünmez
+   * oluyordu ama listede duruyor, yuvayı tutuyor ve geçmişe hiç düşmüyordu.
+   *
+   * ⚠ Burada bir SÜRE HESAPLANMIYOR. Karşılaştırılan şey sunucudan gelen
+   * mutlak an (`expiresAt`); "yedi gün" bilgisi tek bir yerde duruyor
+   * (`lib/types.ts`) ve buraya ikinci bir kopyası girmiyor.
+   *
+   * Otuz saniyelik tur yeterli: sahne kelebeği tam anında yok ediyor
+   * (`visitors.js` iki mutlak anı alıp arasını çiziyor), buradaki iş yalnızca
+   * listeleri ve yuva sayacını gerçeğe döndürmek. Arka plandaki sekmede
+   * tarayıcı turu seyreltiyor ve bunun bir zararı yok — kullanıcı geri
+   * döndüğünde ilk tur farkı kapatıyor.
+   */
+  useEffect(() => {
+    function tick() {
+      const now = Date.now();
+
+      const goneMine = butterflies.filter(
+        (b) => expiresAt(b).getTime() <= now,
+      );
+      const goneMeadow = meadowList.some((e) => e.expiresAt.getTime() <= now);
+
+      if (goneMine.length === 0 && !goneMeadow) return;
+
+      /*
+       * Çayır listesi HERKESİN kelebeğini taşıyor: düşenler yalnızca
+       * kullanıcının kendi kelebekleri değil. Köprü farkı kendisi hesaplıyor
+       * ve boşalan yuvayı havuza döndürüyor (`visitors.remove`).
+       */
+      if (goneMeadow) {
+        setMeadowList((list) =>
+          list.filter((e) => e.expiresAt.getTime() > now),
+        );
+      }
+
+      if (goneMine.length === 0) return;
+
+      setButterflies((list) =>
+        list.filter((b) => expiresAt(b).getTime() > now),
+      );
+
+      /*
+       * Geçmiş satırı YALNIZCA isim ve tarih taşıyor; renk ömürle birlikte
+       * gidiyor (gizlilik metninin sözü ve `readOwnHistory`'nin de yaptığı).
+       * Sunucuda rengi gerçekten silen şey günlük süpürme
+       * (`app/api/cron/sweep`).
+       *
+       * Yeni düşen en öne: liste salma tarihine göre yeniye doğru sıralı ve
+       * yedi gününü şimdi dolduran, listedeki en son salınan kelebek.
+       */
+      setFinished((f) => [
+        ...goneMine.map((b) => ({ ...b, foreHex: '', hindHex: '' })),
+        ...f,
+      ]);
+
+      // İzlenen kelebek gittiyse kamera boşluğa bakıyor demek.
+      if (watched && goneMine.some((b) => b.id === watched)) stopWatching();
+
+      /*
+       * ⚠ Veda ekranı YALNIZCA çayır ekranındayken açılıyor.
+       *
+       * Bir formun ortasındaki kullanıcıyı başka bir ekrana taşımak, yazdığı
+       * şeyi elinden almak olurdu; ömrün dolması onun BAŞLATTIĞI bir olay da
+       * değil. Başka bir ekrandaysa listeler sessizce güncelleniyor ve veda,
+       * hiç görünmeden geçiyor — kelebeğin gidişi zaten geçmişte yazılı.
+       */
+      if (view === 'meadow') {
+        setExpired(goneMine[goneMine.length - 1]);
+        reset('farewell');
+      }
+    }
+
+    tick();
+    const timer = setInterval(tick, 30_000);
+    return () => clearInterval(timer);
+  }, [butterflies, meadowList, view, watched]);
 
   /*
    * ── Kart geçişlerinde odak (§6.3) ───────────────────────────────────────
@@ -883,8 +1009,14 @@ export function Garden({
             <AccountCard
               profile={profile}
               flyingNow={flyingNow}
-              releasedTotal={total + butterflies.length}
-              memberSince={new Date(2026, 5, 1)}
+              /*
+               * ⚠ İki sayı da SUNUCUDAN ve ikisi de KİŞİSEL. "Released in
+               * total" eskiden küresel sayaca kullanıcının uçan kelebek
+               * sayısını ekliyordu — kimsenin sormadığı bir toplam; üyelik
+               * tarihi ise elle yazılmış sabit bir gündü.
+               */
+              releasedTotal={account?.releasedTotal ?? butterflies.length}
+              memberSince={account?.memberSince ?? new Date()}
               onMyButterflies={() => go('butterflies')}
               onSettings={() => go('settings')}
               onSignOut={signOut}
@@ -896,9 +1028,29 @@ export function Garden({
             <SettingsCard
               profile={profile}
               onBack={back}
-              onSave={(name, avatarHex) =>
-                setProfile({ ...profile, name, avatarHex })
-              }
+              lockedUntil={account?.lockedUntil ?? null}
+              /*
+               * Kilit SUNUCUDA uygulanıyor ve cevabı buradan geri geliyor.
+               * Reddedilirse (başka bir sekmede kaydedilmiş) ekran gerçek
+               * kilit anını alıyor ve kendini düzeltiyor — yeni bir hata dili
+               * icat edilmiyor, kartın zaten çizili olan kilitli hâli
+               * yetiyor.
+               */
+              onSave={async (name, avatarHex) => {
+                const result = await updateProfile(name, avatarHex);
+
+                if (!result.ok) {
+                  if (result.reason === 'locked' && account) {
+                    setAccount({ ...account, lockedUntil: result.lockedUntil });
+                  }
+                  return;
+                }
+
+                setProfile(result.profile);
+                if (account) {
+                  setAccount({ ...account, lockedUntil: result.lockedUntil });
+                }
+              }}
               onDelete={deleteAccount}
             />
           )}

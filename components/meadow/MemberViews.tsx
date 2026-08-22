@@ -2,7 +2,7 @@
 
 import { Butterfly } from '@/components/Butterfly';
 import { Button } from '@/components/ui/Button';
-import { SLOT_LIMIT, type Profile } from '@/lib/types';
+import { expiresFrom, SLOT_LIMIT, type Profile } from '@/lib/types';
 
 /*
  * Kartsız çayır ekranları — 06 (girişli karşılama) ve 12 (ömür bitti).
@@ -73,7 +73,12 @@ export function FarewellView({
   onRelease: () => void;
   onMyButterflies: () => void;
 }) {
-  const ended = new Date(releasedAt.getTime() + 7 * 86400000);
+  /*
+   * ⚠ Ömür BURADA HESAPLANMIYOR. Eskiden `7 * 86400000` yazıyordu ve bu,
+   * `LIFESPAN_DAYS`in ikinci bir kopyasıydı: kural değişse bu ekran eski
+   * süreyle bir tarih yazmaya devam ederdi.
+   */
+  const ended = expiresFrom(releasedAt);
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
 
