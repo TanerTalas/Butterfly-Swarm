@@ -132,14 +132,10 @@ sıkışacak yer burası.
 
 ## 5. Yayına çıkmadan önce zorunlu
 
-- **Depo private yapılmalı.** Şu an herkese açık. Handoff bunu şart koşuyor;
-  `design_handoff_butterfly_garden/` bu yüzden commit'lenmedi.
 - **Yasal metinler gerçek değil.** Sade dille ve ürünün gerçek davranışına
   göre yazıldı (22 Ağustos'ta sitenin bugünkü mimarisine göre yenilendi) ama
   hukuki inceleme görmedi; KVKK/GDPR sürümleriyle değişmeli. Veri olarak
   duruyorlar (`lib/legal.ts`), JSX değil.
-- **Inkwell atıfı.** MIT lisansı telif bildiriminin korunmasını şart koşuyor;
-  `public/textures/CREDITS.txt` var ama sitenin atıf sayfasına da girmeli.
 - **Model dosyaları ~6 MB ham PNG doku.** KTX2'ye çevrilip küçültülmeli.
 - **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; tam CSP
   yazılmadı. İki gereksinim birden: three.js için `worker-src blob:`, Turnstile
