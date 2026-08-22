@@ -50,7 +50,10 @@ Aşama E bitti; kalan kalemler kötüye kullanım ve sertleştirme tarafında.
   kilitlemesine açık. Kilit kısa ömürlü olduğu için zarar da kısa ömürlü, ama
   asıl çözüm IP. Özetleme yolu artık hazır (`lib/server/contact.ts` →
   `hashIp`).
-- CSRF, güvenlik başlıkları ve tam CSP (bkz. §5).
+- **CSRF için ayrı bir token yok.** Bugünkü koruma `SameSite=Lax` çerez +
+  Server Action'ların kendi POST protokolü; başka sitenin gönderdiği bir forma
+  çerez eklenmiyor. Güvenlik başlıkları ve tam CSP yazıldı
+  (`next.config.mjs`, kurallar CLAUDE.md'de).
 - **Şifre gücü yalnızca uzunluğa bakıyor** (`PASSWORD_MIN` = 10). Handoff sızmış
   şifre listesine bakılmasını da istiyor.
 - **Kısa şifrenin sunucu reddi `credentials` diline düşüyor** ve bu tam oturan
@@ -143,9 +146,6 @@ sıkışacak yer burası.
   KTX2/Basis ve encoder (`toktx`, KTX-Software) makinede kurulu değil — npm'de
   tarayıcı dışı bir karşılığı da yok. Kurulursa dönüşüm ve `KTX2Loader`
   bağlanması yarım günlük iş.
-- **CSP başlıkları.** `next.config.mjs`'te temel başlıklar var; tam CSP
-  yazılmadı. İki gereksinim birden: three.js için `worker-src blob:`, Turnstile
-  için `script-src` ve `frame-src` içinde `https://challenges.cloudflare.com`.
 - **Üretim ortam değişkenleri:**
   - `DATABASE_URL` (üretim veritabanı, pooled), `APP_URL` (alan adı)
   - `RESEND_API_KEY` + `MAIL_FROM` — boş kalırsa kaydolan herkes hiç
