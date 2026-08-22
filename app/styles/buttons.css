@@ -212,8 +212,21 @@
   color: var(--color-ink);
   transition: border-color 240ms ease;
 }
-.button--oauth:hover {
+.button--oauth:hover:not(:disabled) {
   border-color: var(--wash-strong);
+}
+/*
+ * Google ile giriş henüz bağlı değil (bkz. SignInCard).
+ *
+ * Engelli dil BİRİNCİL BUTONUNKİ: soluk dolgu + soluk metin. Yeni bir kalıp
+ * icat edilmiyor. `opacity` kullanılmadı bilerek — Google'ın dört renkli
+ * işaretini de soluklaştırırdı ve marka işaretleri değiştirilmiyor.
+ */
+.button--oauth:disabled {
+  background: var(--color-disabled);
+  color: var(--color-disabled-ink);
+  border-color: transparent;
+  cursor: not-allowed;
 }
 
 /* Kartın en üstündeki geri dönüş bağlantısı. */
