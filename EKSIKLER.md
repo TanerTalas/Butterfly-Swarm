@@ -3,7 +3,7 @@
 **Bu dosyada YALNIZCA yapılmamış işler var.** Biten bir iş buradan siliniyor;
 ondan geriye kalması gereken bir kural varsa `CLAUDE.md`'ye taşınıyor.
 
-Son güncelleme: 22 Ağustos 2026.
+Son güncelleme: 23 Ağustos 2026.
 
 Aşamalı sıra `ROADMAP.md` → Bölüm II'de. Aşağısı o sıranın açık kalemleri.
 
@@ -119,6 +119,10 @@ Kalanlar:
 - Kanat renk örnekleri hâlâ 28px; dokunma hedefi 44px'e çıkarılabilir.
 - `daysLeft()` hâlâ istemcide hesaplanıyor ve yalnızca ilerleme çubuğunu
   çiziyor; uygunluk kararı zaten sunucuda.
+- **`app/icon.svg`in zemini BEYAZ**, PNG simgelerinki saydam. realfavicon
+  böyle verdi; sekmede beyaz bir kare duruyor, takımın geri kalanında
+  yuvarlak kartın köşeleri saydam. Düzeltmesi SVG'deki
+  `<rect width="1000" height="1000" fill="#ffffff">` satırını silmek.
 
 ---
 

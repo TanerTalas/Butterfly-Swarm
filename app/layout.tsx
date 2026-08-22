@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Newsreader, IBM_Plex_Sans } from 'next/font/google';
+import { appUrl } from '@/lib/server/email';
 import './globals.css';
 
 /*
@@ -31,10 +32,46 @@ const plex = IBM_Plex_Sans({
   display: 'swap',
 });
 
+/*
+ * Sayfa künyesi ve paylaşım kartı.
+ *
+ * ⚠ SİMGELER VE PAYLAŞIM GÖRSELİ BURADA SAYILMIYOR. Next `app/` altındaki
+ * şu dosya adlarını konvansiyon olarak tanıyıp etiketleri kendisi basıyor:
+ * `favicon.ico`, `icon.svg`, `icon.png`, `apple-icon.png` ve
+ * `opengraph-image.png`. Elle bir `icons` listesi yazmak, Next'in o
+ * dosyalara eklediği içerik damgasını (`/icon.svg?a1b2c3`) kaybettirir —
+ * damga, simge değiştiğinde tarayıcının eskisine yapışıp kalmasını önleyen
+ * şey.
+ *
+ * ⚠ `metadataBase` ŞART: `og:image` MUTLAK bir adres olmak zorunda, paylaşım
+ * kartını çeken robot göreli bir yolu çözemez. Adres `appUrl()`ten geliyor —
+ * postadaki bağlantıların gövdesini veren fonksiyonun ta kendisi, çünkü soru
+ * aynı: "bu site hangi adreste duruyor". İkinci bir kopya, alan adı
+ * değiştiğinde birinin geride kalması demek.
+ *
+ * `openGraph` içinde başlık ve açıklama YOK ve bilerek yok: Next ikisini de
+ * `title`/`description`tan devralıyor, yani yasal sayfaların kendi başlığı
+ * (`Privacy · Butterfly Garden`) paylaşım kartına da geçiyor. Buraya sabit
+ * bir başlık yazsaydık o sayfalar hep "Butterfly Garden" diye paylaşılırdı.
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl()),
   title: 'Butterfly Garden',
   description:
     'Release a butterfly into the meadow. It flies for seven days, then it goes.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Butterfly Garden',
+    url: '/',
+    locale: 'en_US',
+  },
+  /*
+   * `twitter-image.png` diye İKİNCİ BİR DOSYA YOK ve gerekmiyor: Next
+   * `twitter` alanının görselini, başlığını ve açıklamasını `openGraph`tan
+   * devralıyor. Buradaki tek iş kartın büyük görselli biçimde açılmasını
+   * istemek — varsayılanı küçük kare bir küçük resim.
+   */
+  twitter: { card: 'summary_large_image' },
 };
 
 export const viewport: Viewport = {
