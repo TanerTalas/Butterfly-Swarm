@@ -1,26 +1,42 @@
 import { Garden } from '@/components/Garden';
 import { guestReleaseUsed } from '@/app/actions/release';
 import { readReleaseTotal } from '@/lib/server/counter';
+import { readMeadow, readOwnHistory, readOwnLive } from '@/lib/server/meadow';
 import { readSession } from '@/lib/server/session';
-import type { Session } from '@/lib/types';
+import type { Butterfly, Session } from '@/lib/types';
 
 /*
  * Tek sayfa. Yasal sayfalar dışında her şey `Garden` içinde yaşıyor.
  *
- * Burası artık bir Server Component: oturumu ve sayacı okuyup `Garden`a
- * veriyor. İkisi de İLK RENDER'da biliniyor, sonradan bir effect'le
- * sorulmuyor — sorulsaydı sayfa önce misafir hâlinde ve sıfır sayaçla
- * çizilir, sonra gerçek değerlere sıçrardı.
+ * Burası bir Server Component: oturumu, sayacı, çayırı ve kullanıcının kendi
+ * listelerini okuyup `Garden`a veriyor. Hepsi İLK RENDER'da biliniyor,
+ * sonradan bir effect'le sorulmuyor — sorulsaydı sayfa önce boş bir çayırla
+ * çizilir, sonra kelebekler üstüne düşerdi.
  *
  * Çerez okunduğu için sayfa zaten dinamik; ayrıca `force-dynamic` demeye
  * gerek yok.
  */
 export default async function Home() {
-  const [session, total, guestUsed] = await Promise.all([
+  const [session, total, guestUsed, meadow] = await Promise.all([
     readSession(),
     readReleaseTotal(),
     guestReleaseUsed(),
+    readMeadow(),
   ]);
+
+  /*
+   * Kişisel listeler yalnızca üye için ve ancak oturum OKUNDUKTAN sonra
+   * sorulabiliyor — hesap kimliği oradan geliyor. Bu yüzden yukarıdaki
+   * paralel gruba giremiyorlar.
+   */
+  let mine: Butterfly[] = [];
+  let history: Butterfly[] = [];
+  if (session.kind === 'member') {
+    [mine, history] = await Promise.all([
+      readOwnLive(session.accountId),
+      readOwnHistory(session.accountId),
+    ]);
+  }
 
   /*
    * ⚠ `accountId` İSTEMCİYE GEÇMİYOR.
@@ -38,16 +54,14 @@ export default async function Home() {
         ? { kind: 'incomplete', email: session.email }
         : { kind: 'guest' };
 
-  /*
-   * Sayacın 27'lik tohumu artık VERİTABANINDA (`db/migrations/0001_schema.sql`).
-   * Burada durduğu sürece her sekme kendi 27'sinden başlıyordu ve sayaç küresel
-   * bir toplam olmaktan çıkıyordu.
-   */
   return (
     <Garden
       initialTotal={total}
       initialSession={initialSession}
       initialGuestUsed={guestUsed}
+      initialMeadow={meadow}
+      initialButterflies={mine}
+      initialHistory={history}
     />
   );
 }

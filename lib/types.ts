@@ -90,6 +90,25 @@ export type Profile = {
   avatarHex: string;
 };
 
+/**
+ * Çayırda uçan bir kelebek — HERKESE açık görünüm.
+ *
+ * ⚠ İSİM ve SAHİP TAŞIMIYOR. Çayır ortak bir yer ve orada uçan kelebeğin
+ * kimin olduğu kimseyi ilgilendirmiyor; sahne de zaten isim çizmiyor. Buraya
+ * sütun eklerken bunu düşün — bu tip sunucu/istemci sınırını geçiyor ve
+ * eklenen her alan herkesin görebileceği bir şey oluyor.
+ */
+export type MeadowEntry = {
+  id: string;
+  foreHex: string;
+  hindHex: string;
+  seed: number;
+  releasedAt: Date;
+  expiresAt: Date;
+  /** Çayırdaki iki kontenjandan hangisine sayıldığı. */
+  kind: 'guest' | 'member';
+};
+
 /*
  * ── Reddedilen salma ──────────────────────────────────────────────────────
  *
@@ -161,7 +180,22 @@ export type Session =
  * eligibility"); burada yalnızca ilerleme çubuğu çiziliyor.
  */
 export function daysLeft(b: Butterfly, now = new Date()): number {
-  const elapsed = (now.getTime() - b.releasedAt.getTime()) / 86_400_000;
+  /*
+   * ⚠ `elapsed` NEGATİF OLAMAZ ve bu kırpma şart.
+   *
+   * `releasedAt` sunucunun saatiyle yazılıyor, `now` ise tarayıcının saati.
+   * İkisi birkaç saniye bile ayrışsa kelebek istemci için "gelecekte"
+   * salınmış görünüyor, `elapsed` eksiye düşüyor ve `Math.ceil` o birkaç
+   * saniyeyi KOCA BİR GÜNE çeviriyor: yeni salınan kelebek "8 days left"
+   * diyordu.
+   *
+   * Saatleri eşitlemek mümkün değil (kullanıcının saati bizim elimizde
+   * değil); yapılabilecek şey, geçmemiş zamanı geçmiş saymamak.
+   */
+  const elapsed = Math.max(
+    0,
+    (now.getTime() - b.releasedAt.getTime()) / 86_400_000,
+  );
   return Math.max(0, Math.ceil(LIFESPAN_DAYS - elapsed));
 }
 

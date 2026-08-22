@@ -8,13 +8,14 @@ import {
   readSession,
 } from '@/lib/server/session';
 import { issueEmailToken } from '@/lib/server/tokens';
+import { readOwnHistory, readOwnLive } from '@/lib/server/meadow';
 import {
   sendVerificationEmail,
   sendAlreadyRegisteredEmail,
 } from '@/lib/server/email';
 import { attemptKey, lockedFor, recordFailure, clearFailures } from '@/lib/server/throttle';
 import { NAME_MAX, AVATAR_COLOURS } from '@/lib/types';
-import type { Profile, SignInError } from '@/lib/types';
+import type { Butterfly, Profile, SignInError } from '@/lib/types';
 
 /*
  * ── Kimlik Server Action'ları (Aşama E.1) ─────────────────────────────────
@@ -30,7 +31,23 @@ import type { Profile, SignInError } from '@/lib/types';
  */
 
 export type SignInResult =
-  | { ok: true; session: 'member'; profile: Profile }
+  /**
+   * ⚠ Kişisel listeler CEVABIN İÇİNDE geliyor.
+   *
+   * Sayfa açılırken de okunuyorlar (`app/page.tsx`) ama o an kullanıcı henüz
+   * misafirdi, yani listeler boştu. Girişten sonra yeniden okunmasalardı
+   * "Kelebeklerim" 0/5 gösterirdi — kelebekler veritabanında dururken.
+   *
+   * Sayfayı yenilemek de çözüm değildi: `Garden`ın durumu zaten kurulmuş
+   * oluyor ve yeni başlangıç değerleri okunmuyor.
+   */
+  | {
+      ok: true;
+      session: 'member';
+      profile: Profile;
+      butterflies: Butterfly[];
+      history: Butterfly[];
+    }
   /** Giriş başarılı ama hesap kurulumu yapılmamış — `setup` ekranına. */
   | { ok: true; session: 'incomplete'; email: string }
   | { ok: false; error: SignInError };
@@ -98,6 +115,11 @@ export async function signIn(
       return { ok: true, session: 'incomplete', email: account.email };
     }
 
+    const [butterflies, history] = await Promise.all([
+      readOwnLive(account.id),
+      readOwnHistory(account.id),
+    ]);
+
     return {
       ok: true,
       session: 'member',
@@ -106,6 +128,8 @@ export async function signIn(
         email: account.email,
         avatarHex: account.avatar_hex,
       },
+      butterflies,
+      history,
     };
   } catch {
     return { ok: false, error: { kind: 'network' } };

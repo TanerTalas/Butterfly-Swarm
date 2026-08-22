@@ -36,6 +36,7 @@ import {
   expiresAt,
   SLOT_LIMIT,
   type Butterfly,
+  type MeadowEntry,
   type Profile,
   type ReleaseFailure,
   type Session,
@@ -63,10 +64,14 @@ import {
  * hesaplamıyor: tavan, ömür, renk ve tohum hep sunucudan geliyor; buradaki
  * kontroller yalnızca butonu doğru anda kilitlemek için.
  *
- * ⚠ KELEBEK LİSTESİ HÂLÂ BURADA. `butterflies` ve `guestButterflies` bu
- * bileşenin belleğinde yaşıyor, yani `F5` onları siliyor — kelebek
- * veritabanında duruyor ama çayır yalnızca bu oturumun saldıklarını
- * gösteriyor. Aşama E.3 listeyi sunucudan okuyacak.
+ * Listelerin hepsi SUNUCUDAN geliyor ve ilk render'da hazır (`app/page.tsx`):
+ * çayır, kullanıcının kendi kelebekleri, geçmiş. Buradaki durum onların
+ * kopyası — yenileme onu yeniden kuruyor, yani `F5` hiçbir şeyi kaybetmiyor.
+ *
+ * ⚠ `meadowList` ile `butterflies` AYRI ŞEYLER. İlki çayırda ne uçtuğu
+ * (herkesin, isimsiz), ikincisi kullanıcının kendi kelebekleri (isimli,
+ * listelenen). Birleştirmek, birinin kelebeğine verdiği ismi bütün
+ * ziyaretçilere açmak olurdu.
  */
 
 type View =
@@ -87,10 +92,19 @@ export function Garden({
   initialTotal = 0,
   initialSession = { kind: 'guest' },
   initialGuestUsed = false,
+  initialMeadow = [],
+  initialButterflies = [],
+  initialHistory = [],
 }: {
   initialTotal?: number;
   /** Misafir bugünkü hakkını kullandı mı (`app/page.tsx` → `guestReleaseUsed()`). */
   initialGuestUsed?: boolean;
+  /** Çayırda uçan HERKESİN kelebeği — isimsiz, sahipsiz (`readMeadow()`). */
+  initialMeadow?: MeadowEntry[];
+  /** Üyenin kendi uçan kelebekleri (`readOwnLive()`). */
+  initialButterflies?: Butterfly[];
+  /** Üyenin ömrünü tamamlamışları — isim ve tarih (`readOwnHistory()`). */
+  initialHistory?: Butterfly[];
   /**
    * Sunucunun okuduğu oturum (`app/page.tsx` → `readSession()`).
    *
@@ -166,7 +180,13 @@ export function Garden({
   /** Kayıt alındı, doğrulama postası yolda — `SignInCard status="verify"`. */
   const [awaitingVerify, setAwaitingVerify] = useState(false);
 
-  const [butterflies, setButterflies] = useState<Butterfly[]>([]);
+  /*
+   * Kullanıcının KENDİ uçan kelebekleri — "Kelebeklerim"in kaynağı ve beş
+   * yuvalık sayacın dayanağı. Çayır listesinden (`meadowList`) ayrı: bu isim
+   * taşıyor, o taşımıyor.
+   */
+  const [butterflies, setButterflies] =
+    useState<Butterfly[]>(initialButterflies);
   const [lastReleased, setLastReleased] = useState<Butterfly | null>(null);
   const [expired, setExpired] = useState<Butterfly | null>(null);
 
@@ -231,11 +251,10 @@ export function Garden({
    * Gezinme yığını da `history` adını taşıdığı için burası `finished`:
    * ikisi tamamen farklı şeyler ve karışmaları kolay.
    *
-   * ⚠ Sunucu gelene kadar boş. Ayrıca gizlilik metniyle çelişiyor: orada
-   * yedi günü dolan kaydın silindiği yazıyor, geçmiş listesi ise onu
-   * saklamayı gerektiriyor. Aşama C'de ya metin ya saklama düzeltilmeli.
+   * Sunucudan geliyor ve YALNIZCA isim ile tarih taşıyor: renk ve çayırdaki
+   * yer, ömür dolunca gidiyor (gizlilik metninin sözü, `readOwnHistory`).
    */
-  const [finished] = useState<Butterfly[]>([]);
+  const [finished, setFinished] = useState<Butterfly[]>(initialHistory);
 
   /*
    * Misafir bugünkü hakkını kullandı mı — SUNUCUDAN geliyor.
@@ -248,14 +267,21 @@ export function Garden({
   const [guestBlocked, setGuestBlocked] = useState(initialGuestUsed);
 
   /*
-   * Misafir kelebekleri.
+   * ÇAYIRIN kendisi — herkesin kelebeği, sunucudan.
    *
-   * `butterflies` listesinden AYRI duruyorlar ve bu bilinçli: misafirin
-   * kelebeği kimseye ait değil, "kelebeklerim"de görünmüyor, takip
-   * edilemiyor ve beş yuvadan birini yemiyor. Ama çayırda uçuyor —
-   * sahne için ikisi arasında hiçbir fark yok.
+   * ⚠ `butterflies` ile KARIŞTIRILMAMALI ve ikisi ayrı kalmalı: bu liste
+   * çayırda ne uçtuğunu söylüyor (isimsiz, sahipsiz), diğeri kullanıcının
+   * kendi kelebeklerini (isimli, "Kelebeklerim"de listelenen). Bir kelebek
+   * ikisinde birden olabilir; sahne yalnızca buradan besleniyor.
+   *
+   * Salınan kelebek buraya EKLENİYOR, liste yeniden çekilmiyor. Sebebi yem
+   * kelebek kuralı: misafir kontenjanı doluyken sunucu satırı hiç yazmıyor,
+   * yani yeniden çekilen listede o kelebek olmazdı ve onay ekranındaki
+   * "Follow it in the meadow" boşa düşerdi. Buraya eklenince sahne kimliği
+   * görüyor ve kontenjan doluysa sabit bir yerleşiğe eşliyor
+   * (`visitors.js` → `DECOY_INDEX`).
    */
-  const [guestButterflies, setGuestButterflies] = useState<Butterfly[]>([]);
+  const [meadowList, setMeadowList] = useState<MeadowEntry[]>(initialMeadow);
 
   const signedIn = profile !== null && profile.name.length > 0;
   const flyingNow = butterflies.length;
@@ -271,23 +297,12 @@ export function Garden({
 
   useEffect(() => {
     /*
-     * Ömrün bitiş anı burada EKLENİYOR, sahnede hesaplanmıyor: kaç günlük
-     * bir ömür olduğu bir ürün kuralı ve `lib/types.ts`te duruyor. Sahne
-     * yalnızca iki mutlak an görüyor ve aradaki oranı çiziyor.
+     * Liste olduğu gibi geçiyor: iki ömür ucu da sunucudan geliyor ve sahne
+     * aradaki oranı çiziyor. Ömrün kaç gün olduğu burada da, sahnede de
+     * bilinmiyor — kural `lib/types.ts`te ve onu yalnızca sunucu okuyor.
      */
-    meadow.sync([
-      ...butterflies.map((b) => ({
-        ...b,
-        kind: 'member' as const,
-        expiresAt: expiresAt(b),
-      })),
-      ...guestButterflies.map((b) => ({
-        ...b,
-        kind: 'guest' as const,
-        expiresAt: expiresAt(b),
-      })),
-    ]);
-  }, [meadow, butterflies, guestButterflies]);
+    meadow.sync(meadowList);
+  }, [meadow, meadowList]);
 
   /*
    * Kameranın izlediği kelebek. Ayrı bir effect, çünkü listeden bağımsız
@@ -427,7 +442,7 @@ export function Garden({
       return;
     }
 
-    setGuestButterflies((list) => [...list, result.butterfly]);
+    setMeadowList((list) => [...list, toMeadowEntry(result.butterfly, 'guest')]);
     setLastReleased(result.butterfly);
     setTotal(result.total);
     setGuestBlocked(true);
@@ -453,6 +468,7 @@ export function Garden({
     }
 
     setButterflies((list) => [...list, result.butterfly]);
+    setMeadowList((list) => [...list, toMeadowEntry(result.butterfly, 'member')]);
     setLastReleased(result.butterfly);
     setTotal(result.total);
 
@@ -493,6 +509,12 @@ export function Garden({
     }
 
     setProfile(result.profile);
+    /*
+     * Kişisel listeler girişin cevabından geliyor. Sayfa açılırken de
+     * okunuyorlar ama o an kullanıcı misafirdi, yani boştular.
+     */
+    setButterflies(result.butterflies);
+    setFinished(result.history);
     reset(afterSignIn);
   }
 
@@ -528,27 +550,35 @@ export function Garden({
   }
 
   /*
-   * ⚠ Kelebekleri listeden düşüren satır HÂLÂ BURADA ve hâlâ yanlış: salınan
-   * kelebek çayırın, salanın değil — oturum kapansa da uçmaya devam etmeli.
+   * ⚠ ÇAYIR BOŞALMIYOR. Salınan kelebek çayırın, salanın değil — oturum
+   * kapansa da yedi gününü doldurmaya devam ediyor. Burada temizlenen tek
+   * şey KİŞİSEL olan: profil ve "Kelebeklerim" listesi.
    *
-   * Kalkamamasının sebebi listenin kaynağı: kelebekler hâlâ yalnızca bu
-   * bileşenin belleğinde yaşıyor, yani çıkışta boşaltılmasalar da yenilemede
-   * kayboluyorlar. Liste sunucudan gelmeye başladığında (E.3) bu iki satır
-   * birlikte kalkacak.
+   * (Sunucusuz sürümde bu fonksiyon `meadowList`i de boşaltıyordu ve bu
+   * yanlıştı; kelebekleri tutan başka kimse olmadığı için mecburdu.)
    */
   async function signOut() {
     setProfile(null);
     setButterflies([]);
+    setFinished([]);
     setAwaitingVerify(false);
     reset('landing');
     await signOutAction();
   }
 
+  /*
+   * ⚠ HENÜZ GERÇEKTEN SİLMİYOR — yalnızca ekranı temizliyor.
+   *
+   * Sunucu tarafı yazılmadı ve arayüzde bir eksik var: uyarı metni silmenin
+   * kalıcı olduğunu söylüyor ve EKSIKLER şifreyle yeniden doğrulama şart
+   * koşuyor, ama `SettingsCard` yalnızca hesap adını yazdırıyor — isim yazmak
+   * bir arayüz eşiği, yetki kanıtı değil. Alan eklenmeden sunucu tarafını
+   * yazmak, sözü tutmayan bir uç nokta açmak olurdu.
+   */
   function deleteAccount() {
-    // Kelebekler anında çayırdan kalkıyor — uyarıda söz verilen davranış.
-    // Burada listeyi boşaltmak yetiyor: köprü farkı görüp sahneden kaldırıyor.
     setProfile(null);
     setButterflies([]);
+    setFinished([]);
     reset('landing');
   }
 
@@ -808,6 +838,25 @@ export function Garden({
       </MeadowShell>
     </main>
   );
+}
+
+/**
+ * Yeni salınan kelebeği çayır listesinin diline çevirir.
+ *
+ * Ömrün bitiş anı burada EKLENİYOR, çünkü salma cevabı yalnızca başlangıcı
+ * taşıyor. `expiresAt` (lib/types.ts) `LIFESPAN_DAYS`i okuyan tek yer — sunucu
+ * da aynı kuralı aynı dosyadan okuyor, yani iki taraf ayrışamaz.
+ */
+function toMeadowEntry(b: Butterfly, kind: 'guest' | 'member'): MeadowEntry {
+  return {
+    id: b.id,
+    foreHex: b.foreHex,
+    hindHex: b.hindHex,
+    seed: b.seed ?? 0,
+    releasedAt: b.releasedAt,
+    expiresAt: expiresAt(b),
+    kind,
+  };
 }
 
 function Landing({
