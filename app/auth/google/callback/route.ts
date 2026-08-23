@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
          * ⚠ `coalesce` ile doğrulama da yazılıyor: doğrulanmamış bir hesap
          * Google ile girildiğinde doğrulanmış hâle geliyor. Yan etki değil,
          * İSTENEN şey — doğrulama postası kaybolduğunda hesabın kilitlenmesi
-         * (EKSIKLER §1.1) bu yoldan açılıyor. Zaten doğrulanmışsa tarih
+         * (CLAUDE.md → Açık işler §1.1) bu yoldan açılıyor. Zaten doğrulanmışsa tarih
          * değişmiyor; "ne zaman üye oldun" cevabı geriye kaymamalı.
          */
         await run(
