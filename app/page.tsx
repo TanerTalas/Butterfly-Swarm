@@ -2,6 +2,7 @@ import { Garden } from '@/components/Garden';
 import { guestReleaseUsed } from '@/app/actions/release';
 import { readAccountFacts } from '@/lib/server/account';
 import { readReleaseTotal } from '@/lib/server/counter';
+import { googleConfigured } from '@/lib/server/google';
 import { readMeadow, readOwnHistory, readOwnLive } from '@/lib/server/meadow';
 import { resetPending } from '@/lib/server/reset';
 import { readSession } from '@/lib/server/session';
@@ -69,6 +70,7 @@ export default async function Home() {
       initialButterflies={mine}
       initialHistory={history}
       initialAccount={account}
+      googleEnabled={googleConfigured()}
     />
   );
 }
