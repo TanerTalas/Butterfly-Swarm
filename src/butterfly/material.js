@@ -8,9 +8,6 @@ import * as THREE from 'three';
  * dağınık üretilseydi hangi kopyanın enjekte edildiğini izlemek imkânsız
  * olurdu — ve o enjeksiyon materyal ömrü boyunca YALNIZCA BİR KEZ yapılabilir
  * (bkz. `swarm/wingShader.js`).
- *
- * Laboratuvar kendi kopyalarını alıyor ve onlara hiçbir şey enjekte
- * edilmiyor; iki yol bu yüzden birbirine karışmıyor.
  */
 
 export function createWingMaterial(map = null) {
@@ -52,14 +49,6 @@ export function createBodyMaterial() {
   return new THREE.MeshStandardMaterial({
     color: 0x2b2118,
     roughness: 0.72,
-    metalness: 0.0,
-  });
-}
-
-export function createEyeMaterial() {
-  return new THREE.MeshStandardMaterial({
-    color: 0x0b0906,
-    roughness: 0.25,
     metalness: 0.0,
   });
 }

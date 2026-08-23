@@ -17,9 +17,8 @@ import { WORLD, sunDirection } from './config.js';
  *   - `scene.environment` ← aynı sahnenin PMREM'i (IBL)
  * olarak kullanmak hem daha ucuz hem de kamerayı serbest bırakıyor.
  *
- * Güneş açısı panelden değişirse `update()` yeniden bake ediyor. Bu ~5 ms
- * sürüyor, yani slider sürüklenirken değil bırakılınca çağrılmalı
- * (`onFinishChange` — projenin geri kalanındaki kural).
+ * Güneş açısı değişirse `update()` yeniden bake ediyor. Bu ~5 ms sürüyor,
+ * yani her karede değil yalnızca açı gerçekten değiştiğinde çağrılmalı.
  */
 export function createSky(renderer, scene) {
   const skyScene = new THREE.Scene();
