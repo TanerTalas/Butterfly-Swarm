@@ -34,7 +34,7 @@ const loader = new THREE.TextureLoader();
  * tırtıklardı.
  *
  * Bu yalnızca İNDİRME kazancı: WebP de GPU'ya ham RGBA olarak çıkıyor, yani
- * VRAM aynı (çim atlası 24 MB). Onu düşürmek KTX2 ister (EKSIKLER §5).
+ * VRAM aynı (çim atlası 24 MB). Onu düşürmek KTX2 ister (CLAUDE.md → Açık işler §5).
  */
 export const GRASS_ATLAS_URL = '/textures/hearth-grass-atlas.webp';
 export const PETAL_ATLAS_URL = '/textures/inkwell-petals.webp';

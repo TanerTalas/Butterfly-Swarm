@@ -68,7 +68,7 @@ const csp = [
 
   /*
    * ⚠ `blob:` worker için ŞART. Bugün kendi kodumuz worker açmıyor ama
-   * three.js'in KTX2 transcoder'ı (EKSIKLER §5) kendini blob URL'inden
+   * three.js'in KTX2 transcoder'ı (CLAUDE.md → Açık işler §5) kendini blob URL'inden
    * başlatıyor; madde şimdiden burada, o iş yapıldığında sessizce kırılmasın.
    */
   "worker-src 'self' blob:",
@@ -105,7 +105,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           /*
            * ⚠ Bu başlık DOĞRU ve kaldırılmamalı — mobil görünümü iframe'e
-           * koyup denemek için bile (bkz. EKSIKLER → Notlar).
+           * koyup denemek için bile (bkz. CLAUDE.md → Geliştirme).
            */
           { key: 'X-Frame-Options', value: 'DENY' },
 
