@@ -9,8 +9,8 @@ import { insetPolygon, dedupe } from './shapeUtils.js';
  * kenara giden düz damarlar, yuvarlak benekler. Kelebek ekranın %11'i
  * kadarken yetiyordu ama yakından bakıldığında kanat düz duruyordu.
  *
- * Buradaki katmanlar `lab.html` içinde tek tek denenip seçildi. Her biri
- * bağımsız açılıp kapanabiliyor.
+ * Buradaki katmanlar tek tek denenip seçildi; her biri `DETAIL_DEFAULTS`
+ * üstünden bağımsız açılıp kapanabiliyor.
  *
  * Gerçek kelebek kanadında olup ilk desende olmayanlar:
  *   - dallanan damar yapısı ve diskal hücre (en belirgin eksikti)
@@ -38,38 +38,6 @@ export const DETAIL_DEFAULTS = {
   reliefStrength: 2.2,
   seed: 7,
 };
-
-const SINGLE_TILE = 1024;
-
-/**
- * Tek kanat için bağımsız texture üretir (laboratuvar bunu kullanıyor).
- * Sürü, atlas'a çizmek için aşağıdaki `drawDetailedWing`'i doğrudan çağırıyor.
- *
- * @returns {{map: THREE.Texture, normalMap: THREE.Texture|null}}
- */
-export function createDetailedWing(shape, options = {}) {
-  const o = { ...DETAIL_DEFAULTS, ...options };
-  const b = shapeBounds(shape);
-  const aspect = b.width / b.height;
-  const W = Math.round(aspect >= 1 ? SINGLE_TILE : SINGLE_TILE * aspect);
-  const H = Math.round(aspect >= 1 ? SINGLE_TILE / aspect : SINGLE_TILE);
-  const rect = { x: 0, y: 0, w: W, h: H };
-
-  const canvas = makeCanvas(W, H);
-  drawDetailedWing(canvas.getContext('2d'), shape, rect, o);
-  const map = makeTexture(canvas, THREE.SRGBColorSpace);
-
-  let normalMap = null;
-  if (o.relief) {
-    const height = makeCanvas(W, H);
-    const hctx = height.getContext('2d');
-    fillNeutralHeight(hctx, W, H);
-    drawWingHeight(hctx, shape, rect, o);
-    normalMap = makeTexture(heightToNormal(height, o.reliefStrength), null);
-  }
-
-  return { map, normalMap };
-}
 
 /** Yükseklik haritasının nötr zemini — gri = düz yüzey. */
 export function fillNeutralHeight(ctx, w, h) {
@@ -515,15 +483,6 @@ function makeCanvas(w, h) {
   c.width = w;
   c.height = h;
   return c;
-}
-
-function makeTexture(canvas, colorSpace) {
-  const t = new THREE.CanvasTexture(canvas);
-  if (colorSpace) t.colorSpace = colorSpace;
-  t.anisotropy = 8;
-  t.wrapS = THREE.ClampToEdgeWrapping;
-  t.wrapT = THREE.ClampToEdgeWrapping;
-  return t;
 }
 
 function trace(ctx, pts, px, py, reverse = false) {

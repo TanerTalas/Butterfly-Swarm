@@ -97,33 +97,3 @@ export function Butterfly({
     </svg>
   );
 }
-
-/**
- * Avatar kipi: krem daire içinde tek renk kelebek.
- * Profil rozetlerinde ve hesap kartında kullanılıyor.
- */
-export function ButterflyAvatar({
-  colour,
-  size = 42,
-  circle = 68,
-  className,
-}: {
-  colour: string;
-  size?: number;
-  circle?: number;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`avatar ${className ?? ''}`.trim()}
-      style={{ width: circle, height: circle }}
-    >
-      <Butterfly
-        fore={colour}
-        width={size}
-        height={size * (100 / 124)}
-        simple
-      />
-    </span>
-  );
-}

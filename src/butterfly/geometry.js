@@ -261,7 +261,7 @@ function buildBodyGeometry() {
  * Kelebeğin tüm geometri parçalarını üretir.
  *
  * Geometrinin nereden geldiğini çağıran taraf BİLMEZ. Kaynak değişirse
- * yalnızca burası değişir; çırpma, sürü ve laboratuvar aynı kalır.
+ * yalnızca burası değişir; çırpma ve sürü aynı kalır.
  */
 export function createButterflyGeometry(overrides = {}) {
   const params = { ...WING_DEFAULTS, ...overrides };

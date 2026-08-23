@@ -47,7 +47,6 @@ notices on its own is a life running out.
 |---|---|---|
 | **The app** | `app/` + `components/` — Next.js, the real product | `npm run dev` |
 | **The scene engine** | `src/` — plain JavaScript three.js that has never heard of React | imported by the app |
-| **The labs** | `index.html`, `lab.html`, `world.html` — swarm, wing detail, meadow | `npm run lab` (Vite) |
 
 The engine was deliberately **not** converted to TypeScript. It works, it is
 documented, and it is imported as-is through `allowJs`. The bridge between the
@@ -95,6 +94,14 @@ mechanical windscreen-wiper feel.
 The maths exists twice on purpose — as pure JavaScript in `butterfly/flap.js`
 and as its direct GLSL counterpart in `swarm/wingShader.js`. They change
 together or not at all.
+
+### The wing pattern is a texture, not vertex colour
+
+Branching veins with a discal cell, directional scale texture, a submarginal
+band, separated lunules, a fringe, eyespots, and a normal map generated from
+the veins — all painted into one atlas. Keeping the pattern in the texture is
+what lets detail and triangle count move independently: richer wings cost atlas
+memory and about 70 ms of generation time, not a single extra vertex.
 
 ### Slots are permits, not addresses
 
@@ -170,30 +177,6 @@ Swapping either one is an environment variable, not a refactor.
 
 ---
 
-## The labs
-
-Three standalone pages served by Vite, kept because they are where the tuning
-actually happens.
-
-| Page | What it is |
-|---|---|
-| `index.html` | The swarm experiment — hundreds of butterflies chasing or fleeing the cursor, with a full control panel |
-| `lab.html` | Wing detail lab: static butterflies side by side, detail increasing left to right |
-| `world.html` | The meadow itself, without the app on top |
-
-<div align="center">
-<img src="docs/media/wings.jpg" alt="Wing detail" width="100%">
-</div>
-
-The swarm's wing pattern was chosen in the lab: branching veins with a discal
-cell, directional scale texture, a submarginal band, separated lunules, a
-fringe, eyespots, and a normal map generated from the veins. Detail costs
-nothing in triangles — it costs atlas memory and about 70 ms of generation time,
-which is why the pattern controls fire on `onFinishChange` rather than on every
-slider pixel.
-
----
-
 ## Performance
 
 | Butterflies | CPU / frame | Triangles | Draw calls |
@@ -228,7 +211,6 @@ npm run dev                  # → http://localhost:3000
 | `npm run build` / `npm start` | Production build and server |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run migrate` | Apply database migrations |
-| `npm run lab` | The three Vite lab pages |
 
 With no mail configuration, verification emails are **printed to the dev
 server's console** — the whole sign-up flow can be walked end to end without

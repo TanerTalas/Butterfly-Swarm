@@ -202,7 +202,7 @@ vec3 bfHsv2Rgb(vec3 c) {
 vec3 bfTint(vec3 rgb) {
   vec3 hsv = bfRgb2Hsv(rgb);
   hsv.x = fract(hsv.x + vHueShift);
-  // uSaturation genel panel ayarı, vSat ise bu kanadın seçilen rengi
+  // uSaturation sürünün geneli, vSat ise bu kanadın seçilen rengi
   hsv.y = clamp(hsv.y * uSaturation * vSat, 0.0, 1.0);
   hsv.z = clamp(hsv.z * vVal, 0.0, 1.0);
   return bfHsv2Rgb(hsv);
@@ -300,7 +300,7 @@ export function injectFlapShader(material, hinges) {
   return uniforms;
 }
 
-/** Panel parametrelerini uniform'lara aktarır. */
+/** Çırpma parametrelerini uniform'lara aktarır. */
 export function syncFlapUniforms(uniforms, params, time) {
   uniforms.uTime.value = time;
   uniforms.uFlapUp.value = params.flapUpDeg * THREE.MathUtils.DEG2RAD;

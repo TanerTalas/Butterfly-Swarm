@@ -112,8 +112,9 @@ export async function createButterflyPreview(canvas, options = {}) {
 
   /*
    * Kameranın uzaklığı geometrinin gerçek sınır kutusundan hesaplanıyor.
-   * Elle bir mesafe yazmak kırılgan: kanat formu panelden değiştirilebiliyor
-   * ve açıklık değişince kelebek kadraja sığmıyor ya da küçük kalıyor.
+   * Elle bir mesafe yazmak kırılgan: kanat formu `WING_DEFAULTS` üstünden
+   * değişebiliyor ve açıklık değişince kelebek kadraja sığmıyor ya da
+   * küçük kalıyor.
    */
   frameSubject(swarm, camera);
 

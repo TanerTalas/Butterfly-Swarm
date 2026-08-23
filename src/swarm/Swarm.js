@@ -6,11 +6,7 @@ import { fadeScale, injectFadeShader } from './fadeShader.js';
 import { createWingMaterial, createBodyMaterial } from '../butterfly/material.js';
 import {
   wanderForce,
-  viewBoundsForce,
   worldBoundsForce,
-  followForce,
-  orbitForce,
-  fleeForce,
   limitLength,
   ensureMinLength,
   limitClimb,
@@ -26,7 +22,7 @@ import { flapWave } from '../butterfly/flap.js';
  * indiriyor.
  *
  * Kapasite bir kez ayrılıyor, `count` yalnızca `instanceMesh.count`'u
- * değiştiriyor — panelden sayıyı oynatmak yeniden ayırma yapmıyor.
+ * değiştiriyor — sayıyı oynatmak yeniden ayırma yapmıyor.
  */
 
 export const SWARM_DEFAULTS = {
@@ -112,15 +108,10 @@ export class Swarm {
     this.position = new Float32Array(n * 3);
     this.velocity = new Float32Array(n * 3);
     this.quaternion = new Float32Array(n * 4);
-    this.followMix = new Float32Array(n);
-    this.fleeMix = new Float32Array(n);
     this.scale = new Float32Array(n);
     this.phase = new Float32Array(n);
     this.flapSpeed = new Float32Array(n);
     this.noiseOffset = new Float32Array(n);
-    // Kelebek başına tercih edilen takip yarıçapı oranı — sürünün ince bir
-    // kabuk yerine bulut oluşturmasını sağlayan şey bu
-    this.radiusBias = new Float32Array(n);
 
     /*
      * KALAN ÖMÜR oranı: 1 = yeni salınmış, 0 = yedi günü dolmuş
@@ -182,9 +173,6 @@ export class Swarm {
 
     this.phase[i] = Math.random();
     this.noiseOffset[i] = Math.random() * 1000;
-    // Küpü alınmış rastgelelik: yakın yarıçapları seyreltip yoğunluğu
-    // hacme eşit dağıtıyor, yoksa herkes merkeze toplanıyor
-    this.radiusBias[i] = Math.cbrt(Math.random());
 
     this._sizeRand[i] = Math.random() - 0.5;
     this._speedRand[i] = Math.random() - 0.5;
@@ -210,7 +198,6 @@ export class Swarm {
   reseedInstance(i, rand) {
     this.phase[i] = rand();
     this.noiseOffset[i] = rand() * 1000;
-    this.radiusBias[i] = Math.cbrt(rand());
     this._sizeRand[i] = rand() - 0.5;
     this._speedRand[i] = rand() - 0.5;
 
@@ -228,8 +215,7 @@ export class Swarm {
 
   /**
    * Boy ve çırpma hızı çeşitliliğini parametrelerden yeniden türetir.
-   * Geometri değişmediği için yeniden inşa GEREKMİYOR — panelde slider
-   * sürüklerken bu yeterli.
+   * Geometri değişmediği için yeniden inşa GEREKMİYOR.
    */
   applyVariation() {
     const p = this.params;
@@ -320,8 +306,8 @@ export class Swarm {
    * Kelebek başına ton kaydırmasını yeniden türetir.
    *
    * Boy çeşitliliğinde olduğu gibi ham çekiliş `_hueRand`'da saklı —
-   * slider'ı oynatmak renkleri yeniden karmıyor, aynı çekilişi yeniden
-   * ölçekliyor. Yoksa her dokunuşta bütün sürü renk değiştirirdi.
+   * `hueSpread`i değiştirmek renkleri yeniden karmıyor, aynı çekilişi
+   * yeniden ölçekliyor. Yoksa her dokunuşta bütün sürü renk değiştirirdi.
    */
   applyHue() {
     const spread = this.params.hueSpread;
@@ -407,12 +393,12 @@ export class Swarm {
    * ayrıldığında (ömrü doldu, hesap silindi) boşluk bırakılamaz: sondaki
    * kelebek boşalan yuvaya taşınıp sayı bir azaltılıyor.
    *
-   * Taşınan şey görünüşü değil DURUMU: konum, hız, yönelim, kip
-   * karışımları, ölçü, çırpma fazı ve rengi. Yalnızca renk kopyalansaydı
-   * o kelebek bir sonraki karede bambaşka bir yere ışınlanırdı.
+   * Taşınan şey görünüşü değil DURUMU: konum, hız, yönelim, ölçü, çırpma
+   * fazı ve rengi. Yalnızca renk kopyalansaydı o kelebek bir sonraki karede
+   * bambaşka bir yere ışınlanırdı.
    *
    * Ham rastgele çekilişler (`_sizeRand` vb.) de geliyor; kalsalardı bir
-   * panel dokunuşunda `applyVariation()` kelebeğin boyunu değiştirirdi.
+   * sonraki `applyVariation()` çağrısı kelebeğin boyunu değiştirirdi.
    */
   copyInstance(from, to) {
     if (from === to) return;
@@ -424,14 +410,11 @@ export class Swarm {
       [this.hueShift, 2],
       [this.wingSat, 2],
       [this.wingVal, 2],
-      [this.followMix, 1],
-      [this.fleeMix, 1],
       [this.fade, 1],
       [this.scale, 1],
       [this.phase, 1],
       [this.flapSpeed, 1],
       [this.noiseOffset, 1],
-      [this.radiusBias, 1],
       [this._sizeRand, 1],
       [this._speedRand, 1],
       [this._hueRand, 1],
@@ -484,69 +467,24 @@ export class Swarm {
 
     const n = this.params.count;
     const fl = this.flight;
-    const blend = 1 - Math.exp(-fl.modeBlend * dt);
-    const followTarget = fl.mode === 'follow' ? 1 : 0;
-    const fleeTarget = fl.mode === 'flee' ? 1 : 0;
     const climbSin = Math.sin(fl.maxClimbDeg * THREE.MathUtils.DEG2RAD);
     const turn = 1 - Math.exp(-fl.turnRate * dt);
-
-    // Mouse hızlı süpürülünce dolanma güçleniyor: hava akımı hissi
-    const gust =
-      1 + Math.min(ctx.pointerSpeed ?? 0, fl.gustMax) * fl.gust;
 
     for (let i = 0; i < n; i++) {
       const i3 = i * 3;
       _pos.fromArray(this.position, i3);
       _vel.fromArray(this.velocity, i3);
 
-      this.followMix[i] += (followTarget - this.followMix[i]) * blend;
-      this.fleeMix[i] += (fleeTarget - this.fleeMix[i]) * blend;
-
       // ── Kuvvetler ──
       _acc.set(0, 0, 0);
-      _acc.addScaledVector(
-        wanderForce(_tmp, this.noiseOffset[i], this.time, fl),
-        gust,
-      );
-
-      if (ctx.target) {
-        const fm = this.followMix[i];
-        if (fm > 1e-3) {
-          // Yarıçap kelebek başına saçılmış: sürü kabuk değil bulut olsun
-          const radius =
-            fl.followRadius *
-            (1 - fl.followSpread + 2 * fl.followSpread * this.radiusBias[i]);
-
-          _acc.addScaledVector(
-            followForce(_tmp, _pos, ctx.target, radius, fl),
-            fm,
-          );
-          const spin = i % 2 === 0 ? 1 : -1;
-          _acc.addScaledVector(
-            orbitForce(_tmp, _pos, ctx.target, spin, radius, fl),
-            fm,
-          );
-        }
-        const xm = this.fleeMix[i];
-        if (xm > 1e-3) {
-          _acc.addScaledVector(fleeForce(_tmp, _pos, ctx.target, fl), xm);
-        }
-      }
+      _acc.add(wanderForce(_tmp, this.noiseOffset[i], this.time, fl));
 
       /*
-       * İki sınır kipi var ve çağıran taraf seçiyor:
-       *
-       *   ctx.bounds verildiyse  → dünyaya sabit silindir (sakura avlusu)
-       *   verilmediyse           → kameranın görünür alanı (tek başına demo)
-       *
-       * Varsayılan ekran kipi, `index.html`'deki sürü demosu bozulmasın diye
-       * korunuyor.
+       * Sınır, çağıran taraf verdiyse uygulanıyor. `ctx.bounds` olmadan
+       * çağıran tek yer önizleme (`world/preview.js`) ve orada
+       * `flight.flying` kapalı — döngüye zaten hiç girilmiyor.
        */
-      _acc.add(
-        ctx.bounds
-          ? worldBoundsForce(_tmp, _pos, ctx.bounds, fl)
-          : viewBoundsForce(_tmp, _pos, ctx.camera, ctx.focusDistance, fl),
-      );
+      if (ctx.bounds) _acc.add(worldBoundsForce(_tmp, _pos, ctx.bounds, fl));
       limitLength(_acc, fl.maxForce);
 
       // ── Entegrasyon ──
