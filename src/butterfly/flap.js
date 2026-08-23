@@ -31,8 +31,8 @@ export const FLAP_DEFAULTS = {
    * (−14°…+72°) bu hep pozitif kalıyor. Yani menteşe farkı sorun değildi,
    * FAZ farkıydı.
    *
-   * Denetleyiciler panelde duruyor (laboratuvarda denenebilsin diye);
-   * değişen yalnızca varsayılan.
+   * Parametreler duruyor — değeri değiştirilebilir kalsın diye; değişen
+   * yalnızca varsayılan.
    */
   hindLag: 0, // arka kanadın faz gecikmesi (vuruş kesri)
   hindAmplitude: 1,
@@ -80,47 +80,6 @@ export function flapVelocity(cycle, downstrokeFraction = FLAP_DEFAULTS.downstrok
   if (p < d) return (-(Math.PI / d) * Math.sin(Math.PI * (p / d))) / peak;
   return ((Math.PI / (1 - d)) * Math.sin(Math.PI * ((p - d) / (1 - d)))) / peak;
 }
-
-/** Zaman + bireysel faz → döngü konumu. */
-export function flapCycle(time, speed, phase = 0) {
-  return time * speed + phase;
-}
-
-/**
- * Kanat çırpma açısı (radyan). Menteşe etrafındaki dönüş — SAĞ kanat için.
- * Sol kanat aynı değeri ters işaretle kullanır (bkz. CLAUDE.md).
- */
-export function flapAngle(cycle, params) {
-  const {
-    flapUpDeg,
-    flapDownDeg,
-    flapAmplitude,
-    downstrokeFraction,
-  } = { ...FLAP_DEFAULTS, ...params };
-
-  const wave = flapWave(cycle, downstrokeFraction) * flapAmplitude;
-  // wave ∈ [-1,1] → [dip, tepe]. Genlik 0'da kanat vuruşun ortasında durur.
-  const deg = flapDownDeg + ((wave + 1) / 2) * (flapUpDeg - flapDownDeg);
-  return deg * DEG2RAD;
-}
-
-/**
- * Kanadın açıklık ekseni etrafındaki burulması (radyan).
- *
- * Tüm kanada uygulanan TEK bir pitch: kanat düz bir levha gibi değil, ön
- * kenarı hamle yönüne göre eğik hareket ediyor.
- *
- * Menteşeden uca doğru artan gerçek burulma sürüde, vertex shader'da yapılıyor
- * (`wingShader.js` → `bfTwist`). Bu fonksiyon tek kelebek yolunda kalıyor ve
- * orada bütün kanadı çevirmek makul ve ucuz yaklaşım.
- */
-export function twistAngle(cycle, params) {
-  const { twistDeg, downstrokeFraction } = { ...FLAP_DEFAULTS, ...params };
-  // Hız negatifken (aşağı hamle) ön kenar aşağı bakmalı → negatif pitch
-  return flapVelocity(cycle, downstrokeFraction) * twistDeg * DEG2RAD;
-}
-
-const DEG2RAD = Math.PI / 180;
 
 function clamp(v, lo, hi) {
   return v < lo ? lo : v > hi ? hi : v;

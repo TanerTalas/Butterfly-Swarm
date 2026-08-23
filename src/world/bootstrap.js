@@ -11,11 +11,7 @@ import { createVisitors } from './visitors.js';
 import { createFollowCam } from './follow.js';
 
 /*
- * Sahnenin GÖMÜLEBİLİR giriş noktası.
- *
- * `main.js` geliştirme sayfası olarak kalıyor: lil-gui paneli, HUD, sayaçlar.
- * Site o sayfayı kullanamaz — panel bir geliştirici aracı ve DOM'a kendi
- * elemanlarını ekliyor. Burası aynı sahneyi kurar ama arayüzü React'e bırakır.
+ * Sahnenin TEK giriş noktası.
  *
  * Sözleşme dar tutuldu: bir canvas al, bir `dispose` döndür. React tarafı
  * three.js hakkında hiçbir şey bilmiyor.
@@ -143,20 +139,20 @@ export async function createMeadow(canvas, options = {}) {
   const visitors = createVisitors(swarm);
 
   /*
-   * İMLEÇ TAKİBİ YOK — bilerek.
+   * İMLEÇ TAKİBİ YOK — bilerek, ve kodu da yok.
    *
-   * `Pointer` burada kurulu değil: çayırdaki kelebekler fareyi ne takip
-   * ediyor ne de ondan kaçıyor, her zaman kendi hâllerinde uçuyorlar.
+   * Çayırdaki kelebekler fareyi ne takip ediyor ne de ondan kaçıyor; her
+   * zaman kendi hâllerinde uçuyorlar.
    *
    * Sebep sahnenin rolü. Burası oynanacak bir demo değil, arayüzün arkasında
    * duran bir manzara; kullanıcı imleci kart okumak veya düğmeye basmak için
    * gezdiriyor ve sürünün her fare hareketinde toplanıp dağılması sahneyi
    * huzurlu bir bahçeden imlece tepki veren bir oyuncağa çeviriyordu.
    *
-   * `Pointer` sınıfı duruyor ve bağımsız demolarda (`src/main.js`,
-   * `src/world/main.js`) hâlâ kullanılıyor — kaldırılan yalnızca bu sahnedeki
-   * bağlantı. Yan fayda: her karedeki ışın izleme ve canvas dinleyicileri de
-   * gitti (dispose'da zaten temizlenmiyorlardı).
+   * Bir zamanlar bağlantı yalnızca buradan sökülmüş, `Pointer` sınıfı ve
+   * takip/kaçış kuvvetleri laboratuvar sayfaları için durmuştu; o sayfalar
+   * da gidince kod tamamen silindi. Yan fayda: her karedeki ışın izleme ve
+   * canvas dinleyicileri de gitti (dispose'da zaten temizlenmiyorlardı).
    */
 
   // ── Takip kamerası ───────────────────────────────────────────────────────
@@ -440,7 +436,7 @@ export async function createMeadow(canvas, options = {}) {
     /** İzlemeyi bırakır; kamera kullanıcının bıraktığı görüşe dönüyor. */
     stopWatching: follow.stop,
 
-    // ── Laboratuvarların ve teşhisin kullandığı iç parçalar ──────────────
+    // ── Teşhisin kullandığı iç parçalar (`window.__meadow`) ──────────────
     scene,
     camera,
     controls,

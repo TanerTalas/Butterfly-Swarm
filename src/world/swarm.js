@@ -17,8 +17,7 @@ import { groundHeight, mulberry32 } from './terrain.js';
  *   2. Başlangıç konumları rastgele değil, tohumdan deterministik.
  *   3. Uçuş parametreleri avlunun ölçeğine göre yeniden ayarlı.
  *
- * Böylece `index.html`'deki tek başına sürü demosu aynen çalışmaya devam
- * ediyor; iki sahne aynı motoru farklı kiplerde kullanıyor.
+ * Üçü de dışarıdan veriliyor; `Swarm` avludan haberdar değil.
  */
 
 /*
@@ -47,10 +46,6 @@ const WORLD_FLIGHT = {
   minSpeed: 0.5,
   wander: 3.2,
   scatter: 0.42,
-  // Avlu geniş; takip halkası da geniş olmalı, yoksa sürü imlecin üstünde
-  // tek bir topak oluyor
-  followRadius: 2.8,
-  fleeRadius: 4.0,
   // Sınır kuvveti dünya ölçeğinde: pay yarıçapın oranı olarak hesaplanıyor
   boundsMargin: 0.3,
   boundsForce: 10.0,
@@ -216,14 +211,12 @@ export function applyPalette(swarm, seed = 0x9a17c) {
  * Başlangıç konumlarını tohumdan üretir.
  *
  * `Swarm._seed()` her ajanı ±4 birimlik bir kutuya `Math.random()` ile
- * atıyor. Bu, tek başına demo için doğru ama burada iki sorun çıkarıyor:
- * kelebekler avlunun ortasında bir küme olarak doğuyor ve her açılışta
- * farklı yerde beliriyorlar.
+ * atıyor; avluda bu iki sorun çıkarıyor: kelebekler ortada bir küme olarak
+ * doğuyor ve her açılışta farklı yerde beliriyorlar.
  *
- * Deterministik yerleşim projefikri.md §5'in de temeli: kelebeğin konumu
- * veritabanında saklanmıyor, `seed`'den türetiliyor. Aşama C'de gerçek
- * kelebek kayıtları geldiğinde aynı fonksiyon onların `seed`'iyle
- * çağrılacak.
+ * Deterministik yerleşim aynı zamanda kelebeğin konumunun veritabanında
+ * saklanmamasının sebebi: konum `seed`'den türetiliyor, o yüzden aynı
+ * kelebek yenilemeden sonra da aynı yerden giriyor.
  */
 function seedPositions(swarm, seed = 0xb17e5) {
   const rand = mulberry32(seed);
