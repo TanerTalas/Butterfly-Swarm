@@ -87,6 +87,14 @@ const nextConfig = {
    */
   transpilePackages: [],
 
+  /*
+   * ⚠ nodemailer Next'in sunucu paketlemesinin DIŞINDA bırakılıyor. Modülü
+   * dinamik `require` ile yüklüyor (taşıyıcılar, DNS çözücü, kodlayıcılar);
+   * paketleyici o çağrıları izleyemiyor ve derleme sessizce geçtikten sonra
+   * çalışma anında "cannot find module" ile düşüyor.
+   */
+  serverExternalPackages: ['nodemailer'],
+
   async headers() {
     return [
       {
