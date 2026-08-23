@@ -128,6 +128,12 @@ Kalanlar:
 
 ## 4. Karar bekleyenler
 
+**Postanın kişisel bir Gmail'den gitmesi.** Gönderen `SMTP_USER` olmak
+zorunda (Gmail kuralı), yani kaydolan herkes kişisel adresi görüyor; günlük
+tavan da 500 alıcı ve o hesabın kendi yazışmalarıyla ortak. İkisi de bir alan
+adı alındığında kapanıyor ve **kod değişmiyor** — katman genel SMTP, değişen
+yalnızca ortam değişkenleri.
+
 **Renk seçicide doygunluk alt sınırı.** Soluk bir renk seçen kullanıcı
 kelebeğini çayırda kaybediyor. Serbest hex girişi duruyor, sınır konmadı.
 
@@ -152,8 +158,9 @@ sıkışacak yer burası.
   bağlanması yarım günlük iş.
 - **Üretim ortam değişkenleri:**
   - `DATABASE_URL` (üretim veritabanı, pooled), `APP_URL` (alan adı)
-  - `RESEND_API_KEY` + `MAIL_FROM` — boş kalırsa kaydolan herkes hiç
-    açılmayacak bir kapının önünde kalır
+  - `SMTP_HOST` + `SMTP_PORT` + `SMTP_USER` + `SMTP_PASS` + `MAIL_FROM` —
+    boş kalırlarsa kaydolan herkes hiç açılmayacak bir kapının önünde kalır.
+    ⚠ `MAIL_FROM`un adresi `SMTP_USER` ile AYNI olmalı (Gmail kuralı)
   - `CONTACT_TO` — iletişim mesajlarının düşeceği kutu
   - `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` — boşken bot kontrolü yok
   - `IP_HASH_SECRET` — boşken IP özeti anahtarsız üretiliyor
@@ -189,7 +196,7 @@ yeniden başlatmak çözüyor.
 uygulananlar `garden.migration` defterinde.
 
 **Postalar konsola basılıyor** (doğrulama, şifre sıfırlama ve iletişim
-mesajları dev sunucusunun çıktısında). Resend anahtarı gerekmiyor.
+mesajları dev sunucusunun çıktısında). SMTP yapılandırması gerekmiyor.
 
 **Doğrulanmış bir test hesabı** açmanın en kısa yolu — arayüzden kayıt olup
 posta beklemeye gerek yok:

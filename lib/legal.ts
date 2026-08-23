@@ -36,6 +36,12 @@
  *      sorguların o sütunu seçmemesiyle tutuluyor görünüyordu. Artık
  *      gerçekten siliniyor (`app/api/cron/sweep`) ve metin "bir gün içinde"
  *      diyor, çünkü iş günde bir kez dönüyor.
+ *   8. "Third parties" postanın RESEND'den gittiğini söylüyordu. Resend
+ *      doğrulanmış bir alan adı olmadan yalnızca kendi hesap sahibine teslim
+ *      ediyor (403), yani kayıt akışı herkese kapalıydı; posta artık düz
+ *      SMTP ile Google'ın sunucularından gidiyor (`lib/server/email.ts`).
+ *      ⚠ Sağlayıcı yine değişebilir — katman genel SMTP ve konak bir ortam
+ *      değişkeni; değiştiğinde bu cümle de değişmeli.
  *
  * ⚠ Yeni bir davranış eklerken BU DOSYAYA dön.
  *
@@ -78,7 +84,7 @@ export const LEGAL_PAGES: LegalPage[] = [
       },
       {
         heading: 'Where it lives',
-        body: 'The site runs on Vercel, and the database is an ordinary Postgres hosted by Neon in Frankfurt. Email is sent through Resend. The check that tells people from scripts on the contact form is Cloudflare’s. Signing in is ours: there is no third-party identity provider, and your password never leaves our own database. Each of these services sees the technical information it needs to do its job, such as your IP address, and nothing more.',
+        body: 'The site runs on Vercel, and the database is an ordinary Postgres hosted by Neon in Frankfurt. Email is sent through Google’s mail servers. The check that tells people from scripts on the contact form is Cloudflare’s. Signing in is ours: there is no third-party identity provider, and your password never leaves our own database. Each of these services sees the technical information it needs to do its job, such as your IP address, and nothing more.',
       },
       {
         heading: 'Your rights',
