@@ -216,7 +216,9 @@
   border-color: var(--wash-strong);
 }
 /*
- * Google ile giriş henüz bağlı değil (bkz. SignInCard).
+ * Google girişi KURULU DEĞİLKEN (`GOOGLE_CLIENT_ID`/`SECRET` boş) buton
+ * kapalı kalıyor; kuruluyken bir bağlantıya dönüşüyor ve bu kural hiç
+ * uygulanmıyor (bkz. SignInCard, lib/server/google.ts).
  *
  * Engelli dil BİRİNCİL BUTONUNKİ: soluk dolgu + soluk metin. Yeni bir kalıp
  * icat edilmiyor. `opacity` kullanılmadı bilerek — Google'ın dört renkli

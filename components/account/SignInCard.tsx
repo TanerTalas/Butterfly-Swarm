@@ -46,6 +46,7 @@ export function SignInCard({
   onAttempt,
   pending = false,
   status = 'idle',
+  googleEnabled = false,
 }: {
   /*
    * ⚠ ŞİFRE KARTTAN ÇIKIYOR ve bu bilinçli bir imza.
@@ -78,6 +79,14 @@ export function SignInCard({
    * gönderiyor ve bağlantı `/auth/confirm`e iniyor.
    */
   status?: 'idle' | 'verify';
+  /**
+   * Google girişi kurulu mu (`app/page.tsx` → `googleConfigured()`).
+   *
+   * ⚠ Anahtarın KENDİSİ değil, yalnızca "var mı" bilgisi geçiyor — Turnstile
+   * site anahtarıyla aynı zincir, ama burada taşınan şey bir sır bile değil.
+   * `NEXT_PUBLIC_` yok ve olmayacak.
+   */
+  googleEnabled?: boolean;
 }) {
   const [tab, setTab] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -222,21 +231,31 @@ export function SignInCard({
       </form>
 
       {/*
-       * ⚠ HENÜZ BAĞLI DEĞİL ve bu yüzden devre dışı.
+       * ⚠ BUTON DEĞİL BAĞLANTI, ve form da değil.
        *
-       * Sunucusuz sürümde buton sahte bir e-postayla (`you@example.com`)
-       * doğrudan hesap kurulumuna atlıyordu — gösterim iskelesiydi. Kimlik
-       * gerçek olduğuna göre o yol artık var olmayan bir hesaba oturum açmaya
-       * çalışırdı; çalışıyormuş gibi duran bir buton, kilitli duran bir
-       * butondan daha kötü.
+       * CSP'de `form-action 'self'` var (`next.config.mjs`); bir form
+       * gönderimi Google'a giden yönlendirme zincirinde takılabilirdi. Düz bir
+       * gezinme o kısıtın konusu bile değil.
        *
-       * Bağlanması Google OAuth akışını yazmak demek (~150 satır, kütüphane
-       * gerekmiyor); ayrı bir iş olarak duruyor.
+       * ⚠ SAHNE BU TIKLAMADA YENİDEN KURULUYOR — tam sayfa gezinmesi. Site tek
+       * sayfa (CLAUDE.md) ama OAuth kullanıcıyı Google'a gönderip geri almak
+       * zorunda; `/auth/confirm`in zaten kabul ettiği bedelin aynısı.
+       *
+       * ⚠ Anahtar yokken KAPALI kalıyor. Google'a gidip hata ekranıyla dönen
+       * bir buton, kilitli duran bir butondan kötü — bu, Turnstile'ın tersi
+       * bir karar ve sebebi `lib/server/google.ts`te yazılı.
        */}
-      <button type="button" disabled className="button--oauth">
-        <GoogleMark />
-        Continue with Google
-      </button>
+      {googleEnabled ? (
+        <a href="/auth/google" className="button--oauth">
+          <GoogleMark />
+          Continue with Google
+        </a>
+      ) : (
+        <button type="button" disabled className="button--oauth">
+          <GoogleMark />
+          Continue with Google
+        </button>
+      )}
 
       {/*
        * Yasal metne giden bağlantı BURADA duruyor. Kabuğun alt şeridi

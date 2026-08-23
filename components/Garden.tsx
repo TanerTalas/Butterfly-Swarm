@@ -109,6 +109,7 @@ export function Garden({
   initialButterflies = [],
   initialHistory = [],
   initialAccount = null,
+  googleEnabled = false,
 }: {
   initialTotal?: number;
   /** Misafir bugünkü hakkını kullandı mı (`app/page.tsx` → `guestReleaseUsed()`). */
@@ -134,6 +135,13 @@ export function Garden({
    * ayarlardaki kilit, sayfanın açılmasını engelleyecek şeyler değil.
    */
   initialAccount?: AccountFacts | null;
+  /**
+   * Google girişi kurulu mu (`app/page.tsx` → `googleConfigured()`).
+   *
+   * Sunucudan geliyor çünkü ortam değişkenlerini yalnızca sunucu görüyor;
+   * taşınan şey anahtar değil, "buton açık mı" bilgisi.
+   */
+  googleEnabled?: boolean;
   /**
    * Sunucunun okuduğu oturum (`app/page.tsx` → `readSession()`).
    *
@@ -922,6 +930,7 @@ export function Garden({
               error={signInError}
               pending={pending}
               status={awaitingVerify ? 'verify' : 'idle'}
+              googleEnabled={googleEnabled}
               onAttempt={() => setSignInError(null)}
               onDone={completeSignIn}
               onBack={back}

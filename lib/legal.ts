@@ -43,6 +43,14 @@
  *      ⚠ Sağlayıcı yine değişebilir — katman genel SMTP ve konak bir ortam
  *      değişkeni; değiştiğinde bu cümle de değişmeli.
  *
+ *   9. "Third parties" ÜÇÜNCÜ BİR KİMLİK SAĞLAYICISI OLMADIĞINI söylüyordu.
+ *      Google ile giriş bağlandı (`app/auth/google/`): şifre hâlâ kendi
+ *      veritabanımızın dışına çıkmıyor ama artık ikinci bir giriş yolu var
+ *      ve Google, kullanıcının burada giriş yaptığını görüyor.
+ *      ⚠ Yalnızca `openid email` isteniyor — isim ve resim İSTENMİYOR, ve
+ *      metin bunu açıkça söylüyor. Kapsam genişletilirse bu cümle de
+ *      genişlemeli.
+ *
  * ⚠ Yeni bir davranış eklerken BU DOSYAYA dön.
  *
  * ⚠ Hesap silme KALICI ve geri alma penceresi YOK. Bu bir varsayım değil:
@@ -84,7 +92,7 @@ export const LEGAL_PAGES: LegalPage[] = [
       },
       {
         heading: 'Where it lives',
-        body: 'The site runs on Vercel, and the database is an ordinary Postgres hosted by Neon in Frankfurt. Email is sent through Google’s mail servers. The check that tells people from scripts on the contact form is Cloudflare’s. Signing in is ours: there is no third-party identity provider, and your password never leaves our own database. Each of these services sees the technical information it needs to do its job, such as your IP address, and nothing more.',
+        body: 'The site runs on Vercel, and the database is an ordinary Postgres hosted by Neon in Frankfurt. Email is sent through Google’s mail servers. The check that tells people from scripts on the contact form is Cloudflare’s. Signing in is ours: your password never leaves our own database. You may also choose to sign in with Google instead; if you do, Google tells us your email address and nothing else — not your name, not your picture — and Google learns that you signed in here. You can always use a password instead and never involve them. Each of these services sees the technical information it needs to do its job, such as your IP address, and nothing more.',
       },
       {
         heading: 'Your rights',

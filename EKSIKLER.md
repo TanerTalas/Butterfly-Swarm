@@ -38,9 +38,6 @@ Aşama E bitti; kalan kalemler kötüye kullanım ve sertleştirme tarafında.
 
 ### 1.1 Kimlik
 
-- **Google ile giriş.** Buton çizili ama bağlı değil ve bu yüzden DEVRE DIŞI
-  duruyor. Kendi auth'umuzu yazdığımız için OAuth akışını da yazmak gerekiyor
-  (~150 satır, kütüphane gerekmez).
 - **Cloudflare Turnstile GİRİŞTE ve KAYITTA yok.** Sunucu tarafı hazır
   (`lib/server/turnstile.ts`) ve iletişim formunda çalışıyor; giriş kartına
   bağlanması ayrı bir iş — site anahtarının `app/page.tsx`ten `Garden`a, oradan
