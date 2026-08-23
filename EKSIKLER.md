@@ -54,6 +54,19 @@ Aşama E bitti; kalan kalemler kötüye kullanım ve sertleştirme tarafında.
   Server Action'ların kendi POST protokolü; başka sitenin gönderdiği bir forma
   çerez eklenmiyor. Güvenlik başlıkları ve tam CSP yazıldı
   (`next.config.mjs`, kurallar CLAUDE.md'de).
+- ⚠ **DOĞRULANMAMIŞ HESAP KİLİTLENEBİLİYOR — çıkışı yok.** Doğrulama
+  bağlantısı yalnızca kayıt anında, BİR KEZ gönderiliyor: `VerifyCard`ta
+  yeniden gönderme düğmesi yok, aynı adresle tekrar kaydolmak "You already
+  have a meadow" postası getiriyor (içinde bağlantı YOK), şifre sıfırlama ise
+  doğrulanmamış hesaba bilerek posta göndermiyor (`password.ts`). Posta
+  kaybolduysa o adres kalıcı olarak kullanılamaz hâle geliyor — kullanıcı ne
+  girebiliyor, ne sıfırlayabiliyor, ne yeniden kaydolabiliyor. Üretimde
+  yaşandı (posta katmanı Resend'de 403 verirken açılan hesaplar).
+  `password.ts`teki gerekçe ("o kullanıcının elinde zaten bir doğrulama
+  bağlantısı var") bu durumda GEÇERSİZ.
+  Çözüm adayı: `sendAlreadyRegisteredEmail` hesap doğrulanmamışsa taze bir
+  doğrulama bağlantısı taşısın — ekran değişmiyor, tek mesaj kuralı bozulmuyor,
+  fark yalnızca posta kutusunda.
 - **Şifre gücü yalnızca uzunluğa bakıyor** (`PASSWORD_MIN` = 10). Handoff sızmış
   şifre listesine bakılmasını da istiyor.
 - **Kısa şifrenin sunucu reddi `credentials` diline düşüyor** ve bu tam oturan

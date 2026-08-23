@@ -413,6 +413,21 @@ export function Garden({
   function clearAttempts() {
     setReleaseFailure(null);
     setSignInError(null);
+
+    /*
+     * ⚠ Doğrulama ekranı da bir DENEMENİN cevabı ve onunla birlikte gitmeli.
+     *
+     * `awaitingVerify` yalnızca `signOut`ta sıfırlanıyordu; kart terk
+     * edildiğinde kalıyor ve `signin` görünümü bir daha AÇILMIYORDU — kayıt
+     * olan biri "check your inbox"tan çıkıp giriş yapmak istediğinde aynı
+     * ekranla karşılaşıyordu, çünkü `SignInCard`ın `status`u bu bayraktan
+     * okunuyor. Giriş formuna dönmenin tek yolu sekmeyi yenilemekti.
+     *
+     * Burada durması güvenli: `clearAttempts` YALNIZCA gezinmede çağrılıyor
+     * (`go`/`back`/`reset`), yani kayıt başarılı olduğunda ekran yerinde
+     * kalıyor ve ancak kullanıcı başka bir yere gidince düşüyor.
+     */
+    setAwaitingVerify(false);
   }
 
   /** Yeni ekrana gec ve gecmise ekle. */
